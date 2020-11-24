@@ -1,5 +1,5 @@
 ASM68 6800 Assembler (c) 1988-1995 Evenson Consulting Services        Page 1
-FILE: e:\src\repos\mc6800\play68b\play68b.asm      TITLE: PLAY68
+FILE: c:\src\repos\zoggins\mc6800\play68b\play68b.asm      TITLE: PLAY68
 
 00001                        NAM     PLAY68           REV.B MAY 1978
 00002                        OPT     O,NOP            
@@ -60,7 +60,7 @@ FILE: e:\src\repos\mc6800\play68b\play68b.asm      TITLE: PLAY68
 00057 1F4A BC E000           CPX     $E000            ;5-
 00058 1F4D BC E000           CPX     $E000            ;5-
 ASM68 6800 Assembler (c) 1988-1995 Evenson Consulting Services        Page 2
-FILE: e:\src\repos\mc6800\play68b\play68b.asm      TITLE: PLAY68
+FILE: c:\src\repos\zoggins\mc6800\play68b\play68b.asm      TITLE: PLAY68
 
 00059 1F50 73 E000           COM     $E000            ;6-
 00060 1F53 86 16   LOOP2     LDAA    #22              ;4-FIXED DELAY TO ADJUST
@@ -121,7 +121,7 @@ FILE: e:\src\repos\mc6800\play68b\play68b.asm      TITLE: PLAY68
 00115 1FFA         TBL1P     RMB     2                ;TABLE POINTER.
 00116 1FFC         PITCH     RMB     1                ;PITCH PARAMETER.
 ASM68 6800 Assembler (c) 1988-1995 Evenson Consulting Services        Page 3
-FILE: e:\src\repos\mc6800\play68b\play68b.asm      TITLE: PLAY68
+FILE: c:\src\repos\zoggins\mc6800\play68b\play68b.asm      TITLE: PLAY68
 
 00117               
 00118         1EE2           ORG     BASEND           
