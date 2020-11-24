@@ -5,17 +5,45 @@ namespace Score68B.Net
 {
     class Program
     {
-        static void GenerateSREC(int startAddress, byte[] byteArray, int numBytes)
+        static void GenerateSREC(UInt16 startAddress, byte[] byteArray, int numBytes)
         {
+
             int numFullRecords = numBytes / 32;
-            for (int i = 0; i < numFullRecords; ++i)
+            int i = 0;
+            for (; i < numFullRecords; ++i)
             {
+                var checksum = 0x23;
+                
+                checksum += (byte)startAddress;
+                checksum += (byte)(startAddress >> 8);
                 Console.Write(string.Format("S123{0:X4}", startAddress));
                 for(int j = 0; j < 32; ++j)
                 {
-                    //byteArray[(i*32)+j]
+                    checksum += byteArray[(i * 32) + j];
+                    Console.Write(string.Format("{0:X2}", byteArray[(i * 32) + j]));
                 }
+
+                Console.WriteLine(string.Format("{0:X2}", (byte)(~checksum)));
+                startAddress += 32;
             }
+
+            int remainderBytes = numBytes % 32;
+            if (remainderBytes != 0)
+            {
+                var checksum = (byte)remainderBytes + 3;
+                checksum += (byte)startAddress;
+                checksum += (byte)(startAddress >> 8);
+                Console.Write(string.Format("S1{0:X2}{1:X4}", (byte)remainderBytes + 3, startAddress));
+                for (int j = 0; j < remainderBytes; ++j)
+                {
+                    checksum += byteArray[(i * 32) + j];
+                    Console.Write(string.Format("{0:X2}", byteArray[(i * 32) + j]));
+                }
+
+                Console.WriteLine(string.Format("{0:X2}", (byte)(~checksum)));
+            }
+
+            Console.WriteLine("S9");
         }
 
         static void Main(string[] args)
@@ -156,13 +184,14 @@ namespace Score68B.Net
                                         break;
                                     case 'X':
                                         byteArray[3 * (v - 1)] = 0;
-                                        for (int i = 0; i < ((v - 1) * 3)+1; ++i)
-                                        {
-                                            Console.Write(string.Format("{0:X2}", byteArray[i]));
-                                            //Console.Write(" ");
-                                            //if ((i+1) % 3  == 0)
-                                            //    Console.Write("\n");
-                                        }
+                                        //for (int i = 0; i < ((v - 1) * 3)+1; ++i)
+                                        //{
+                                        //Console.Write(string.Format("{0:X2}", byteArray[i]));
+                                        //Console.Write(" ");
+                                        //if ((i+1) % 3  == 0)
+                                        //    Console.Write("\n");
+                                        //}
+                                        GenerateSREC(0x2002, byteArray, 3 * (v - 1) + 1);
                                         return;
                                     default:
                                         ReportError(v, trimmedNote, c);

@@ -2,7 +2,7 @@
   "profiles": {
     "Score68B.Net": {
       "commandName": "Project",
-      "commandLineArgs": "..\\..\\..\\..\\SCORE68B\\HAPPY1.BAS 2.0"
+      "commandLineArgs": "..\\..\\..\\..\\SCORE68B\\ENTERT.BAS"
     }
   }
 }
