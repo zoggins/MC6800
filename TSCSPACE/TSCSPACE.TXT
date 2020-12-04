@@ -1,0 +1,205 @@
+*TSC Space Voyage
+*
+*  Copyright 1976 by
+* Technical Systems Consultants
+*   Box 2574  W.Lafayette  Ind. 47906
+*
+* Instructions for Playing
+*
+* After entering Space Voyage you must enter the TSC
+* Random Number Generator at location A04A. Then
+* using MIKBUG (a registered trademark of Motorola
+* Inc) go to user program at location 0100 hex.
+*
+* Space Voyage is a very complex space simulation
+* game. You are put in command of the Starship
+* Enterprise and your mission is to rid the galaxy
+* of all enemy Klingon ships. At the start of the
+* game you will be informed of the location of your
+* starbase. It is important that you know its
+* position at all times. Next you must enter a three
+* character password. This will be needed if you
+* wish to execute the self destruct sequence anytime
+* during your mission.
+*
+* Next, five important lines will be output. First is
+* the present stardate followed by the number of
+* Klingons in the galaxy. You must destroy all of
+* these to save the Federation! The next line tells
+* you the number of solar years you will have to
+* complete your mission. Finally the last two lines
+* inform you of your current quadrant and sector
+* locations in the galaxy.
+*
+* The galaxy is divided into 64 quadrants. See the
+* short form instruction sheet for details of the
+* coordinates. Each quadrant is similarly divided
+* into 64 sectors.
+*
+* Following is a list of devices and how to use them.
+*
+*Command 0 - Warp Engines
+* Course= An integer number from 0 to 7. The numbers
+* start with 0 at the top and go clockwise:
+*
+*                   0
+*                 7   1
+*               6       2
+*                 5   3
+*                   4
+*
+* Warp Factor= A real number from 0 to 9. If the
+* number entered is an integer (no decimal point)
+* the distance travelled will be that number of
+* quadrants. To travel within a quadrant a decimal
+* point must be entered first, then the number of
+* sectors travelled equals the number entered after
+* the decimal point.
+*    Warp .1 = Move  1 Sector
+*         .5 =       5 Sectors
+*          1 =       1 Quadrant
+*          2 =       2 Quadrants
+* Example: if you are in quadrant 1-1, sector 1-1
+* and enter a course of 2 and warp factor 3 you
+* will end up in quadrant 4-1. When you change
+* quadrants, the positions of all objects in the
+* quadrant (including the Enterprise) will be
+* randomized to simulate 3-D travel.
+* Note: every use of the warp engines takes time
+* and is proportional to the warp factor used.
+* If the Enterprise is blocked by something
+* during intra-quadrant travel it will stop in
+* front of it and waste time. If the object is a
+* Klingon, the Klingon will be destroyed and the
+* Enterprise badly damaged.
+*
+*Command 1 - Short Range Scanners
+* The short range scanners display a detailed view
+* of the current quadrant. The Enterprise looks
+* like an 'E' on the screen. Klingons appear as
+* a 'K', the starbase as 'B', and stars as '*'. To
+* dock with your base, you must first move to one
+* of the 8 adjacent sectors then perform a short
+* range scan. Docking replenishes all energy, shield
+* and photon levels. While docked shields are
+* lowered but the base shields protect you. The
+* 'condition' displayed on this scan can be 'docked',
+* 'green' when no Klingons are threatening, 'red'
+* when there are Klingons, and 'yellow' if your
+* energy reaches a dangerously low level (300 units
+* or less). If condition yellow exists you should
+* return to your base immediately!
+*
+*Command 2 - Long Range Scanners
+* These scanners display the objects in the 8
+* surrounding quadrants as well as the current
+* quadrant. This information is compiled by the
+* computer and displayed as a 4 digit number for
+* each quadrant.
+* The one's digit is the number of Klingons
+*     ten's                        stars
+*   hundred's                      bases
+*   thousand's                     supernovas
+* Example: 0121 means no supernovas, 1 base,
+* 2 stars, and 1 Klingon.
+* A supernova can appear at any time and in any
+* quadrant. If it does all objects in that
+* quadrant will be destroyed! If the Enterprise
+* enters a quadrant containing a supernova, it
+* will be destroyed.
+*
+*Command 3 - Phasers
+* Any portion of the available energy can be fired
+* using the phasers. The battle computer divides
+* this amount among the Klingons of the quadrant
+* and determines the various directions of fire.
+* Each Klingon has a certain unknown amount of
+* energy (each one different) and this is the
+* amount needed to destroy them. If too little
+* energy is fired you will only damage the Klingons
+* and must fire again.
+* Note: shields must be lowered to fire phasers.
+*
+*Command 4 - Photon Torpedoes
+* Initially you will have 15 photon torpedoes. One
+* torpedo destroys whatever it hits. The range of
+* torpedoes (like phasers) is limited to the
+* current quadrant. The course of a torpedo is
+* set the same way as that of the Enterprise. If
+* the torpedo must travel a long distance to its
+* target it may run out of energy before reaching
+* it.
+*
+*Command 5 - Damage Report
+* The damage report lists the main devices and
+* their state of repair. Devices are only listed
+* if damaged. The number appearing beside the
+* device in the status column indicates the
+* number of solar years which must pass before
+* that device is repaired. Devices are nonfunctioning
+* when damaged. The exception to this is the warp
+* engines which may only be used for sector moves.
+* Damage can occur any time a Klingon attacks and
+* shields are down or when a Klingon is rammed.
+* Note: all damages are repaired when docked.
+*
+*Command 6 and 7 - Energy Shields
+* Shield strength is a measure of how much energy
+* the shields can ward off during attacks. It is
+* printed after shield status during a short range
+* scan. When attacked shield strength is lowered
+* and the effect is cumulative. When the strength
+* reaches zero the shields are disabled and may be
+* regained by docking. Command 6 raises the shields
+* and uses 200 units of shield energy.
+* Command 7 lowers the shields.
+*
+*Command 8 - Teleporter
+* The teleporter instantaneously transports you to
+* your base and operates on energy from the base.
+* It can be used an unknown number of times but
+* not until 12 solar years have passed. After
+* any use it may become damaged but will not show
+* on the damage report. Any time used it may
+* malfunction and place the Enterprise in a random
+* quadrant!
+*
+*Command 9 - Self Destruct
+* If you want to give up your mission or decide
+* you cant save the Federation you may self
+* destruct the Enterprise. Upon entering this
+* sequence you will be asked for the password entered
+* earlier. Since you are the captain you should be
+* the only one with this information. If the wrong
+* word is entered the sequence will be aborted,
+* otherwise destruction will result!
+*
+*
+* When initializing the game you will be asked
+* 'S OR L ?'. This is for short or long version.
+* It is recommended that only short versions be
+* played at first since long ones tend to be very
+* difficult.
+*
+* When playing it is a good idea to keep track of
+* all quadrants seen by the long range scan. This
+* lets you keep track of where you have been and
+* where the Klingons are located. A sample
+* grid for this purpose appears on the short form
+* instruction sheet.
+*
+* Several unexpected events may happen during your
+* mission. A space storm will damage your shields.
+* Supernovas may appear at any time. Some Klingons
+* have the ability to mask themselves from a short
+* range scan (but not long range scan). It will
+* probably be necessary to use phasers to destroy
+* these Klingons. When using your warp engines, if
+* you try to leave the galaxy (go beyond the
+* stated boundaries) you will be told 'GALAXY
+* LIMIT' and halted. If this is attempted three
+* times during your mission the Enterprise will be
+* destroyed!
+*
+* --- Good luck on your mission ---
+*

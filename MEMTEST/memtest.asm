@@ -7,6 +7,8 @@
 ; pattern repeats every nine locations, it can detect
 ; shorted address bits.
 ;
+; Assembles with the As02 assember
+;
 	if	~IN_SWTBUG	;SWTUB provides much of this
 EOT		equ	$04
 LF		equ	$0a
