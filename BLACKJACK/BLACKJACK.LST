@@ -1,0 +1,471 @@
+ASM68 6800 Assembler (c) 1988-1995 Evenson Consulting Services        Page 1
+FILE: e:\src\repos\mc6800\blackjack\blackjack.asm      TITLE: BLKJCK
+
+00001                        NAM     BLKJCK           
+00002               *      BLACKJACK REV 1.5 RICK STERLING QUAD EIGHT ELEC. 8/16/
+00003               *
+00004               *      NOTE TO USERS, THERE IS A TIMER INCORPORATED IN
+00005               *      THIS PROGRAM. IT IS USED TO GENERATE DELAYS DURING
+00006               *      PLAY WHEN OPERATING AT 9600 BAUD. THOSE OF YOU WHO
+00007               *      ARE USING SLOWER BAUD RATES MAY WISH TO DELETE THIS
+00008               *      FUNCTION.
+00009               *
+00010               *      ADAPTED FOR THE MC3 BY DANIEL TUFVESSON 2013
+00011               *
+00012         0309 DLRTOT    EQU     $309             
+00013         030A PLRTOT    EQU     $30A             
+00014         0305 DLRSAV    EQU     $305             
+00015         0306 PLRSAV    EQU     $306             
+00016         0307 PLRACE    EQU     $307             
+00017         0308 DLRACE    EQU     $308             
+00018         0300 SAVEX     EQU     $300             
+00019         0302 DKPNTR    EQU     $302             
+00020         0304 FLAG      EQU     $304             
+00021         0100 RANDNO    EQU     $100             
+00022         0104 TEMP      EQU     $104             
+00023         0105 DECK      EQU     $105             
+00024         1000           ORG     $1000            
+00025               *      INITIALIZE STACK POINTER PRINT MESSAGE
+00026               *      CLEAR SCORE CLEAR CARD MEMORY
+00027 1000 86 39   START     LDAA    #$39             
+00028 1002 B7 FCF4           STAA    $FCF4            
+00029 1005 8E 0FF0           LDS     #$FF0            
+00030 1008 CE 13C4           LDX     #SHUF            
+00031 100B BD 1530           JSR     PRINT            
+00032 100E CE 3030           LDX     #$3030           
+00033 1011 FF 156A           STX     PLRSCR           
+00034 1014 FF 156D           STX     DLRSCR           
+00035 1017 7F 0309           CLR     DLRTOT           
+00036 101A 7F 030A           CLR     PLRTOT           
+00037               *      JUMP TO SHUFFLE ROUTINE REPEAT UNTIL
+00038               *      KEY PUSHED
+00039 101D BD 1356 LOOPC     JSR     SHUFLE+6         
+00040 1020 B6 FCF4           LDAA    $FCF4            
+00041 1023 47                ASRA                     
+00042 1024 24 F7             BCC     LOOPC            
+00043 1026 B6 FCF5           LDAA    $FCF5            
+00044 1029 CE 0105           LDX     #DECK            
+00045 102C FF 0302           STX     DKPNTR           
+00046               *      PLAY STARTS HERE, ALL TEMP REGISTERS ARE 
+00047               *      CLEARED
+00048 102F 7F 0304 START1    CLR     FLAG             
+00049 1032 BD 10A5           JSR     SCORE            
+00050 1035 7F 0307           CLR     PLRACE           
+00051 1038 7F 0308           CLR     DLRACE           
+00052 103B 7F 0305           CLR     DLRSAV           
+00053 103E 7F 0306           CLR     PLRSAV           
+00054 1041 BD 10E0           JSR     TIME             
+00055 1044 CE 154B           LDX     #OVRLY           
+00056 1047 BD 1530           JSR     PRINT            
+00057 104A BD 1207 START2    JSR     DEAL             
+00058 104D BD 115C           JSR     SCALE            
+ASM68 6800 Assembler (c) 1988-1995 Evenson Consulting Services        Page 2
+FILE: e:\src\repos\mc6800\blackjack\blackjack.asm      TITLE: BLKJCK
+
+00059 1050 BD 1223           JSR     PLRCRD           
+00060 1053 BD 11B6           JSR     OUTCD            
+00061 1056 CE 123F           LDX     #SPACE           
+00062 1059 BD 1530           JSR     PRINT            
+00063 105C BD 1207           JSR     DEAL             
+00064 105F BD 115C           JSR     SCALE            
+00065 1062 BD 1231           JSR     DLRCRD           
+00066 1065 F6 0304           LDAB    FLAG             
+00067 1068 27 05             BEQ     FIRST            
+00068 106A B7 0104           STAA    TEMP             
+00069 106D 20 03             BRA     SECOND           
+00070 106F BD 11B6 FIRST     JSR     OUTCD            
+00071 1072 86 0A   SECOND    LDAA    #$A              
+00072 1074 BD 1576           JSR     COUT             
+00073 1077 86 0D             LDAA    #$D              
+00074 1079 BD 1576           JSR     COUT             
+00075 107C 7C 0304           INC     FLAG             
+00076 107F B6 0304           LDAA    FLAG             
+00077 1082 81 02             CMPA    #2               
+00078 1084 26 C4             BNE     START2           
+00079 1086 B6 0306           LDAA    PLRSAV           
+00080 1089 81 16             CMPA    #22              
+00081 108B 26 08             BNE     NEX1             
+00082 108D 86 0C             LDAA    #12              
+00083 108F B7 0306           STAA    PLRSAV           
+00084 1092 7A 0307           DEC     PLRACE           
+00085 1095 81 15   NEX1      CMPA    #21              
+00086 1097 26 54             BNE     CKDLR            
+00087 1099 CE 12E2           LDX     #PLRBKJ          
+00088 109C BD 1530           JSR     PRINT            
+00089 109F 7C 030A           INC     PLRTOT           
+00090 10A2 7E 102F           JMP     START1           
+00091               *COUT   EQU * CHARATOR OUTPUT ROUTINE
+00092               *       PSHB SAVE B REGISTER
+00093               *       LDAB $FCF4 CONTROL REG
+00094               *       ASRB
+00095               *       ASRB
+00096               *       BCC COUT+1
+00097               *       STAA $FCF5 OUTPUT CHAR
+00098               *       CLRB
+00099               *       DECB
+00100               *       BNE *-1
+00101               *       PULB RESTORE B REG
+00102               *       RTS
+00103 10A5 7D 0309 SCORE     TST     DLRTOT           
+00104 10A8 27 08             BEQ     NEXT1            
+00105 10AA 7F 0309           CLR     DLRTOT           
+00106 10AD CE 156D           LDX     #DLRSCR          
+00107 10B0 8D 0E             BSR     BCDADD           
+00108 10B2 7D 030A NEXT1     TST     PLRTOT           
+00109 10B5 27 08             BEQ     OUT7             
+00110 10B7 7F 030A           CLR     PLRTOT           
+00111 10BA CE 156A           LDX     #PLRSCR          
+00112 10BD 8D 01             BSR     BCDADD           
+00113 10BF 39      OUT7      RTS                      
+00114 10C0 A6 01   BCDADD    LDAA    1,X              
+00115 10C2 E6 00             LDAB    ,X               
+00116 10C4 84 0F             ANDA    #$0F             
+ASM68 6800 Assembler (c) 1988-1995 Evenson Consulting Services        Page 3
+FILE: e:\src\repos\mc6800\blackjack\blackjack.asm      TITLE: BLKJCK
+
+00117 10C6 C4 0F             ANDB    #$0F             
+00118 10C8 58                ASLB                     
+00119 10C9 58                ASLB                     
+00120 10CA 58                ASLB                     
+00121 10CB 58                ASLB                     
+00122 10CC 1B                ABA                      
+00123 10CD 8B 01             ADDA    #1               
+00124 10CF 19                DAA                      
+00125 10D0 16                TAB                      
+00126 10D1 C4 0F             ANDB    #$F              
+00127 10D3 CB 30             ADDB    #$30             
+00128 10D5 E7 01             STAB    1,X              
+00129 10D7 44                LSRA                     
+00130 10D8 44                LSRA                     
+00131 10D9 44                LSRA                     
+00132 10DA 44                LSRA                     
+00133 10DB 8B 30             ADDA    #$30             
+00134 10DD A7 00             STAA    ,X               
+00135 10DF 39                RTS                      
+00136 10E0 4F      TIME      CLRA                     
+00137 10E1 CE 0000 TIMEL     LDX     #$0000           THIS VALUE MAY BE ADJ. FOR
+00138 10E4 08      LOOPT     INX                      
+00139 10E5 26 FD             BNE     LOOPT            
+00140 10E7 4C                INCA                     
+00141 10E8 81 14             CMPA    #20              THIS VALUE MAY BE ADJ. FOR
+00142 10EA 26 F5             BNE     TIMEL            
+00143 10EC 39                RTS                      
+00144 10ED B6 0305 CKDLR     LDAA    DLRSAV           
+00145 10F0 81 16             CMPA    #22              
+00146 10F2 26 08             BNE     NEX2             
+00147 10F4 86 0C             LDAA    #12              
+00148 10F6 B7 0305           STAA    DLRSAV           
+00149 10F9 7A 0308           DEC     DLRACE           
+00150 10FC 81 15   NEX2      CMPA    #21              
+00151 10FE 26 18             BNE     HIT1             
+00152 1100 CE 133B           LDX     #DWNCDM          
+00153 1103 BD 1530           JSR     PRINT            
+00154 1106 B6 0104           LDAA    TEMP             
+00155 1109 BD 11B6           JSR     OUTCD            
+00156 110C CE 130B           LDX     #DLRBKJ          
+00157 110F BD 1530           JSR     PRINT            
+00158 1112 7C 0309           INC     DLRTOT           
+00159 1115 7E 102F           JMP     START1           
+00160 1118 CE 12A2 HIT1      LDX     #HITMES          
+00161 111B BD 1530           JSR     PRINT            
+00162 111E BD 1573           JSR     CIN              
+00163 1121 81 31             CMPA    #$31             
+00164 1123 27 03             BEQ     HIT2             
+00165 1125 7E 1141           JMP     DLRNX2           former DLRNXT
+00166 1128 BD 1207 HIT2      JSR     DEAL             
+00167 112B CE 133B           LDX     #DWNCDM          reconstructed line
+00168 112E BD 1530           JSR     PRINT            
+00169 1131 B6 0104           LDAA    TEMP             
+00170 1134 BD 11B6           JSR     OUTCD            
+00171 1137 86 0A             LDAA    #$A              
+00172 1139 BD 1576           JSR     COUT             
+00173 113C 86 0D             LDAA    #$D              
+00174 113E BD 1576           JSR     COUT             
+ASM68 6800 Assembler (c) 1988-1995 Evenson Consulting Services        Page 4
+FILE: e:\src\repos\mc6800\blackjack\blackjack.asm      TITLE: BLKJCK
+
+00175 1141 B6 0305 DLRNX2    LDAA    DLRSAV           
+00176 1144 81 10             CMPA    #16              
+00177 1146 22 27             BHI     STOP             
+00178 1148 CE 12AF           LDX     #SPC18           
+00179 114B BD 1530           JSR     PRINT            
+00180 114E BD 1207           JSR     DEAL             
+00181 1151 BD 115C           JSR     SCALE            
+00182 1154 BD 1231           JSR     DLRCRD           
+00183 1157 BD 11B6           JSR     OUTCD            
+00184 115A 20 E5             BRA     DLRNX2           
+00185 115C 16      SCALE     TAB                      
+00186 115D C4 0F             ANDB    #$F              
+00187 115F 5C                INCB                     
+00188 1160 C1 01             CMPB    #1               
+00189 1162 27 05             BEQ     ACE              
+00190 1164 C1 0A             CMPB    #10              
+00191 1166 22 04             BHI     TENS             
+00192 1168 39                RTS                      
+00193 1169 C6 0B   ACE       LDAB    #11              
+00194 116B 39                RTS                      
+00195 116C C6 0A   TENS      LDAB    #10              
+00196 116E 39                RTS                      
+00197 116F 81 15   STOP      CMPA    #21              
+00198 1171 22 1E             BHI     BUST2            
+00199 1173 B1 0306           CMPA    PLRSAV           
+00200 1176 22 0D             BHI     DLRWIN           
+00201 1178 27 31             BEQ     PUSH             
+00202 117A CE 12C4 PLRW      LDX     #PLRWIN          
+00203 117D BD 1530           JSR     PRINT            
+00204 1180 7C 030A           INC     PLRTOT           
+00205 1183 20 09             BRA     OUT5             
+00206 1185 CE 12D1 DLRWIN    LDX     #DLRWMS          
+00207 1188 BD 1530           JSR     PRINT            
+00208 118B 7C 0309           INC     DLRTOT           
+00209 118E 7E 102F OUT5      JMP     START1           
+00210 1191 B6 0308 BUST2     LDAA    DLRACE           
+00211 1194 27 0D             BEQ     BUST2A           
+00212 1196 7A 0308           DEC     DLRACE           
+00213 1199 B6 0305           LDAA    DLRSAV           
+00214 119C 80 0A             SUBA    #10              
+00215 119E B7 0305           STAA    DLRSAV           
+00216 11A1 20 9E             BRA     DLRNX2           
+00217 11A3 CE 12A7 BUST2A    LDX     #BUST            
+00218 11A6 BD 1530           JSR     PRINT            
+00219 11A9 20 CF             BRA     PLRW             
+00220 11AB CE 1333 PUSH      LDX     #PUSHM           
+00221 11AE BD 1530           JSR     PRINT            
+00222 11B1 20 DB             BRA     OUT5             
+00223 11B3 7E 102F           JMP     START1           
+00224 11B6 36      OUTCD     PSHA                     
+00225 11B7 84 0F             ANDA    #$F              
+00226 11B9 16                TAB                      
+00227 11BA 1B                ABA                      
+00228 11BB 1B                ABA                      
+00229 11BC 1B                ABA                      
+00230 11BD 1B                ABA                      
+00231 11BE 5F                CLRB                     
+00232 11BF CE 1241           LDX     #CARD            
+ASM68 6800 Assembler (c) 1988-1995 Evenson Consulting Services        Page 5
+FILE: e:\src\repos\mc6800\blackjack\blackjack.asm      TITLE: BLKJCK
+
+00233 11C2 FF 0300           STX     SAVEX            
+00234 11C5 BB 0301           ADDA    SAVEX+1          
+00235 11C8 F9 0300           ADCB    SAVEX            
+00236 11CB B7 0301           STAA    SAVEX+1          
+00237 11CE F7 0300           STAB    SAVEX            
+00238 11D1 FE 0300           LDX     SAVEX            
+00239 11D4 C6 05             LDAB    #5               
+00240 11D6 8D 25             BSR     PRINK            
+00241 11D8 86 2F             LDAA    #'/              
+00242 11DA BD 1576           JSR     COUT             
+00243 11DD 32                PULA                     
+00244 11DE 84 30             ANDA    #$30             
+00245 11E0 44                LSRA                     
+00246 11E1 CE 1282           LDX     #SUIT            
+00247 11E4 5F                CLRB                     
+00248 11E5 FF 0300           STX     SAVEX            
+00249 11E8 BB 0301           ADDA    SAVEX+1          
+00250 11EB F9 0300           ADCB    SAVEX            
+00251 11EE B7 0301           STAA    SAVEX+1          
+00252 11F1 F7 0300           STAB    SAVEX            
+00253 11F4 FE 0300           LDX     SAVEX            
+00254 11F7 C6 08             LDAB    #8               
+00255 11F9 BD 11FD           JSR     PRINK            
+00256 11FC 39                RTS                      
+00257 11FD A6 00   PRINK     LDAA    ,X               
+00258 11FF BD 1576           JSR     COUT             
+00259 1202 08                INX                      
+00260 1203 5A                DECB                     
+00261 1204 26 F7             BNE     PRINK            
+00262 1206 39                RTS                      
+00263 1207 FE 0302 DEAL      LDX     DKPNTR           
+00264 120A 8C 0139           CPX     #DECK+52         
+00265 120D 26 0B             BNE     DECKOK           
+00266 120F CE 14FC           LDX     #SHUF2           
+00267 1212 BD 1530           JSR     PRINT            
+00268 1215 31                INS                      
+00269 1216 31                INS                      
+00270 1217 7E 101D           JMP     LOOPC            
+00271 121A FE 0302 DECKOK    LDX     DKPNTR           
+00272 121D A6 00             LDAA    ,X               
+00273 121F 7C 0303           INC     DKPNTR+1         
+00274 1222 39                RTS                      
+00275 1223 C1 0B   PLRCRD    CMPB    #11              
+00276 1225 26 03             BNE     PLRCR1           
+00277 1227 7C 0307           INC     PLRACE           
+00278 122A FB 0306 PLRCR1    ADDB    PLRSAV           
+00279 122D F7 0306           STAB    PLRSAV           
+00280 1230 39                RTS                      
+00281 1231 C1 0B   DLRCRD    CMPB    #11              
+00282 1233 26 03             BNE     DLRCR1           
+00283 1235 7C 0308           INC     DLRACE           
+00284 1238 FB 0305 DLRCR1    ADDB    DLRSAV           
+00285 123B F7 0305           STAB    DLRSAV           
+00286 123E 39                RTS                      
+00287 123F    20   SPACE     FCB     $20              reconstructed line 
+00288 1240    04             FCB     $4               
+00289 1241    2020 CARD      FCC     '  ACE  TWOTHREE FOUR FIVE  SIXSEVEN' 
+00290 1264    4549           FCC     'EIGHT NINE  TEN JACKQUEEN KING' 
+ASM68 6800 Assembler (c) 1988-1995 Evenson Consulting Services        Page 6
+FILE: e:\src\repos\mc6800\blackjack\blackjack.asm      TITLE: BLKJCK
+
+00291 1282    5350 SUIT      FCC     'SPADES  HEARTS  CLUBS   DIAMONDS' 
+00292 12A2    0A0D HITMES    FCB     $A,$D            
+00293 12A4    3F1A           FCB     $3F,$1A,$4       
+00294 12A7    0A0D BUST      FCB     $A,$D,$7         
+00295 12AA    4255           FCC     'BUST'           
+00296 12AE    04             FCB     $4               
+00297 12AF    0A0D SPC18     FCB     $A,$D            
+00298 12B1    4445           FCC     'DEALER DRAWS A    ' 
+00299 12C3    04             FCB     $4               
+00300 12C4    0A0D PLRWIN    FCB     $A,$D,$7         
+00301 12C7    594F           FCC     'YOU WIN'        
+00302 12CE    0A0D           FCB     $A,$D,$4         
+00303 12D1    0A0D DLRWMS    FCB     $A,$D,$7         
+00304 12D4    4445           FCC     'DEALER WINS'    
+00305 12DF    0A0D           FCB     $A,$D,$4         
+00306 12E2    0A0D PLRBKJ    FCB     $A,$D            
+00307 12E4    4220           FCC     'B L A C K J A C K    Y O U   W I N ! !' 
+00308 130A    04             FCB     $4               
+00309 130B    0A0D DLRBKJ    FCB     $A,$D            
+00310 130D    4220           FCC     'B L A C K J A C K    I    W I N ! ! !' 
+00311 1332    04             FCB     $4               
+00312 1333    0A0D PUSHM     FCB     $A,$D,$7         
+00313 1336    5055           FCC     'PUSH'           
+00314 133A    04             FCB     $4               
+00315 133B    0A0D DWNCDM    FCB     $A,$D            
+00316 133D    4D59           FCC     'MY DOWN CARD WAS  ' 
+00317 134F    04             FCB     $4               
+00318               *CIN    EQU *
+00319               *       LDAA $FCF4
+00320               *       ASRA
+00321               *       BCC CIN
+00322               *       LDAA $FCF5
+00323               *       ANDA #$7F
+00324               *       RTS
+00325               *      THIS SUB-ROUTINE GENERATES A 52 CARD DECK
+00326 1350 CE 14FC SHUFLE    LDX     #SHUF2           
+00327 1353 BD 1530           JSR     PRINT            
+00328 1356 BD 153D           JSR     INIT             
+00329 1359 BD 1365 LOOP4     JSR     RANDOM           
+00330 135C BD 138E           JSR     CHECK            
+00331 135F BD 13A7           JSR     LOAD             
+00332 1362 24 F5             BCC     LOOP4            
+00333 1364 39                RTS                      
+00334               *      THIS IS A 32 BIT RANDOM (PSEUDO) NUMBER GENERATOR
+00335               *      4.29X10^9 STATES
+00336 1365 B6 0103 RANDOM    LDAA    RANDNO+3         
+00337 1368 BA 0102           ORAA    RANDNO+2         
+00338 136B BA 0101           ORAA    RANDNO+1         
+00339 136E BA 0100           ORAA    RANDNO           
+00340 1371 26 03             BNE     SKIP             IF ZERO ENTER ALL 1'S
+00341 1373 73 0103           COM     RANDNO+3         
+00342 1376 B6 0103 SKIP      LDAA    RANDNO+3         
+00343 1379 44                LSRA                     
+00344 137A 44                LSRA                     
+00345 137B 44                LSRA                     
+00346 137C B8 0103           EORA    RANDNO+3         
+00347 137F 47                ASRA                     
+00348 1380 47                ASRA                     
+ASM68 6800 Assembler (c) 1988-1995 Evenson Consulting Services        Page 7
+FILE: e:\src\repos\mc6800\blackjack\blackjack.asm      TITLE: BLKJCK
+
+00349 1381 76 0100           ROR     RANDNO           
+00350 1384 76 0101           ROR     RANDNO+1         
+00351 1387 76 0102           ROR     RANDNO+2         
+00352 138A 76 0103           ROR     RANDNO+3         
+00353 138D 39                RTS                      
+00354               *      MODULO 52 MASK
+00355 138E B6 0100 CHECK     LDAA    RANDNO           
+00356 1391 B8 0101           EORA    RANDNO+1         
+00357 1394 B8 0102           EORA    RANDNO+2         
+00358 1397 B8 0103           EORA    RANDNO+3         
+00359 139A 16                TAB                      
+00360 139B 84 0F             ANDA    #$F              
+00361 139D 81 0C             CMPA    #12              
+00362 139F 2F 02             BLE     OK               
+00363 13A1 80 0D             SUBA    #13              
+00364 13A3 C4 30   OK        ANDB    #$30             
+00365 13A5 1B                ABA                      
+00366 13A6 39                RTS                      
+00367               *      SUBROUTINE TO LOAD DECK FROM RANDOM # GEN.
+00368 13A7 CE 0105 LOAD      LDX     #DECK            
+00369 13AA E6 00   LOOP2     LDAB    ,X               
+00370 13AC 2B 0B             BMI     ENT              
+00371 13AE 11                CBA                      
+00372 13AF 27 0A             BEQ     OUTNG            
+00373 13B1 08                INX                      
+00374 13B2 8C 0139           CPX     #DECK+52         
+00375 13B5 27 0B             BEQ     OUTOK            
+00376 13B7 20 F1             BRA     LOOP2            
+00377 13B9 A7 00   ENT       STAA    ,X               
+00378 13BB 8C 0138 OUTNG     CPX     #DECK+51         
+00379 13BE 27 02             BEQ     OUTOK            
+00380 13C0 0C                CLC                      
+00381 13C1 39                RTS                      
+00382 13C2 0D      OUTOK     SEC                      
+00383 13C3 39                RTS                      
+00384 13C4    0606 SHUF      FCB     $06,06,$0C,0,0,0,0,0,$A,$D 
+00385 13CE    5448           FCC     'THIS IS MOTOROLA BLACKJACK......' 
+00386 13EE    2E2E           FCC     '.........TRY YOUR LUCK.....!' 
+00387 140A    0D0A           FCB     $D,$A            
+00388 140C    0607           FCB     6,7              
+00389 140E    4445           FCC     'DEALER MUST HIT ON 16 OR LESS AND' 
+00390 142F    2053           FCC     ' STAND ON 17.'  
+00391 143C    0D0A           FCB     $D,$A,0,0,0,0,0  
+00392 1443    4143           FCC     'ACES COUNT 1 OR 11 , FACE CARDS' 
+00393 1462    2043           FCC     ' COUNT TEN.'    
+00394 146D    0D0A           FCB     $D,$A,0,0,0,0,0  
+00395 1474    424C           FCC     'BLACKJACK WITH ACE AND A FACE CARD' 
+00396 1496    204F           FCC     ' OR TEN'        
+00397 149D    0D0A           FCB     $D,$A,0,0,0,0,0  
+00398 14A4    5449           FCC     'TIES COUNT AS A PUSH NO WINNER.' 
+00399 14C3    0D0A           FCB     $D,$A,0,0,0,0,0  
+00400 14CA    4455           FCC     'DURING PLAY TYPE 1 FOR A HIT,0 TO' 
+00401 14EB    2053           FCC     ' STAND PAT'     
+00402 14F5    0D0A           FCB     $D,$A,0,0,0,0,0  
+00403 14FC    0D0A SHUF2     FCB     $D,$A,6,2,0,0    
+00404 1502    5348           FCC     'SHUFFLE NOW IN PROGRESS.............' 
+00405 1526    0601           FCB     6,1              
+00406 1528    0D0A           FCB     $D,$A,0,0,0,0,0  
+ASM68 6800 Assembler (c) 1988-1995 Evenson Consulting Services        Page 8
+FILE: e:\src\repos\mc6800\blackjack\blackjack.asm      TITLE: BLKJCK
+
+00407 152F    04             FCB     $4               
+00408         1530 PRINT     EQU     *                
+00409 1530 A6 00             LDAA    ,X               
+00410 1532 81 04             CMPA    #$4              
+00411 1534 26 01             BNE     NOTEND           
+00412 1536 39                RTS                      
+00413 1537 BD 1576 NOTEND    JSR     COUT             
+00414 153A 08                INX                      
+00415 153B 20 F3             BRA     PRINT            
+00416         153D INIT      EQU     *                INITIALIZE DECK FOR LOAD 
+00417               *      ROUTINE , ALL CARDS EQUAL FF
+00418 153D CE 0105           LDX     #DECK            
+00419 1540 86 FF             LDAA    #$FF             
+00420 1542 A7 00   LOOP7     STAA    ,X               
+00421 1544 08                INX                      
+00422 1545 8C 0139           CPX     #DECK+52         
+00423 1548 26 F8             BNE     LOOP7            
+00424 154A 39                RTS                      
+00425 154B    0C00 OVRLY     FCB     $0C,0,0,0        
+00426 154F    0D0A           FCB     $D,$A,0,0,0,0,0  
+00427 1556    0D             FCB     13               
+00428 1557    504C           FCC     'PLAYER'         
+00429 155D    09             FCB     9                
+00430 155E    4445           FCC     'DEALER'         
+00431 1564    0D0A           FCB     $D,$A,8,8,8      
+00432 1569    06             FCB     6                
+00433 156A         PLRSCR    RMB     2                
+00434         156C           ORG     *                
+00435 156C    09             FCB     9                
+00436 156D         DLRSCR    RMB     2                
+00437         156F           ORG     *                
+00438 156F    0D0A           FCB     $D,$A,$A,$4      
+00439 1573 7E E1AC CIN       JMP     INCHAR           
+00440 1576 7E E1D1 COUT      JMP     OUTCHAR          
+00441         E1D1 OUTCHAR   EQU     $E1D1            
+00442         E1AC INCHAR    EQU     $E1AC            
+00443         0000           END                      
+
+No errors
+
+ Total bytes output = 1401

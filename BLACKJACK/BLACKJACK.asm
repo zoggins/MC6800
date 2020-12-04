@@ -1,0 +1,444 @@
+       NAM BLKJCK
+*      BLACKJACK REV 1.5 RICK STERLING QUAD EIGHT ELEC. 8/16/76
+*
+*      NOTE TO USERS, THERE IS A TIMER INCORPORATED IN
+*      THIS PROGRAM. IT IS USED TO GENERATE DELAYS DURING
+*      PLAY WHEN OPERATING AT 9600 BAUD. THOSE OF YOU WHO
+*      ARE USING SLOWER BAUD RATES MAY WISH TO DELETE THIS
+*      FUNCTION.
+*
+*      ADAPTED FOR THE MC3 BY DANIEL TUFVESSON 2013
+*
+DLRTOT EQU $309
+PLRTOT EQU $30A
+DLRSAV EQU $305
+PLRSAV EQU $306
+PLRACE EQU $307
+DLRACE EQU $308
+SAVEX  EQU $300
+DKPNTR EQU $302
+FLAG   EQU $304
+RANDNO EQU $100
+TEMP   EQU $104
+DECK   EQU $105
+       ORG $1000
+*      INITIALIZE STACK POINTER PRINT MESSAGE
+*      CLEAR SCORE CLEAR CARD MEMORY
+START  LDAA #$39
+       STAA $FCF4
+       LDS #$FF0
+       LDX #SHUF
+       JSR PRINT
+       LDX #$3030
+       STX PLRSCR
+       STX DLRSCR
+       CLR DLRTOT
+       CLR PLRTOT
+*      JUMP TO SHUFFLE ROUTINE REPEAT UNTIL
+*      KEY PUSHED
+LOOPC  JSR SHUFLE+6
+       LDAA $FCF4
+       ASRA
+       BCC LOOPC
+       LDAA $FCF5
+       LDX #DECK
+       STX DKPNTR
+*      PLAY STARTS HERE, ALL TEMP REGISTERS ARE 
+*      CLEARED
+START1 CLR FLAG
+       JSR SCORE
+       CLR PLRACE
+       CLR DLRACE
+       CLR DLRSAV
+       CLR PLRSAV
+       JSR TIME
+       LDX #OVRLY
+       JSR PRINT
+START2 JSR DEAL
+       JSR SCALE
+       JSR PLRCRD
+       JSR OUTCD
+       LDX #SPACE
+       JSR PRINT
+       JSR DEAL
+       JSR SCALE
+       JSR DLRCRD
+       LDAB FLAG
+       BEQ FIRST
+       STAA TEMP
+       BRA SECOND
+FIRST  JSR OUTCD
+SECOND LDAA #$A
+       JSR COUT
+       LDAA #$D
+       JSR COUT
+       INC FLAG
+       LDAA FLAG
+       CMPA #2
+       BNE START2
+       LDAA PLRSAV
+       CMPA #22
+       BNE NEX1
+       LDAA #12
+       STAA PLRSAV
+       DEC PLRACE
+NEX1   CMPA #21
+       BNE CKDLR
+       LDX #PLRBKJ
+       JSR PRINT
+       INC PLRTOT
+       JMP START1
+*COUT   EQU * CHARATOR OUTPUT ROUTINE
+*       PSHB SAVE B REGISTER
+*       LDAB $FCF4 CONTROL REG
+*       ASRB
+*       ASRB
+*       BCC COUT+1
+*       STAA $FCF5 OUTPUT CHAR
+*       CLRB
+*       DECB
+*       BNE *-1
+*       PULB RESTORE B REG
+*       RTS
+SCORE  TST DLRTOT
+       BEQ NEXT1
+       CLR DLRTOT
+       LDX #DLRSCR
+       BSR BCDADD
+NEXT1  TST PLRTOT
+       BEQ OUT7
+       CLR PLRTOT
+       LDX #PLRSCR
+       BSR BCDADD
+OUT7   RTS
+BCDADD LDAA 1,X
+       LDAB ,X
+       ANDA #$0F
+       ANDB #$0F
+       ASLB
+       ASLB
+       ASLB
+       ASLB
+       ABA
+       ADDA #1
+       DAA
+       TAB
+       ANDB #$F
+       ADDB #$30
+       STAB 1,X
+       LSRA
+       LSRA
+       LSRA
+       LSRA
+       ADDA #$30
+       STAA ,X
+       RTS
+TIME   CLRA
+TIMEL  LDX #$0000 THIS VALUE MAY BE ADJ. FOR DIFFERENT TIMEOUT
+LOOPT  INX
+       BNE LOOPT
+       INCA
+       CMPA #20 THIS VALUE MAY BE ADJ. FOR DIFFERENT TIMEOUT
+       BNE TIMEL
+       RTS
+CKDLR  LDAA DLRSAV
+       CMPA #22
+       BNE NEX2
+       LDAA #12
+       STAA DLRSAV
+       DEC DLRACE
+NEX2   CMPA #21
+       BNE HIT1
+       LDX #DWNCDM
+       JSR PRINT
+       LDAA TEMP
+       JSR OUTCD
+       LDX #DLRBKJ
+       JSR PRINT
+       INC DLRTOT
+       JMP START1
+HIT1   LDX #HITMES
+       JSR PRINT
+       JSR CIN
+       CMPA #$31
+       BEQ HIT2
+       JMP DLRNX2		former DLRNXT
+HIT2   JSR DEAL
+       LDX #DWNCDM		reconstructed line
+       JSR PRINT
+       LDAA TEMP
+       JSR OUTCD
+       LDAA #$A
+       JSR COUT
+       LDAA #$D
+       JSR COUT
+DLRNX2 LDAA DLRSAV
+       CMPA #16
+       BHI STOP
+       LDX #SPC18
+       JSR PRINT
+       JSR DEAL
+       JSR SCALE
+       JSR DLRCRD
+       JSR OUTCD
+       BRA DLRNX2
+SCALE  TAB
+       ANDB #$F
+       INCB
+       CMPB #1
+       BEQ ACE
+       CMPB #10
+       BHI TENS
+       RTS
+ACE    LDAB #11
+       RTS
+TENS   LDAB #10
+       RTS
+STOP   CMPA #21
+       BHI BUST2
+       CMPA PLRSAV
+       BHI DLRWIN
+       BEQ PUSH
+PLRW   LDX #PLRWIN
+       JSR PRINT
+       INC PLRTOT
+       BRA OUT5
+DLRWIN LDX #DLRWMS
+       JSR PRINT
+       INC DLRTOT
+OUT5   JMP START1
+BUST2  LDAA DLRACE
+       BEQ BUST2A
+       DEC DLRACE
+       LDAA DLRSAV
+       SUBA #10
+       STAA DLRSAV
+       BRA DLRNX2
+BUST2A LDX #BUST
+       JSR PRINT
+       BRA PLRW
+PUSH   LDX #PUSHM
+       JSR PRINT
+       BRA OUT5
+       JMP START1
+OUTCD  PSHA
+       ANDA #$F
+       TAB
+       ABA
+       ABA
+       ABA
+       ABA
+       CLRB
+       LDX #CARD
+       STX SAVEX
+       ADDA SAVEX+1
+       ADCB SAVEX
+       STAA SAVEX+1
+       STAB SAVEX
+       LDX SAVEX
+       LDAB #5
+       BSR PRINK
+       LDAA #'/
+       JSR COUT
+       PULA
+       ANDA #$30
+       LSRA
+       LDX #SUIT
+       CLRB
+       STX SAVEX
+       ADDA SAVEX+1
+       ADCB SAVEX
+       STAA SAVEX+1
+       STAB SAVEX
+       LDX SAVEX
+       LDAB #8
+       JSR PRINK
+       RTS
+PRINK  LDAA ,X
+       JSR COUT
+       INX
+       DECB
+       BNE PRINK
+       RTS
+DEAL   LDX DKPNTR
+       CPX #DECK+52
+       BNE DECKOK
+       LDX #SHUF2
+       JSR PRINT
+       INS
+       INS
+       JMP LOOPC
+DECKOK LDX DKPNTR
+       LDAA ,X
+       INC DKPNTR+1
+       RTS
+PLRCRD CMPB #11
+       BNE PLRCR1
+       INC PLRACE
+PLRCR1 ADDB PLRSAV
+       STAB PLRSAV
+       RTS
+DLRCRD CMPB #11
+       BNE DLRCR1
+       INC DLRACE
+DLRCR1 ADDB DLRSAV
+       STAB DLRSAV
+       RTS
+SPACE  FCB $20				reconstructed line 
+       FCB $4
+CARD   FCC '  ACE  TWOTHREE FOUR FIVE  SIXSEVEN'
+       FCC 'EIGHT NINE  TEN JACKQUEEN KING'
+SUIT   FCC 'SPADES  HEARTS  CLUBS   DIAMONDS'
+HITMES FCB $A,$D
+       FCB $3F,$1A,$4
+BUST   FCB $A,$D,$7
+       FCC 'BUST'
+       FCB $4
+SPC18  FCB $A,$D
+       FCC 'DEALER DRAWS A    '
+       FCB $4
+PLRWIN FCB $A,$D,$7
+       FCC 'YOU WIN'
+       FCB $A,$D,$4
+DLRWMS FCB $A,$D,$7
+       FCC 'DEALER WINS'
+       FCB $A,$D,$4
+PLRBKJ FCB $A,$D
+       FCC 'B L A C K J A C K    Y O U   W I N ! !'
+       FCB $4
+DLRBKJ FCB $A,$D
+       FCC 'B L A C K J A C K    I    W I N ! ! !'
+       FCB $4
+PUSHM  FCB $A,$D,$7
+       FCC 'PUSH'
+       FCB $4
+DWNCDM FCB $A,$D
+       FCC 'MY DOWN CARD WAS  '
+       FCB $4
+*CIN    EQU *
+*       LDAA $FCF4
+*       ASRA
+*       BCC CIN
+*       LDAA $FCF5
+*       ANDA #$7F
+*       RTS
+*      THIS SUB-ROUTINE GENERATES A 52 CARD DECK
+SHUFLE  LDX #SHUF2
+       JSR PRINT
+       JSR INIT
+LOOP4  JSR RANDOM
+       JSR CHECK
+       JSR LOAD
+       BCC LOOP4
+       RTS
+*      THIS IS A 32 BIT RANDOM (PSEUDO) NUMBER GENERATOR
+*      4.29X10^9 STATES
+RANDOM  LDAA RANDNO+3
+       ORAA RANDNO+2
+       ORAA RANDNO+1
+       ORAA RANDNO
+       BNE SKIP IF ZERO ENTER ALL 1'S
+       COM RANDNO+3
+SKIP   LDAA RANDNO+3
+       LSRA
+       LSRA
+       LSRA
+       EORA RANDNO+3
+       ASRA
+       ASRA
+       ROR RANDNO
+       ROR RANDNO+1
+       ROR RANDNO+2
+       ROR RANDNO+3
+       RTS
+*      MODULO 52 MASK
+CHECK   LDAA RANDNO
+       EORA RANDNO+1
+       EORA RANDNO+2
+       EORA RANDNO+3
+       TAB
+       ANDA #$F
+       CMPA #12
+       BLE OK
+       SUBA #13
+OK     ANDB #$30
+       ABA
+       RTS
+*      SUBROUTINE TO LOAD DECK FROM RANDOM # GEN.
+LOAD    LDX #DECK
+LOOP2  LDAB ,X
+       BMI ENT
+       CBA
+       BEQ OUTNG
+       INX
+       CPX #DECK+52
+       BEQ OUTOK
+       BRA LOOP2
+ENT    STAA ,X
+OUTNG  CPX #DECK+51
+       BEQ OUTOK
+       CLC
+       RTS
+OUTOK  SEC
+       RTS
+SHUF   FCB $06,06,$0C,0,0,0,0,0,$A,$D
+       FCC 'THIS IS MOTOROLA BLACKJACK......'
+       FCC '.........TRY YOUR LUCK.....!'
+       FCB $D,$A
+       FCB 6,7
+       FCC 'DEALER MUST HIT ON 16 OR LESS AND'
+       FCC ' STAND ON 17.'
+       FCB $D,$A,0,0,0,0,0
+       FCC 'ACES COUNT 1 OR 11 , FACE CARDS'
+       FCC ' COUNT TEN.'
+       FCB $D,$A,0,0,0,0,0
+       FCC 'BLACKJACK WITH ACE AND A FACE CARD'
+       FCC ' OR TEN'
+       FCB $D,$A,0,0,0,0,0
+       FCC 'TIES COUNT AS A PUSH NO WINNER.'
+       FCB $D,$A,0,0,0,0,0
+       FCC 'DURING PLAY TYPE 1 FOR A HIT,0 TO'
+       FCC ' STAND PAT'
+       FCB $D,$A,0,0,0,0,0
+SHUF2  FCB $D,$A,6,2,0,0
+       FCC 'SHUFFLE NOW IN PROGRESS.............'
+       FCB 6,1
+       FCB $D,$A,0,0,0,0,0
+       FCB $4
+PRINT  EQU *
+       LDAA ,X
+       CMPA #$4
+       BNE NOTEND
+       RTS
+NOTEND JSR COUT
+       INX
+       BRA PRINT
+INIT   EQU * INITIALIZE DECK FOR LOAD 
+*      ROUTINE , ALL CARDS EQUAL FF
+       LDX #DECK
+       LDAA #$FF
+LOOP7  STAA ,X
+       INX
+       CPX #DECK+52
+       BNE LOOP7
+       RTS
+OVRLY  FCB $0C,0,0,0
+       FCB $D,$A,0,0,0,0,0
+       FCB 13 
+       FCC 'PLAYER'
+       FCB 9
+       FCC 'DEALER'
+       FCB $D,$A,8,8,8
+       FCB 6 
+PLRSCR RMB 2
+       ORG *
+       FCB 9 
+DLRSCR RMB 2
+       ORG *
+       FCB $D,$A,$A,$4
+CIN    JMP INCHAR
+COUT   JMP OUTCHAR
+OUTCHAR	EQU	$E1D1
+INCHAR	EQU	$E1AC
+       END 
+       MON
