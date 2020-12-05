@@ -1,0 +1,2264 @@
+ASM68 6800 Assembler (c) 1988-1995 Evenson Consulting Services        Page 1
+FILE: e:\src\repos\mc6800\games\startrek\startrek.asm      TITLE: STAR
+
+00001                        NAM     STAR             TREK
+00002               *****************************
+00003               * STAR TREK GAME 1.2
+00004               * BY UNKNOWN SOURCE
+00005               * RECOVERED FROM OLD FLOPPIES
+00006               *
+00007               *****************************
+00008               
+00009               *
+00010               * MONITOR ROUTINE ADDRESSES
+00011               *
+00012         E1D1 OUTCH     EQU     $E1D1            
+00013         E1AC INCH      EQU     $E1AC            
+00014         E0D0 CONTRL    EQU     $E0D0            
+00015               *
+00016               * STORAGE AREAS
+00017               *
+00018         0020           ORG     $20              
+00019 0020         STPSFL    RMB     1                
+00020 0021         BASEX     RMB     1                
+00021 0022         BASEY     RMB     1                
+00022 0023         BASESX    RMB     1                
+00023 0024         BASESY    RMB     1                
+00024 0025         GLMFLG    RMB     1                
+00025 0026         SECKLN    RMB     1                
+00026 0027         FLAGC     RMB     1                
+00027 0028         TIMDEC    RMB     1                
+00028 0029         STCFLG    RMB     1                
+00029 002A         SQFLG     RMB     1                
+00030 002B         PNTFLG    RMB     1                
+00031 002C         COURSE    RMB     1                
+00032 002D         WARP      RMB     1                
+00033 002E         FINCX     RMB     1                
+00034 002F         FINCY     RMB     1                
+00035 0030         COUNT     RMB     1                
+00036 0031         TEMP      RMB     2                
+00037 0033         TEMP2     RMB     2                
+00038 0035         XTEMP     RMB     2                
+00039 0037         TIME0     RMB     2                
+00040 0039         GAMTIM    RMB     1                
+00041 003A         TIMUSE    RMB     2                
+00042 003C         SHENGY    RMB     2                
+00043 003E         KLNENG    RMB     2                
+00044 0040         PHSENG    RMB     2                
+00045 0042         TOPFLG    RMB     1                
+00046 0043         BOTFLG    RMB     1                
+00047 0044         LSDFLG    RMB     1                
+00048 0045         RSDFLG    RMB     1                
+00049 0046         PHOTON    RMB     1                
+00050 0047         CURQUX    RMB     1                
+00051 0048         CURQUY    RMB     1                
+00052 0049         CURSCX    RMB     1                
+00053 004A         CURSCY    RMB     1                
+00054 004B         TRIALX    RMB     1                
+00055 004C         TRIALY    RMB     1                
+00056 004D         FLAG      RMB     1                
+00057 004E         CNDFLG    RMB     1                
+00058 004F         SCANX     RMB     1                
+ASM68 6800 Assembler (c) 1988-1995 Evenson Consulting Services        Page 2
+FILE: e:\src\repos\mc6800\games\startrek\startrek.asm      TITLE: STAR
+
+00059 0050         SCANY     RMB     1                
+00060 0051         COUNT1    RMB     1                
+00061 0052         SECINF    RMB     1                
+00062 0053         MASK      RMB     1                
+00063 0054         KLNGCT    RMB     1                
+00064 0055         LENGTH    RMB     1                
+00065 0056         ASAVE     RMB     1                
+00066 0057         SHIELD    RMB     1                
+00067 0058         ENERGY    RMB     2                
+00068 005A         TSAVE1    RMB     1                
+00069 005B         HITKLS    RMB     1                
+00070 005C         HITSTR    RMB     1                
+00071 005D         HITBAS    RMB     1                
+00072 005E         TEMP3     RMB     2                
+00073 0060         GALCNT    RMB     1                
+00074 0061         DAMENG    RMB     1                
+00075 0062         DAMSRS    RMB     1                
+00076 0063         DAMLRS    RMB     1                
+00077 0064         DAMPHS    RMB     1                
+00078 0065         DAMPHT    RMB     1                
+00079 0066         DAMSHL    RMB     1                
+00080 0067         DAMTEL    RMB     1                
+00081 0068         DAMTRB    RMB     1                
+00082 0069         DAMCOM    RMB     1                
+00083 006A         PCOUNT    RMB     1                TORP SPREAD COUNT
+00084 006B         PTZFLG    RMB     1                NO MORE TORP FLAG
+00085 006C         GAMEND    RMB     1                
+00086 006D         AUTOSR    RMB     1                
+00087 006E         AUTOLR    RMB     1                
+00088 006F         SUPFLG    RMB     1                
+00089 0070         TELFLG    RMB     1                
+00090 0071         ATKENG    RMB     2                
+00091 0073         QUDPTR    RMB     2                POINTS TO CURR LOC IN QUDM
+00092 0075         PASWRD    RMB     3                
+00093 0078         PHTFLG    RMB     1                
+00094 0079         SHUTCR    RMB     1                
+00095 007A         SHUTLX    RMB     1                
+00096 007B         SHUTLY    RMB     1                
+00097 007C         QUDMAP    RMB     64               
+00098 00BC         COMMAP    RMB     64               MUST FOLLOW QUDMAP IMMEDIA
+00099 00FC         SECMAP    RMB     16               PACKED SECTOR (64*2 BITS) 
+00100 010C         STUF      RMB     4                SEED FOR RANDOM FUNCTION
+00101               *
+00102               * PROGRAM ENTRY
+00103               *
+00104         0200           ORG     $0200            
+00105 0200 7E 02A3           JMP     STRTRK           
+00106               *
+00107               * TABLE OF MOVE VECTORS
+00108               *
+00109 0203    00FF MOVTBL    FCB     $00,$FF,$01,$FF,$01,$00,$01,$01 FF=-1
+00110 020B    0001           FCB     $00,$01,$FF,$01,$FF,$00,$FF,$FF 
+00111               *
+00112               * CHARACTER PRINT TABLE
+00113               *
+00114 0213    2E2A CHRTBL    FCC     /.*KBN/          
+00115               *
+00116               * COMMAND CODE TABLE
+ASM68 6800 Assembler (c) 1988-1995 Evenson Consulting Services        Page 3
+FILE: e:\src\repos\mc6800\games\startrek\startrek.asm      TITLE: STAR
+
+00117               *
+00118 0218    454E CMDTBL    FCC     /ENSRLRPHPTDRSHTPSDTBCO/ 
+00119               *
+00120               * COMMAND JUMP TABLE
+00121               *
+00122 022E    0835 JMPTBL    FDB     SETCRS           
+00123 0230    05A8           FDB     SRSCAN           
+00124 0232    0AEF           FDB     LRSCAN           
+00125 0234    0BB2           FDB     PHASOR           
+00126 0236    080E           FDB     PHOTOR           
+00127 0238    0E38           FDB     DAMRPT           
+00128 023A    0579           FDB     SHLDS            
+00129 023C    0CD0           FDB     TELEPT           
+00130 023E    0CA9           FDB     SELFDE           
+00131 0240    0F27           FDB     TRCTBM           
+00132 0242    0E80           FDB     COMPTR           
+00133               *
+00134 0244 BD E1D1 PDATA     JSR     OUTCH            
+00135 0247 08                INX                      
+00136 0248 A6 00   PDATA1    LDAA    0,X              
+00137 024A 81 04             CMPA    #$04             
+00138 024C 26 F6             BNE     PDATA            
+00139 024E 39                RTS                      
+00140               *
+00141 024F 86 0D   PCRLF     LDAA    #$0D             
+00142 0251 BD E1D1           JSR     OUTCH            
+00143 0254 86 0A             LDAA    #$0A             
+00144 0256 7E E1D1           JMP     OUTCH            
+00145               *
+00146 0259 8D F4   PSTRNG    BSR     PCRLF            
+00147 025B 20 EB             BRA     PDATA1           
+00148               *
+00149 025D 36      OUTHL     PSHA                     
+00150 025E 44                LSRA                     
+00151 025F 44                LSRA                     
+00152 0260 44                LSRA                     
+00153 0261 44                LSRA                     
+00154 0262 8D 02             BSR     OUTHR            
+00155 0264 32                PULA                     
+00156 0265 39                RTS                      
+00157               *
+00158 0266 36      OUTHR     PSHA                     
+00159 0267 84 0F             ANDA    #$0F             
+00160 0269 8A 30             ORAA    #$30             
+00161 026B 81 39             CMPA    #$39             
+00162 026D 23 02             BLS     OUTDIG           
+00163 026F 8B 07             ADDA    #7               
+00164 0271 BD E1D1 OUTDIG    JSR     OUTCH            
+00165 0274 32                PULA                     
+00166 0275 39                RTS                      
+00167               *
+00168 0276 36      OUTS      PSHA                     
+00169 0277 86 20             LDAA    #$20             
+00170 0279 20 F6             BRA     OUTDIG           
+00171               *
+00172               * LIB RANDOM
+00173 027B 37      RANDOM    PSHB                     RANDOM	NUMBER GENERATOR - 
+00174 027C B6 010D           LDAA    STUF+1           COMPUTE (STUF * 2 * * 9) M
+ASM68 6800 Assembler (c) 1988-1995 Evenson Consulting Services        Page 4
+FILE: e:\src\repos\mc6800\games\startrek\startrek.asm      TITLE: STAR
+
+00175 027F 0C                CLC                      
+00176 0280 49                ROLA                     
+00177 0281 0C                CLC                      
+00178 0282 49                ROLA                     
+00179 0283 BB 010C           ADDA    STUF             ADD STUFF TO RESULT
+00180 0286 F6 010D           LDAB    STUF+1           
+00181 0289 0C                CLC                      MULTIPLY BY 2 ** 2
+00182 028A 59                ROLB                     
+00183 028B 49                ROLA                     
+00184 028C 0C                CLC                      
+00185 028D 59                ROLB                     
+00186 028E 49                ROLA                     
+00187 028F 0C                CLC                      
+00188 0290 FB 010D           ADDB    STUF+1           ADD STUFF TO RESULT
+00189 0293 B9 010C           ADCA    STUF             
+00190 0296 0C                CLC                      
+00191 0297 CB 19             ADDB    #$19             ADD HEXADECIMAL 3619 TO TH
+00192 0299 8B 36             ADDA    #$36             
+00193 029B B7 010C           STAA    STUF             STORE RESULT IN STUF
+00194 029E F7 010D           STAB    STUF+1           
+00195 02A1 33                PULB                     RESTORE B
+00196 02A2 39                RTS                      
+00197               *
+00198               * PRINT TITLE
+00199               *
+00200 02A3 CE 0F47 STRTRK    LDX     #TITLE           
+00201 02A6 BD 0259           JSR     PSTRNG           
+00202               *
+00203               * CLEAR ALL TEMP STORAGE
+00204               *
+00205 02A9 CE 0020           LDX     #STPSFL          
+00206 02AC 6F 00   SETCLR    CLR     0,X              
+00207 02AE 08                INX                      
+00208 02AF 8C 010C           CPX     #STUF            LAST VALUE OF RAM AREA
+00209 02B2 26 F8             BNE     SETCLR           
+00210 02B4 86 FF             LDAA    #$FF             
+00211 02B6 CE 00BC           LDX     #COMMAP          
+00212 02B9 A7 00   CLRMAP    STAA    0,X              
+00213 02BB 08                INX                      
+00214 02BC 8C 00FC           CPX     #COMMAP+64       
+00215 02BF 26 F8             BNE     CLRMAP           
+00216 02C1 CE 0F7F           LDX     #SHTLNG          
+00217 02C4 BD 0259           JSR     PSTRNG           
+00218 02C7 BD E1AC           JSR     INCH             
+00219 02CA 81 53             CMPA    #'S              
+00220 02CC 27 03             BEQ     SETQD            
+00221 02CE 7C 0055           INC     LENGTH           SET LONG FLAG
+00222               *
+00223               * SETUP SPACE
+00224               *
+00225 02D1 CE 007C SETQD     LDX     #QUDMAP          
+00226 02D4 C6 40             LDAB    #64              
+00227 02D6 BD 027B SETUP0    JSR     RANDOM           
+00228 02D9 81 FC             CMPA    #$FC             
+00229 02DB 23 04             BLS     SETUP1           
+00230 02DD 86 04             LDAA    #4               
+00231 02DF 20 19             BRA     SETUP5           
+00232 02E1 81 F7   SETUP1    CMPA    #$F7             
+ASM68 6800 Assembler (c) 1988-1995 Evenson Consulting Services        Page 5
+FILE: e:\src\repos\mc6800\games\startrek\startrek.asm      TITLE: STAR
+
+00233 02E3 23 04             BLS     SETUP2           
+00234 02E5 86 03             LDAA    #3               
+00235 02E7 20 11             BRA     SETUP5           
+00236 02E9 81 E0   SETUP2    CMPA    #$E0             
+00237 02EB 23 04             BLS     SETUP3           
+00238 02ED 86 02             LDAA    #2               
+00239 02EF 20 09             BRA     SETUP5           
+00240 02F1 81 A0   SETUP3    CMPA    #$A0             
+00241 02F3 23 04             BLS     SETUP4           
+00242 02F5 86 01             LDAA    #1               
+00243 02F7 20 01             BRA     SETUP5           
+00244 02F9 4F      SETUP4    CLRA                     
+00245 02FA 7F 0056 SETUP5    CLR     ASAVE            
+00246 02FD 7D 0055           TST     LENGTH           
+00247 0300 27 16             BEQ     SETUP8           
+00248 0302 97 56             STAA    ASAVE            
+00249 0304 BD 027B           JSR     RANDOM           
+00250 0307 81 F0             CMPA    #$F0             
+00251 0309 23 04             BLS     SETUP6           
+00252 030B 86 03             LDAA    #3               
+00253 030D 20 09             BRA     SETUP8           
+00254 030F 81 C0   SETUP6    CMPA    #$C0             
+00255 0311 23 04             BLS     SETUP7           
+00256 0313 86 02             LDAA    #2               
+00257 0315 20 01             BRA     SETUP8           
+00258 0317 4F      SETUP7    CLRA                     
+00259 0318 9B 56   SETUP8    ADDA    ASAVE            
+00260 031A A7 00             STAA    0,X              STORE SECT KLNGON CNT
+00261 031C 9B 54             ADDA    KLNGCT           
+00262 031E 97 54             STAA    KLNGCT           
+00263 0320 BD 027B STARS     JSR     RANDOM           
+00264 0323 84 38             ANDA    #$38             
+00265 0325 AA 00             ORAA    0,X              
+00266 0327 A7 00             STAA    0,X              
+00267 0329 08      CONT      INX                      
+00268 032A 5A                DECB                     
+00269 032B 27 03             BEQ     CONT1            
+00270 032D 7E 02D6           JMP     SETUP0           
+00271               *
+00272               * GET STARBASE LOCATION
+00273               *
+00274 0330 BD 027B CONT1     JSR     RANDOM           
+00275 0333 84 07             ANDA    #$7              
+00276 0335 16                TAB                      
+00277 0336 BD 027B           JSR     RANDOM           
+00278 0339 84 07             ANDA    #$7              
+00279 033B 97 21             STAA    BASEX            
+00280 033D D7 22             STAB    BASEY            
+00281 033F 7C 0020           INC     STPSFL           
+00282 0342 CE 007C           LDX     #QUDMAP          
+00283 0345 BD 06E1           JSR     STPSEX           
+00284 0348 86 40             LDAA    #$40             
+00285 034A AA 00             ORAA    0,X              
+00286 034C A7 00             STAA    0,X              
+00287 034E 8D 32   CONT2     BSR     REFUEL           
+00288 0350 BD 027B           JSR     RANDOM           
+00289 0353 8B 00             ADDA    #0               
+00290 0355 19                DAA                      
+ASM68 6800 Assembler (c) 1988-1995 Evenson Consulting Services        Page 6
+FILE: e:\src\repos\mc6800\games\startrek\startrek.asm      TITLE: STAR
+
+00291 0356 97 38             STAA    TIME0+1          
+00292 0358 BD 027B           JSR     RANDOM           
+00293 035B 84 7F             ANDA    #$7F             
+00294 035D 8A 23             ORAA    #$23             
+00295 035F 8B 00             ADDA    #0               
+00296 0361 19                DAA                      
+00297 0362 97 37             STAA    TIME0            
+00298 0364 8D 3B             BSR     MAKTIM           
+00299 0366 7D 0055           TST     LENGTH           
+00300 0369 27 05             BEQ     GATM             
+00301 036B 16                TAB                      
+00302 036C 8D 33             BSR     MAKTIM           
+00303 036E 1B                ABA                      
+00304 036F 19                DAA                      
+00305 0370 97 39   GATM      STAA    GAMTIM           
+00306 0372 BD 027B           JSR     RANDOM           SET SHUTTLECRAFT LOCATION
+00307 0375 84 07             ANDA    #$7              
+00308 0377 97 7A             STAA    SHUTLX           
+00309 0379 BD 027B           JSR     RANDOM           
+00310 037C 84 07             ANDA    #$7              
+00311 037E 97 7B             STAA    SHUTLY           
+00312 0380 20 2A             BRA     CONT3            
+00313               *
+00314               * REFUEL THE ENTERPRISE
+00315               *
+00316 0382 7F 0057 REFUEL    CLR     SHIELD           
+00317 0385 86 30             LDAA    #$30             
+00318 0387 97 58             STAA    ENERGY           
+00319 0389 7F 0059           CLR     ENERGY+1         
+00320 038C 97 3C             STAA    SHENGY           
+00321 038E 7F 003D           CLR     SHENGY+1         
+00322 0391 86 0F             LDAA    #15              
+00323 0393 97 46             STAA    PHOTON           
+00324 0395 CE 0061           LDX     #DAMENG          FIX ALL DAMAGE
+00325 0398 6F 00   REFUL1    CLR     0,X              
+00326 039A 08                INX                      
+00327 039B 8C 006A           CPX     #DAMENG+9        
+00328 039E 26 F8             BNE     REFUL1           
+00329 03A0 39                RTS                      
+00330               *
+00331               * CALCULATE GAME TIME
+00332               *
+00333 03A1 BD 027B MAKTIM    JSR     RANDOM           
+00334 03A4 84 0F             ANDA    #$0F             
+00335 03A6 8A 31             ORAA    #$31             
+00336 03A8 8B 00             ADDA    #0               
+00337 03AA 19                DAA                      
+00338 03AB 39                RTS                      
+00339               *
+00340               * CONTINUE SETUP
+00341               *
+00342 03AC BD 027B CONT3     JSR     RANDOM           
+00343 03AF 84 07             ANDA    #7               
+00344 03B1 97 47             STAA    CURQUX           
+00345 03B3 BD 027B           JSR     RANDOM           
+00346 03B6 84 07             ANDA    #7               
+00347 03B8 97 48             STAA    CURQUY           
+00348 03BA BD 06CB           JSR     SETUPS           
+ASM68 6800 Assembler (c) 1988-1995 Evenson Consulting Services        Page 7
+FILE: e:\src\repos\mc6800\games\startrek\startrek.asm      TITLE: STAR
+
+00349 03BD CE 0F9F           LDX     #BASINF          
+00350 03C0 BD 0259           JSR     PSTRNG           
+00351 03C3 96 21             LDAA    BASEX            
+00352 03C5 8D 4E             BSR     FIXOUT           
+00353 03C7 BD 046A           JSR     OUTDSH           
+00354 03CA 96 22             LDAA    BASEY            
+00355 03CC 8D 47             BSR     FIXOUT           
+00356 03CE CE 135D           LDX     #INTRO0          
+00357 03D1 BD 0259           JSR     PSTRNG           
+00358 03D4 CE 0075           LDX     #PASWRD          
+00359 03D7 C6 03             LDAB    #3               
+00360 03D9 BD E1AC CONT4     JSR     INCH             
+00361 03DC A7 00             STAA    0,X              
+00362 03DE 08                INX                      
+00363 03DF 5A                DECB                     
+00364 03E0 26 F7             BNE     CONT4            
+00365 03E2 CE 0FD7           LDX     #INTRO1          
+00366 03E5 BD 0259           JSR     PSTRNG           
+00367 03E8 8D 31             BSR     OUTDAT           
+00368 03EA CE 0FE8           LDX     #INTRO2          
+00369 03ED BD 0259           JSR     PSTRNG           
+00370 03F0 8D 3B             BSR     OUTKLN           
+00371 03F2 CE 0FFD           LDX     #INTRO3          
+00372 03F5 BD 0259           JSR     PSTRNG           
+00373 03F8 7F 0031           CLR     TEMP             
+00374 03FB 96 39             LDAA    GAMTIM           
+00375 03FD 97 32             STAA    TEMP+1           
+00376 03FF BD 0549           JSR     OUTBCD           
+00377 0402 CE 101F           LDX     #INTRO4          
+00378 0405 BD 0259           JSR     PSTRNG           
+00379 0408 8D 4A             BSR     OUTQUD           
+00380 040A CE 1034           LDX     #INTRO6          
+00381 040D BD 0259           JSR     PSTRNG           
+00382 0410 8D 4D             BSR     OUTSEC           
+00383 0412 7E 0479           JMP     COMAND           
+00384               *
+00385               * OUTPUT A NUMBER
+00386               *
+00387 0415 8B 31   FIXOUT    ADDA    #$31             
+00388 0417 BD E1D1           JSR     OUTCH            
+00389 041A 39                RTS                      
+00390               *
+00391               * OUTPUT STARDATE
+00392               *
+00393 041B DE 37   OUTDAT    LDX     TIME0            
+00394 041D DF 31             STX     TEMP             
+00395 041F BD 0549           JSR     OUTBCD           
+00396 0422 86 2E             LDAA    #'.              
+00397 0424 BD E1D1           JSR     OUTCH            
+00398 0427 96 28             LDAA    TIMDEC           
+00399 0429 BD 0266           JSR     OUTHR            
+00400 042C 39                RTS                      
+00401               *
+00402               * OUTPUT A KLINGON COUNT
+00403               *
+00404 042D 96 54   OUTKLN    LDAA    KLNGCT           
+00405 042F 7F 0031 OUTK0     CLR     TEMP             
+00406 0432 7F 0032 OUTK1     CLR     TEMP+1           
+ASM68 6800 Assembler (c) 1988-1995 Evenson Consulting Services        Page 8
+FILE: e:\src\repos\mc6800\games\startrek\startrek.asm      TITLE: STAR
+
+00407 0435 C6 0A             LDAB    #10              
+00408 0437 10      OUTK2     SBA                      
+00409 0438 25 0C             BCS     OUTK3            
+00410 043A 7C 0032           INC     TEMP+1           
+00411 043D D1 32             CMPB    TEMP+1           
+00412 043F 26 F6             BNE     OUTK2            
+00413 0441 7C 0031           INC     TEMP             
+00414 0444 20 EC             BRA     OUTK1            
+00415 0446 1B      OUTK3     ABA                      
+00416 0447 D6 32             LDAB    TEMP+1           
+00417 0449 58                ASLB                     
+00418 044A 58                ASLB                     
+00419 044B 58                ASLB                     
+00420 044C 58                ASLB                     
+00421 044D 1B                ABA                      
+00422 044E 97 32             STAA    TEMP+1           
+00423 0450 BD 0549           JSR     OUTBCD           
+00424 0453 39                RTS                      
+00425               *
+00426               * OUTPUT QUADRANT LOCATION
+00427               *
+00428 0454 96 48   OUTQUD    LDAA    CURQUY           
+00429 0456 8D BD             BSR     FIXOUT           
+00430 0458 8D 10             BSR     OUTDSH           
+00431 045A 96 47             LDAA    CURQUX           
+00432 045C 8D B7             BSR     FIXOUT           
+00433 045E 39                RTS                      
+00434               *
+00435               * OUTPUT A SECTOR
+00436               *
+00437 045F 96 4A   OUTSEC    LDAA    CURSCY           
+00438 0461 8D B2             BSR     FIXOUT           
+00439 0463 8D 05             BSR     OUTDSH           
+00440 0465 96 49             LDAA    CURSCX           
+00441 0467 8D AC             BSR     FIXOUT           
+00442 0469 39                RTS                      
+00443               *
+00444               * OUTPUT A DASH
+00445               *
+00446 046A 86 2D   OUTDSH    LDAA    #'-              
+00447 046C BD E1D1           JSR     OUTCH            
+00448 046F 39                RTS                      
+00449               *
+00450               * ADD THE A-REG TO THE INDEX REGISTER
+00451               *
+00452 0470 DF 31   FIXXRG    STX     TEMP             
+00453 0472 9B 32             ADDA    TEMP+1           
+00454 0474 97 32             STAA    TEMP+1           
+00455 0476 DE 31             LDX     TEMP             
+00456 0478 39                RTS                      
+00457               *
+00458               * GET COMMAND AND PERFORM IT
+00459               *
+00460 0479 96 39   COMAND    LDAA    GAMTIM           
+00461 047B 91 3B             CMPA    TIMUSE+1         
+00462 047D 22 03             BHI     NOEXTC           
+00463 047F 7E 0D69           JMP     NOMTIM           
+00464 0482 7D 0054 NOEXTC    TST     KLNGCT           
+ASM68 6800 Assembler (c) 1988-1995 Evenson Consulting Services        Page 9
+FILE: e:\src\repos\mc6800\games\startrek\startrek.asm      TITLE: STAR
+
+00465 0485 26 03             BNE     NOEXT2           
+00466 0487 7E 0D6E           JMP     NOMKLN           
+00467 048A 7D 006F NOEXT2    TST     SUPFLG           
+00468 048D 27 0C             BEQ     NOEXT4           
+00469 048F CE 16BD           LDX     #SUPDES          
+00470 0492 BD 0259           JSR     PSTRNG           
+00471 0495 BD 0CBF           JSR     SELFDA           
+00472 0498 7E 0D76           JMP     ENDGAM           
+00473               *
+00474 049B BD 0D97 NOEXT4    JSR     CLRCQU           CLEAR K & S
+00475 049E 86 02             LDAA    #2               
+00476 04A0 91 4E             CMPA    CNDFLG           DOCKED?
+00477 04A2 27 5F             BEQ     CMND27           
+00478 04A4 7F 004E           CLR     CNDFLG           
+00479 04A7 7D 0026           TST     SECKLN           RED?
+00480 04AA 27 03             BEQ     CMNDAC           
+00481 04AC 4A                DECA                     
+00482 04AD 97 4E             STAA    CNDFLG           
+00483 04AF BD 027B CMNDAC    JSR     RANDOM           
+00484 04B2 81 FC             CMPA    #$FC             SPACE STORM
+00485 04B4 23 0D             BLS     COMND2           
+00486 04B6 CE 14DB           LDX     #SPSTRM          
+00487 04B9 BD 0259           JSR     PSTRNG           
+00488 04BC 86 02             LDAA    #2               
+00489 04BE 97 66             STAA    DAMSHL           
+00490 04C0 BD 057E           JSR     SHLDWN           
+00491               *
+00492 04C3 BD 027B COMND2    JSR     RANDOM           
+00493 04C6 81 FC             CMPA    #$FC             SUPERNOVA?
+00494 04C8 23 03             BLS     CMND25           
+00495 04CA BD 0DCD           JSR     SUPNOV           
+00496 04CD BD 0D19 CMND25    JSR     ATTACK           ALLOW ATTACK
+00497 04D0 7D 0058           TST     ENERGY           
+00498 04D3 2A 03             BPL     COMND0           
+00499 04D5 7E 0D61           JMP     NRGOUT           
+00500               *
+00501 04D8 7D 0079 COMND0    TST     SHUTCR           
+00502 04DB 26 12             BNE     CMND01           
+00503 04DD 96 7A             LDAA    SHUTLX           
+00504 04DF 91 47             CMPA    CURQUX           
+00505 04E1 26 0C             BNE     CMND01           
+00506 04E3 96 7B             LDAA    SHUTLY           
+00507 04E5 91 48             CMPA    CURQUY           
+00508 04E7 26 06             BNE     CMND01           
+00509 04E9 CE 1A11           LDX     #SHTSIG          
+00510 04EC BD 0259           JSR     PSTRNG           
+00511 04EF 86 03   CMND01    LDAA    #3               
+00512 04F1 91 58             CMPA    ENERGY           
+00513 04F3 23 02             BLS     CMNDAD           
+00514 04F5 97 4E             STAA    CNDFLG           
+00515 04F7 7D 003C CMNDAD    TST     SHENGY           
+00516 04FA 2A 07             BPL     CMND27           
+00517 04FC 4F                CLRA                     
+00518 04FD 97 57             STAA    SHIELD           
+00519 04FF 97 3C             STAA    SHENGY           
+00520 0501 97 3D             STAA    SHENGY+1         
+00521 0503 CE 1040 CMND27    LDX     #COMST           PRINT COMMAND PROMPT
+00522 0506 BD 0259           JSR     PSTRNG           
+ASM68 6800 Assembler (c) 1988-1995 Evenson Consulting Services        Page 10
+FILE: e:\src\repos\mc6800\games\startrek\startrek.asm      TITLE: STAR
+
+00523 0509 7F 0029           CLR     STCFLG           
+00524 050C 7F 0078           CLR     PHTFLG           
+00525 050F BD E1AC COMND3    JSR     INCH             
+00526 0512 81 0D             CMPA    #$D              
+00527 0514 27 16             BEQ     ILCMND           
+00528 0516 16                TAB                      
+00529 0517 BD E1AC           JSR     INCH             
+00530 051A CE 0218           LDX     #CMDTBL          
+00531 051D E1 00   CHKCM1    CMPB    0,X              
+00532 051F 26 04             BNE     INX2             
+00533 0521 A1 01             CMPA    1,X              
+00534 0523 27 0F             BEQ     GOTCMD           
+00535 0525 08      INX2      INX                      
+00536 0526 08                INX                      
+00537 0527 8C 022E           CPX     #CMDTBL+22       
+00538 052A 26 F1             BNE     CHKCM1           
+00539 052C CE 18B3 ILCMND    LDX     #EXPCMD          
+00540 052F BD 0259           JSR     PSTRNG           
+00541 0532 20 DB             BRA     COMND3           
+00542               *
+00543 0534 86 16   GOTCMD    LDAA    #22              STEP FORWARD 22 BYTES TO R
+00544 0536 08      GCMD1     INX                      
+00545 0537 4A                DECA                     
+00546 0538 26 FC             BNE     GCMD1            
+00547 053A EE 00             LDX     0,X              
+00548 053C AD 00             JSR     0,X              
+00549 053E 7D 006C           TST     GAMEND           
+00550 0541 27 03             BEQ     CMND99           
+00551 0543 7E 0D76           JMP     ENDGAM           
+00552 0546 7E 0479 CMND99    JMP     COMAND           
+00553               *
+00554               * OUTPUT A 4 DIGIT BCD NUMBER
+00555               *
+00556 0549 7F 004D OUTBCD    CLR     FLAG             
+00557 054C 96 31             LDAA    TEMP             
+00558 054E 27 13             BEQ     OUTBC2           
+00559 0550 84 F0             ANDA    #$F0             
+00560 0552 27 05             BEQ     OUTBC1           
+00561 0554 96 31             LDAA    TEMP             
+00562 0556 BD 025D           JSR     OUTHL            
+00563 0559 96 31   OUTBC1    LDAA    TEMP             
+00564 055B 84 0F             ANDA    #$0F             
+00565 055D BD 0266           JSR     OUTHR            
+00566 0560 7C 004D           INC     FLAG             
+00567 0563 96 32   OUTBC2    LDAA    TEMP+1           
+00568 0565 7D 004D           TST     FLAG             
+00569 0568 26 04             BNE     NOZERO           
+00570 056A 84 F0             ANDA    #$F0             
+00571 056C 27 03             BEQ     OUTBC3           
+00572 056E BD 025D NOZERO    JSR     OUTHL            
+00573 0571 96 32   OUTBC3    LDAA    TEMP+1           
+00574 0573 84 0F             ANDA    #$0F             
+00575 0575 BD 0266           JSR     OUTHR            
+00576 0578 39                RTS                      
+00577               *
+00578               * LOWER THE SHIELDS
+00579               *
+00580 0579 7D 0057 SHLDS     TST     SHIELD           
+ASM68 6800 Assembler (c) 1988-1995 Evenson Consulting Services        Page 11
+FILE: e:\src\repos\mc6800\games\startrek\startrek.asm      TITLE: STAR
+
+00581 057C 27 0A             BEQ     SHLDUP           
+00582 057E 7F 0057 SHLDWN    CLR     SHIELD           
+00583 0581 CE 104B           LDX     #DWNST           
+00584 0584 BD 0259 SHLD0     JSR     PSTRNG           
+00585 0587 39      SHLD1     RTS                      
+00586               *
+00587               * RAISE THE SHIELDS
+00588               *
+00589 0588 96 3C   SHLDUP    LDAA    SHENGY           
+00590 058A 81 01             CMPA    #1               
+00591 058C 23 F9             BLS     SHLD1            
+00592 058E 7D 0066           TST     DAMSHL           
+00593 0591 26 EB             BNE     SHLDWN           
+00594 0593 7C 0057           INC     SHIELD           
+00595 0596 CE 003C           LDX     #SHENGY          
+00596 0599 86 02             LDAA    #2               
+00597 059B 97 31             STAA    TEMP             
+00598 059D 7F 0032           CLR     TEMP+1           
+00599 05A0 BD 0AD3           JSR     BCDSUB           
+00600 05A3 CE 1065           LDX     #UPSTR           
+00601 05A6 20 DC             BRA     SHLD0            
+00602               *
+00603               * SHORT RANGE SCAN
+00604               *
+00605 05A8 7D 0062 SRSCAN    TST     DAMSRS           
+00606 05AB 27 0F             BEQ     SSCAN1           
+00607 05AD 7D 0079           TST     SHUTCR           
+00608 05B0 26 04             BNE     SSCAN0           
+00609 05B2 BD 0E31           JSR     RPTDAM           
+00610 05B5 39                RTS                      
+00611 05B6 CE 1A4D SSCAN0    LDX     #SCBKUP          
+00612 05B9 BD 0259           JSR     PSTRNG           
+00613 05BC BD 024F SSCAN1    JSR     PCRLF            
+00614 05BF 7F 0050           CLR     SCANY            
+00615 05C2 96 4E             LDAA    CNDFLG           
+00616 05C4 81 02             CMPA    #2               
+00617 05C6 26 03             BNE     SSCAN2           
+00618 05C8 BD 0382           JSR     REFUEL           
+00619 05CB CE 00FC SSCAN2    LDX     #SECMAP          
+00620 05CE DF 33             STX     TEMP2            
+00621 05D0 BD 0674           JSR     DOSCAN           
+00622 05D3 CE 1187           LDX     #SDATE           
+00623 05D6 BD 0248           JSR     PDATA1           
+00624 05D9 BD 041B           JSR     OUTDAT           
+00625 05DC BD 0674           JSR     DOSCAN           
+00626 05DF CE 1194           LDX     #CNDTNS          
+00627 05E2 BD 0248           JSR     PDATA1           
+00628 05E5 96 4E             LDAA    CNDFLG           
+00629 05E7 27 1A             BEQ     SRSCN1           
+00630 05E9 81 01             CMPA    #1               
+00631 05EB 27 11             BEQ     SRSCN0           
+00632 05ED 81 03             CMPA    #3               
+00633 05EF 27 05             BEQ     OUTCN1           
+00634 05F1 CE 0FB6           LDX     #DOCKED          
+00635 05F4 20 03             BRA     OUTCND           
+00636 05F6 CE 11A2 OUTCN1    LDX     #YELLOW          
+00637 05F9 BD 0248 OUTCND    JSR     PDATA1           
+00638 05FC 20 0A             BRA     SRSCN2           
+ASM68 6800 Assembler (c) 1988-1995 Evenson Consulting Services        Page 12
+FILE: e:\src\repos\mc6800\games\startrek\startrek.asm      TITLE: STAR
+
+00639               *
+00640 05FE CE 11AA SRSCN0    LDX     #RED             
+00641 0601 20 F6             BRA     OUTCND           
+00642               *
+00643 0603 CE 11B1 SRSCN1    LDX     #GREEN           
+00644 0606 20 F1             BRA     OUTCND           
+00645               *
+00646 0608 8D 6A   SRSCN2    BSR     DOSCAN           
+00647 060A CE 11B7           LDX     #QUADP           
+00648 060D BD 0248           JSR     PDATA1           
+00649 0610 BD 0454           JSR     OUTQUD           
+00650 0613 8D 5F             BSR     DOSCAN           
+00651 0615 CE 11C4           LDX     #SECP            
+00652 0618 BD 0248           JSR     PDATA1           
+00653 061B BD 045F           JSR     OUTSEC           
+00654 061E 8D 54             BSR     DOSCAN           
+00655 0620 CE 11D1           LDX     #ENGSTR          
+00656 0623 BD 0248           JSR     PDATA1           
+00657 0626 DE 58             LDX     ENERGY           
+00658 0628 DF 31             STX     TEMP             
+00659 062A BD 0549           JSR     OUTBCD           
+00660 062D 8D 45             BSR     DOSCAN           
+00661 062F CE 11DC           LDX     #KLSTR           
+00662 0632 BD 0248           JSR     PDATA1           
+00663 0635 BD 042D           JSR     OUTKLN           
+00664 0638 8D 3A             BSR     DOSCAN           
+00665 063A CE 11E9           LDX     #SHSTR           
+00666 063D BD 0248           JSR     PDATA1           
+00667 0640 DE 3C             LDX     SHENGY           
+00668 0642 DF 31             STX     TEMP             
+00669 0644 BD 0549           JSR     OUTBCD           
+00670 0647 7D 0057           TST     SHIELD           
+00671 064A 27 05             BEQ     SRSCN4           
+00672 064C CE 0F9B           LDX     #UPSCAS          
+00673 064F 20 03             BRA     SRSCN5           
+00674               *
+00675 0651 CE 0FBD SRSCN4    LDX     #DNSCAS          
+00676 0654 BD 0248 SRSCN5    JSR     PDATA1           
+00677 0657 8D 1B             BSR     DOSCAN           
+00678 0659 CE 11F5           LDX     #TRPSTR          
+00679 065C BD 0248           JSR     PDATA1           
+00680 065F 7F 0031           CLR     TEMP             
+00681 0662 96 46             LDAA    PHOTON           
+00682 0664 8B 00             ADDA    #0               
+00683 0666 19                DAA                      
+00684 0667 97 32             STAA    TEMP+1           
+00685 0669 BD 0549           JSR     OUTBCD           
+00686 066C DE 73             LDX     QUDPTR           UPDATE COMPUTER MAP
+00687 066E A6 00             LDAA    0,X              
+00688 0670 BD 0B7C           JSR     UPDCMP           
+00689 0673 39                RTS                      
+00690               *
+00691               * OUTPUT 1 SHORT RANGE SCAN LINE
+00692               *
+00693 0674 BD 024F DOSCAN    JSR     PCRLF            
+00694 0677 86 02             LDAA    #2               
+00695 0679 97 30             STAA    COUNT            
+00696 067B 7F 004F           CLR     SCANX            
+ASM68 6800 Assembler (c) 1988-1995 Evenson Consulting Services        Page 13
+FILE: e:\src\repos\mc6800\games\startrek\startrek.asm      TITLE: STAR
+
+00697 067E 86 04   DOSCN     LDAA    #4               
+00698 0680 97 51             STAA    COUNT1           
+00699 0682 DE 33             LDX     TEMP2            
+00700 0684 A6 00             LDAA    0,X              
+00701 0686 97 56   DOSCN0    STAA    ASAVE            
+00702 0688 96 4A             LDAA    CURSCY           
+00703 068A 91 50             CMPA    SCANY            IS IT Y-LOC OF ENTERPRISE?
+00704 068C 26 0D             BNE     CHK0             
+00705 068E 96 49             LDAA    CURSCX           
+00706 0690 91 4F             CMPA    SCANX            
+00707 0692 26 07             BNE     CHK0             
+00708 0694 86 45             LDAA    #'E              
+00709 0696 BD E1D1           JSR     OUTCH            
+00710 0699 20 0F             BRA     GOAHD            
+00711 069B 96 56   CHK0      LDAA    ASAVE            
+00712 069D CE 0213 DOSCN1    LDX     #CHRTBL          
+00713 06A0 84 03             ANDA    #3               
+00714 06A2 BD 0470           JSR     FIXXRG           
+00715 06A5 A6 00             LDAA    0,X              
+00716 06A7 BD E1D1           JSR     OUTCH            
+00717 06AA BD 0276 GOAHD     JSR     OUTS             
+00718 06AD DE 33             LDX     TEMP2            
+00719 06AF 7C 004F           INC     SCANX            
+00720 06B2 7A 0051           DEC     COUNT1           
+00721 06B5 27 06             BEQ     DOSCN2           
+00722 06B7 96 56             LDAA    ASAVE            
+00723 06B9 44                LSRA                     
+00724 06BA 44                LSRA                     
+00725 06BB 20 C9             BRA     DOSCN0           
+00726 06BD 08      DOSCN2    INX                      
+00727 06BE DF 33             STX     TEMP2            
+00728 06C0 A6 00             LDAA    0,X              
+00729 06C2 7A 0030           DEC     COUNT            
+00730 06C5 26 B7             BNE     DOSCN            
+00731 06C7 7C 0050           INC     SCANY            
+00732 06CA 39                RTS                      
+00733               *
+00734               * SETUP SECTOR MAP
+00735               *
+00736 06CB 7F 0026 SETUPS    CLR     SECKLN           
+00737 06CE CE 00FC           LDX     #SECMAP          
+00738 06D1 C6 10             LDAB    #16              
+00739 06D3 4F                CLRA                     
+00740 06D4 A7 00   SETPS1    STAA    0,X              
+00741 06D6 08                INX                      
+00742 06D7 5A                DECB                     
+00743 06D8 26 FA             BNE     SETPS1           
+00744 06DA CE 007C           LDX     #QUDMAP          
+00745 06DD 96 47             LDAA    CURQUX           
+00746 06DF D6 48             LDAB    CURQUY           
+00747 06E1 97 56   STPSEX    STAA    ASAVE            
+00748 06E3 5D                TSTB                     
+00749 06E4 27 09             BEQ     SETPS4           
+00750 06E6 86 08   SETPS2    LDAA    #8               
+00751 06E8 08      SETPS3    INX                      
+00752 06E9 4A                DECA                     
+00753 06EA 26 FC             BNE     SETPS3           
+00754 06EC 5A                DECB                     
+ASM68 6800 Assembler (c) 1988-1995 Evenson Consulting Services        Page 14
+FILE: e:\src\repos\mc6800\games\startrek\startrek.asm      TITLE: STAR
+
+00755 06ED 26 F7             BNE     SETPS2           
+00756 06EF 96 56   SETPS4    LDAA    ASAVE            
+00757 06F1 27 04             BEQ     SETPS6           
+00758 06F3 08      SETPS5    INX                      
+00759 06F4 4A                DECA                     
+00760 06F5 26 FC             BNE     SETPS5           
+00761 06F7 7D 0020 SETPS6    TST     STPSFL           
+00762 06FA 27 04             BEQ     STPSNX           
+00763 06FC 7F 0020           CLR     STPSFL           
+00764 06FF 39                RTS                      
+00765               *
+00766 0700 DF 73   STPSNX    STX     QUDPTR           
+00767 0702 E6 00             LDAB    0,X              
+00768 0704 D7 52             STAB    SECINF           
+00769 0706 27 36             BEQ     SETP10           
+00770 0708 C4 07             ANDB    #7               
+00771 070A 27 0A             BEQ     SETPS7           
+00772 070C D7 30             STAB    COUNT            
+00773 070E D7 26             STAB    SECKLN           
+00774 0710 86 02             LDAA    #2               
+00775 0712 97 53             STAA    MASK             
+00776 0714 8D 62             BSR     PUTINM           
+00777 0716 D6 52   SETPS7    LDAB    SECINF           
+00778 0718 C4 38             ANDB    #$38             
+00779 071A 27 0B             BEQ     SETPS8           
+00780 071C 54                LSRB                     
+00781 071D 54                LSRB                     
+00782 071E 54                LSRB                     
+00783 071F D7 30             STAB    COUNT            
+00784 0721 86 01             LDAA    #1               
+00785 0723 97 53             STAA    MASK             
+00786 0725 8D 51             BSR     PUTINM           
+00787 0727 D6 52   SETPS8    LDAB    SECINF           
+00788 0729 C5 40             BITB    #$40             
+00789 072B 27 0A             BEQ     SETPS9           
+00790 072D 86 01             LDAA    #1               
+00791 072F 97 30             STAA    COUNT            
+00792 0731 86 03             LDAA    #3               
+00793 0733 97 53             STAA    MASK             
+00794 0735 8D 41             BSR     PUTINM           
+00795 0737 D6 52   SETPS9    LDAB    SECINF           
+00796 0739 2A 03             BPL     SETP10           
+00797 073B 7C 006F           INC     SUPFLG           
+00798 073E BD 027B SETP10    JSR     RANDOM           
+00799 0741 84 07             ANDA    #7               
+00800 0743 97 4B             STAA    TRIALX           
+00801 0745 BD 027B           JSR     RANDOM           
+00802 0748 84 07             ANDA    #7               
+00803 074A 97 4C             STAA    TRIALY           
+00804 074C BD 07C0           JSR     CHKPOS           
+00805 074F 7D 004D           TST     FLAG             
+00806 0752 26 EA             BNE     SETP10           
+00807 0754 96 4B             LDAA    TRIALX           
+00808 0756 97 49             STAA    CURSCX           
+00809 0758 96 4C             LDAA    TRIALY           
+00810 075A 97 4A             STAA    CURSCY           
+00811               *
+00812               * COMPUTE LOCAL KLINGON ENERGY
+ASM68 6800 Assembler (c) 1988-1995 Evenson Consulting Services        Page 15
+FILE: e:\src\repos\mc6800\games\startrek\startrek.asm      TITLE: STAR
+
+00813               *
+00814 075C D6 26   CSCKEN    LDAB    SECKLN           
+00815 075E 58                ASLB                     
+00816 075F CE 003E           LDX     #KLNENG          
+00817 0762 6F 00   CSCEXT    CLR     0,X              
+00818 0764 6F 01             CLR     1,X              
+00819 0766 BD 027B CSCKN1    JSR     RANDOM           
+00820 0769 8B 00             ADDA    #0               
+00821 076B 19                DAA                      
+00822 076C 7F 0031           CLR     TEMP             
+00823 076F 97 32             STAA    TEMP+1           
+00824 0771 BD 0AD0           JSR     BCDADD           
+00825 0774 5A                DECB                     
+00826 0775 26 EF             BNE     CSCKN1           
+00827 0777 39                RTS                      
+00828               *
+00829               * PUT OBJECTS IN SECTOR MAP
+00830               *
+00831 0778 CE 00FC PUTINM    LDX     #SECMAP          
+00832 077B BD 027B           JSR     RANDOM           
+00833 077E 84 0F             ANDA    #$F              
+00834 0780 97 5A             STAA    TSAVE1           
+00835 0782 BD 0470           JSR     FIXXRG           
+00836 0785 E6 00             LDAB    0,X              
+00837 0787 BD 027B           JSR     RANDOM           
+00838 078A 84 03             ANDA    #3               
+00839 078C 97 56             STAA    ASAVE            
+00840 078E 27 05             BEQ     PUTIN2           
+00841 0790 56      PUTIN1    RORB                     
+00842 0791 56                RORB                     
+00843 0792 4A                DECA                     
+00844 0793 26 FB             BNE     PUTIN1           
+00845 0795 C5 03   PUTIN2    BITB    #3               
+00846 0797 26 DF             BNE     PUTINM           
+00847 0799 DA 53             ORAB    MASK             
+00848 079B 96 56             LDAA    ASAVE            
+00849 079D 27 05             BEQ     PUTIN4           
+00850 079F 59      PUTIN3    ROLB                     
+00851 07A0 59                ROLB                     
+00852 07A1 4A                DECA                     
+00853 07A2 26 FB             BNE     PUTIN3           
+00854 07A4 E7 00   PUTIN4    STAB    0,X              
+00855 07A6 7A 0030           DEC     COUNT            
+00856 07A9 26 CD             BNE     PUTINM           
+00857 07AB 96 53             LDAA    MASK             
+00858 07AD 81 03             CMPA    #3               
+00859 07AF 26 0E             BNE     PUTIN6           
+00860 07B1 D6 5A             LDAB    TSAVE1           
+00861 07B3 0C                CLC                      
+00862 07B4 56                RORB                     
+00863 07B5 96 56             LDAA    ASAVE            
+00864 07B7 24 02             BCC     PUTIN5           
+00865 07B9 8B 04             ADDA    #4               
+00866 07BB 97 23   PUTIN5    STAA    BASESX           
+00867 07BD D7 24             STAB    BASESY           
+00868 07BF 39      PUTIN6    RTS                      
+00869               *
+00870               * CHECK FOR EMPTY POSITIONS
+ASM68 6800 Assembler (c) 1988-1995 Evenson Consulting Services        Page 16
+FILE: e:\src\repos\mc6800\games\startrek\startrek.asm      TITLE: STAR
+
+00871               *
+00872 07C0 7F 004D CHKPOS    CLR     FLAG             
+00873 07C3 DF 35             STX     XTEMP            
+00874 07C5 CE 00FC           LDX     #SECMAP          
+00875 07C8 96 4C             LDAA    TRIALY           
+00876 07CA 27 05             BEQ     CHKPO2           
+00877 07CC 08      CHKPO1    INX                      
+00878 07CD 08                INX                      
+00879 07CE 4A                DECA                     
+00880 07CF 26 FB             BNE     CHKPO1           
+00881 07D1 96 4B   CHKPO2    LDAA    TRIALX           
+00882 07D3 81 03             CMPA    #3               
+00883 07D5 23 03             BLS     CHKPO3           
+00884 07D7 08                INX                      
+00885 07D8 80 04             SUBA    #4               
+00886 07DA E6 00   CHKPO3    LDAB    0,X              
+00887 07DC 97 56             STAA    ASAVE            
+00888 07DE 27 05             BEQ     CHKPO5           
+00889 07E0 54      CHKPO4    LSRB                     
+00890 07E1 54                LSRB                     
+00891 07E2 4A                DECA                     
+00892 07E3 26 FB             BNE     CHKPO4           
+00893 07E5 C4 03   CHKPO5    ANDB    #3               
+00894 07E7 27 10             BEQ     CHKPO6           
+00895 07E9 D7 4D             STAB    FLAG             
+00896 07EB 7D 0029           TST     STCFLG           
+00897 07EE 27 09             BEQ     CHKPO6           
+00898 07F0 7D 0078           TST     PHTFLG           
+00899 07F3 26 07             BNE     CHKPO7           
+00900 07F5 C1 02             CMPB    #2               
+00901 07F7 27 03             BEQ     CHKPO7           
+00902 07F9 DE 35   CHKPO6    LDX     XTEMP            
+00903 07FB 39                RTS                      
+00904               *
+00905 07FC C6 FC   CHKPO7    LDAB    #$FC             
+00906 07FE 96 56             LDAA    ASAVE            
+00907 0800 27 06             BEQ     CHKPO9           
+00908 0802 0D                SEC                      
+00909 0803 59      CHKPO8    ROLB                     
+00910 0804 59                ROLB                     
+00911 0805 4A                DECA                     
+00912 0806 26 FB             BNE     CHKPO8           
+00913 0808 E4 00   CHKPO9    ANDB    0,X              
+00914 080A E7 00             STAB    0,X              
+00915 080C 20 EB             BRA     CHKPO6           
+00916               *
+00917               * FIRE PHOTON TORPEDO
+00918               *
+00919 080E 7D 0065 PHOTOR    TST     DAMPHT           
+00920 0811 27 04             BEQ     PTRNDM           
+00921 0813 BD 0E31 PTRND9    JSR     RPTDAM           
+00922 0816 39                RTS                      
+00923 0817 7D 0046 PTRNDM    TST     PHOTON           ANY LEFT
+00924 081A 26 0A             BNE     PHOTRO           
+00925 081C CE 0FC3 PTEMPT    LDX     #PTEMST          
+00926 081F BD 0259           JSR     PSTRNG           
+00927 0822 7C 006B           INC     PTZFLG           
+00928 0825 39                RTS                      
+ASM68 6800 Assembler (c) 1988-1995 Evenson Consulting Services        Page 17
+FILE: e:\src\repos\mc6800\games\startrek\startrek.asm      TITLE: STAR
+
+00929               *
+00930 0826 7C 0078 PHOTRO    INC     PHTFLG           
+00931 0829 BD 027B           JSR     RANDOM           
+00932 082C 84 0F             ANDA    #$F              
+00933 082E 8A 04             ORAA    #4               
+00934 0830 97 2D             STAA    WARP             
+00935 0832 7A 0046           DEC     PHOTON           
+00936               *
+00937               * WARP ENGINES AND PHOTON TORP COURSE
+00938               *
+00939 0835 7F 002A SETCRS    CLR     SQFLG            
+00940 0838 7F 0025           CLR     GLMFLG           
+00941 083B CE 107D           LDX     #CRSSTR          
+00942 083E BD 0259           JSR     PSTRNG           
+00943 0841 BD 0A7B           JSR     INCHCK           
+00944 0844 81 07             CMPA    #7               
+00945 0846 22 38             BHI     ABC29            
+00946 0848 BD 0276           JSR     OUTS             
+00947 084B BD 0276           JSR     OUTS             
+00948 084E 97 2C             STAA    COURSE           
+00949 0850 7D 0078           TST     PHTFLG           
+00950 0853 26 20             BNE     PHTOR1           
+00951 0855 CE 1097           LDX     #WRPSTR          
+00952 0858 BD 0259           JSR     PSTRNG           
+00953 085B BD 0A7B           JSR     INCHCK           
+00954 085E 97 2D             STAA    WARP             
+00955 0860 7D 002B           TST     PNTFLG           
+00956 0863 26 07             BNE     STCRS2           
+00957 0865 97 2A             STAA    SQFLG            
+00958 0867 7D 0061           TST     DAMENG           
+00959 086A 26 A7             BNE     PTRND9           
+00960               *
+00961 086C BD E1AC STCRS2    JSR     INCH             
+00962 086F 81 0D             CMPA    #$0D             
+00963 0871 26 F9             BNE     STCRS2           
+00964 0873 96 2C             LDAA    COURSE           
+00965 0875 CE 0203 PHTOR1    LDX     #MOVTBL          
+00966 0878 48                ASLA                     
+00967 0879 BD 0470           JSR     FIXXRG           
+00968 087C 96 2D             LDAA    WARP             
+00969 087E 26 01             BNE     ABC30            
+00970 0880 39      ABC29     RTS                      
+00971               *
+00972 0881 97 30   ABC30     STAA    COUNT            
+00973 0883 7D 002A           TST     SQFLG            
+00974 0886 27 04             BEQ     STCRS3           
+00975 0888 86 0F             LDAA    #$0F             
+00976 088A 97 30             STAA    COUNT            
+00977 088C 96 49   STCRS3    LDAA    CURSCX           
+00978 088E D6 4A             LDAB    CURSCY           
+00979 0890 AB 00   PHTOR2    ADDA    0,X              
+00980 0892 EB 01             ADDB    1,X              
+00981 0894 BD 0A57           JSR     TSTBND           
+00982 0897 7D 002E           TST     FINCX            
+00983 089A 27 03             BEQ     ABC1             
+00984 089C 7E 092A           JMP     STCRS5           
+00985               *
+00986 089F 7D 002F ABC1      TST     FINCY            
+ASM68 6800 Assembler (c) 1988-1995 Evenson Consulting Services        Page 18
+FILE: e:\src\repos\mc6800\games\startrek\startrek.asm      TITLE: STAR
+
+00987 08A2 27 03             BEQ     ABC5             
+00988 08A4 7E 092A           JMP     STCRS5           
+00989               *
+00990 08A7 97 4B   ABC5      STAA    TRIALX           SAVE TRIAL POSITION
+00991 08A9 D7 4C             STAB    TRIALY           
+00992 08AB 7D 0078           TST     PHTFLG           
+00993 08AE 27 05             BEQ     ABC4             
+00994 08B0 BD 0276           JSR     OUTS             
+00995 08B3 8D 1F             BSR     OBATSO           
+00996 08B5 7C 0029 ABC4      INC     STCFLG           
+00997 08B8 BD 07C0           JSR     CHKPOS           CHK IF BLKD
+00998 08BB 96 4D             LDAA    FLAG             
+00999 08BD 27 2B             BEQ     STCRS4           
+01000 08BF 7D 0078           TST     PHTFLG           
+01001 08C2 27 03             BEQ     ABC2             
+01002 08C4 7E 0A1B           JMP     PHTOR3           
+01003               *
+01004 08C7 81 02   ABC2      CMPA    #2               
+01005 08C9 26 03             BNE     ABC3             
+01006 08CB 7E 09C4           JMP     KLGRAM           
+01007               *
+01008 08CE CE 10AF ABC3      LDX     #BLOKST          
+01009 08D1 BD 0259           JSR     PSTRNG           
+01010 08D4 96 4C   OBATSO    LDAA    TRIALY           
+01011 08D6 BD 0415           JSR     FIXOUT           
+01012 08D9 BD 046A           JSR     OUTDSH           
+01013 08DC 96 4B             LDAA    TRIALX           
+01014 08DE BD 0415           JSR     FIXOUT           
+01015 08E1 7D 0078           TST     PHTFLG           
+01016 08E4 27 01             BEQ     STCRET           
+01017 08E6 39                RTS                      
+01018               *
+01019 08E7 7E 0977 STCRET    JMP     STCRS6           
+01020               *
+01021 08EA 7D 0078 STCRS4    TST     PHTFLG           
+01022 08ED 27 12             BEQ     STCRSB           JUMP IF NOT
+01023 08EF 96 4B             LDAA    TRIALX           
+01024 08F1 D6 4C             LDAB    TRIALY           
+01025 08F3 7A 0030           DEC     COUNT            
+01026 08F6 26 98             BNE     PHTOR2           
+01027 08F8 CE 1165 PHTOR4    LDX     #PNOENG          
+01028 08FB BD 0259           JSR     PSTRNG           
+01029 08FE 7E 0977           JMP     STCRS6           
+01030               *
+01031 0901 96 4B   STCRSB    LDAA    TRIALX           
+01032 0903 97 49             STAA    CURSCX           
+01033 0905 96 4C             LDAA    TRIALY           
+01034 0907 97 4A             STAA    CURSCY           
+01035 0909 BD 027B           JSR     RANDOM           
+01036 090C 81 80             CMPA    #$80             
+01037 090E 23 0A             BLS     STCRSC           
+01038 0910 86 01             LDAA    #1               
+01039 0912 BD 0A98           JSR     FIXTIM           
+01040 0915 86 03             LDAA    #3               
+01041 0917 BD 0AC0           JSR     FIXENG           
+01042 091A 7A 0030 STCRSC    DEC     COUNT            DEC MOVE CNTR
+01043 091D 27 03             BEQ     STCRSD           
+01044 091F 7E 088C           JMP     STCRS3           
+ASM68 6800 Assembler (c) 1988-1995 Evenson Consulting Services        Page 19
+FILE: e:\src\repos\mc6800\games\startrek\startrek.asm      TITLE: STAR
+
+01045               *
+01046 0922 7D 002A STCRSD    TST     SQFLG            
+01047 0925 26 03             BNE     STCRS5           QUADRANT MOVE!
+01048 0927 7E 0977           JMP     STCRS6           
+01049               *
+01050 092A 7D 0078 STCRS5    TST     PHTFLG           
+01051 092D 27 03             BEQ     ABC6             
+01052 092F 7E 08F8           JMP     PHTOR4           
+01053 0932 96 2D   ABC6      LDAA    WARP             
+01054 0934 97 30             STAA    COUNT            
+01055 0936 96 47   ABC7      LDAA    CURQUX           
+01056 0938 D6 48             LDAB    CURQUY           
+01057 093A 7D 002A           TST     SQFLG            
+01058 093D 27 6E             BEQ     STCRS7           
+01059 093F AB 00             ADDA    0,X              
+01060 0941 EB 01             ADDB    1,X              
+01061 0943 97 4B             STAA    TRIALX           
+01062 0945 D7 4C             STAB    TRIALY           
+01063 0947 BD 0A57           JSR     TSTBND           
+01064 094A 7D 002E           TST     FINCX            
+01065 094D 27 03             BEQ     ABCD0            
+01066 094F 7E 09F7           JMP     GALBND           
+01067               *
+01068 0952 7D 002F ABCD0     TST     FINCY            
+01069 0955 27 03             BEQ     ABCD1            
+01070 0957 7E 09F7           JMP     GALBND           
+01071               *
+01072 095A 96 4B   ABCD1     LDAA    TRIALX           
+01073 095C 97 47             STAA    CURQUX           
+01074 095E 96 4C             LDAA    TRIALY           
+01075 0960 97 48             STAA    CURQUY           
+01076 0962 7C 0025           INC     GLMFLG           
+01077 0965 86 06             LDAA    #6               
+01078 0967 BD 0A98           JSR     FIXTIM           
+01079 096A 86 30             LDAA    #$30             
+01080 096C BD 0AC0           JSR     FIXENG           
+01081 096F 7A 0030           DEC     COUNT            
+01082 0972 26 C2             BNE     ABC7             
+01083 0974 BD 06CB STCRSA    JSR     SETUPS           
+01084 0977 7F 004E STCRS6    CLR     CNDFLG           
+01085 097A 96 21             LDAA    BASEX            
+01086 097C 91 47             CMPA    CURQUX           
+01087 097E 26 1C             BNE     SEXIT1           
+01088 0980 D6 22             LDAB    BASEY            
+01089 0982 D1 48             CMPB    CURQUY           
+01090 0984 26 16             BNE     SEXIT1           
+01091 0986 96 23             LDAA    BASESX           
+01092 0988 D6 24             LDAB    BASESY           DOCKED?
+01093 098A 4C                INCA                     
+01094 098B 90 49             SUBA    CURSCX           
+01095 098D 81 02             CMPA    #2               
+01096 098F 22 0B             BHI     SEXIT1           
+01097 0991 5C      SEXIT0    INCB                     
+01098 0992 D0 4A             SUBB    CURSCY           
+01099 0994 C1 02             CMPB    #2               
+01100 0996 22 04             BHI     SEXIT1           
+01101 0998 86 02   SDOCK     LDAA    #2               
+01102 099A 97 4E             STAA    CNDFLG           
+ASM68 6800 Assembler (c) 1988-1995 Evenson Consulting Services        Page 20
+FILE: e:\src\repos\mc6800\games\startrek\startrek.asm      TITLE: STAR
+
+01103 099C 7D 006D SEXIT1    TST     AUTOSR           
+01104 099F 27 03             BEQ     SEXIT2           
+01105 09A1 BD 05A8           JSR     SRSCAN           
+01106 09A4 7D 006E SEXIT2    TST     AUTOLR           
+01107 09A7 27 03             BEQ     SEXIT3           
+01108 09A9 BD 0AEF           JSR     LRSCAN           
+01109 09AC 39      SEXIT3    RTS                      
+01110               *
+01111 09AD 9B 2E   STCRS7    ADDA    FINCX            
+01112 09AF DB 2F             ADDB    FINCY            
+01113 09B1 81 07             CMPA    #7               
+01114 09B3 22 42             BHI     GALBND           
+01115 09B5 C1 07             CMPB    #7               
+01116 09B7 22 3E             BHI     GALBND           
+01117 09B9 97 47             STAA    CURQUX           
+01118 09BB D7 48             STAB    CURQUY           
+01119 09BD 86 07             LDAA    #7               
+01120 09BF BD 0A98           JSR     FIXTIM           
+01121 09C2 20 B0             BRA     STCRSA           
+01122               *
+01123               * RAMMED A KLINGON ROUTINE
+01124               *
+01125 09C4 CE 10D4 KLGRAM    LDX     #KRMSTR          
+01126 09C7 BD 0259           JSR     PSTRNG           
+01127 09CA 86 01             LDAA    #1               
+01128 09CC 97 30             STAA    COUNT            
+01129 09CE 7F 002A           CLR     SQFLG            
+01130 09D1 7C 005B           INC     HITKLS           
+01131 09D4 7A 0054           DEC     KLNGCT           DEC KLINGON COUNT
+01132 09D7 7A 0026           DEC     SECKLN           
+01133 09DA 7C 0078           INC     PHTFLG           
+01134 09DD BD 08D4           JSR     OBATSO           
+01135 09E0 CE 1774           LDX     #HEVDAM          
+01136 09E3 BD 0259           JSR     PSTRNG           
+01137 09E6 C6 6A             LDAB    #$6A             
+01138 09E8 BD 0E04           JSR     MANDAM           
+01139 09EB CE 1382           LDX     #STILFT          
+01140 09EE BD 0259           JSR     PSTRNG           
+01141 09F1 BD 042D           JSR     OUTKLN           
+01142 09F4 7E 0901           JMP     STCRSB           
+01143               *
+01144               * PRINT GALAXY LIMIT MESSAGE
+01145               *
+01146 09F7 CE 10F6 GALBND    LDX     #GLBNDS          
+01147 09FA BD 0259           JSR     PSTRNG           
+01148 09FD 96 60             LDAA    GALCNT           
+01149 09FF 4C                INCA                     
+01150 0A00 81 03             CMPA    #3               
+01151 0A02 26 0A             BNE     GALBN2           
+01152 0A04 CE 1507           LDX     #GALDUM          
+01153 0A07 BD 0259           JSR     PSTRNG           
+01154 0A0A 7C 006C           INC     GAMEND           
+01155 0A0D 39                RTS                      
+01156               *
+01157 0A0E 97 60   GALBN2    STAA    GALCNT           
+01158 0A10 7D 0025           TST     GLMFLG           
+01159 0A13 26 03             BNE     ABC20            
+01160 0A15 7E 0977           JMP     STCRS6           
+ASM68 6800 Assembler (c) 1988-1995 Evenson Consulting Services        Page 21
+FILE: e:\src\repos\mc6800\games\startrek\startrek.asm      TITLE: STAR
+
+01161               *
+01162 0A18 7E 0974 ABC20     JMP     STCRSA           
+01163               *
+01164               * TORPEDO HAS HIT SOMETHING
+01165               *
+01166 0A1B CE 114D PHTOR3    LDX     #PHITST          
+01167 0A1E BD 0259           JSR     PSTRNG           
+01168 0A21 96 4D             LDAA    FLAG             
+01169 0A23 81 02             CMPA    #2               KLINGON?
+01170 0A25 26 1A             BNE     ABC8             
+01171 0A27 7A 0026           DEC     SECKLN           
+01172 0A2A 7A 0054           DEC     KLNGCT           
+01173 0A2D 7C 005B           INC     HITKLS           
+01174 0A30 CE 1344           LDX     #KLGSTR          
+01175 0A33 BD 0248           JSR     PDATA1           
+01176 0A36 CE 1382           LDX     #STILFT          
+01177 0A39 BD 0259           JSR     PSTRNG           
+01178 0A3C BD 042D           JSR     OUTKLN           
+01179 0A3F 20 0D             BRA     ABC10            
+01180               *
+01181 0A41 81 01   ABC8      CMPA    #1               STAR?
+01182 0A43 26 0A             BNE     ABC11            
+01183 0A45 7C 005C           INC     HITSTR           
+01184 0A48 CE 12FD           LDX     #STARST          
+01185 0A4B BD 0248 ABC9      JSR     PDATA1           
+01186 0A4E 39      ABC10     RTS                      
+01187               *
+01188 0A4F CE 1316 ABC11     LDX     #BASEST          HIT BASE!
+01189 0A52 7C 005D           INC     HITBAS           
+01190 0A55 20 F4             BRA     ABC9             
+01191               *
+01192               * SEE IF GALAXY EDGE REACHED
+01193               *
+01194 0A57 7F 002E TSTBND    CLR     FINCX            
+01195 0A5A 7F 002F           CLR     FINCY            
+01196 0A5D 4D                TSTA                     
+01197 0A5E 2A 05             BPL     TSTBN1           
+01198 0A60 7A 002E           DEC     FINCX            
+01199 0A63 20 07             BRA     TSTBN2           
+01200               *
+01201 0A65 81 07   TSTBN1    CMPA    #7               
+01202 0A67 23 03             BLS     TSTBN2           
+01203 0A69 7C 002E           INC     FINCX            
+01204 0A6C 5D      TSTBN2    TSTB                     
+01205 0A6D 2A 04             BPL     TSTBN3           
+01206 0A6F 7A 002F           DEC     FINCY            
+01207 0A72 39                RTS                      
+01208               *
+01209 0A73 C1 07   TSTBN3    CMPB    #7               
+01210 0A75 23 03             BLS     TSTBN4           
+01211 0A77 7C 002F           INC     FINCY            
+01212 0A7A 39      TSTBN4    RTS                      
+01213               *
+01214               * INPUT CHARACTER AND CHECK
+01215               *
+01216 0A7B 4F      INCHCK    CLRA                     
+01217 0A7C 97 2B   INCHK0    STAA    PNTFLG           
+01218 0A7E BD E1AC           JSR     INCH             
+ASM68 6800 Assembler (c) 1988-1995 Evenson Consulting Services        Page 22
+FILE: e:\src\repos\mc6800\games\startrek\startrek.asm      TITLE: STAR
+
+01219 0A81 81 2E             CMPA    #'.              
+01220 0A83 27 F7             BEQ     INCHK0           
+01221 0A85 81 39             CMPA    #'9              
+01222 0A87 22 07             BHI     INCHK1           
+01223 0A89 81 2F             CMPA    #'0-1            
+01224 0A8B 23 03             BLS     INCHK1           
+01225 0A8D 80 30             SUBA    #$30             
+01226 0A8F 39                RTS                      
+01227               *
+01228 0A90 CE 12EC INCHK1    LDX     #ERR             
+01229 0A93 BD 0248           JSR     PDATA1           
+01230 0A96 20 E3             BRA     INCHCK           
+01231               *
+01232               * ADD TO GAME TIME
+01233               *
+01234 0A98 9B 28   FIXTIM    ADDA    TIMDEC           
+01235 0A9A 81 09             CMPA    #9               
+01236 0A9C 23 1F             BLS     FIXTM1           
+01237 0A9E 80 0A             SUBA    #10              
+01238 0AA0 97 28             STAA    TIMDEC           
+01239 0AA2 7F 0031           CLR     TEMP             
+01240 0AA5 86 01             LDAA    #1               
+01241 0AA7 97 32             STAA    TEMP+1           
+01242 0AA9 DF 35             STX     XTEMP            
+01243 0AAB CE 0037           LDX     #TIME0           
+01244 0AAE BD 0AD0           JSR     BCDADD           
+01245 0AB1 CE 003A           LDX     #TIMUSE          
+01246 0AB4 BD 0AD0           JSR     BCDADD           
+01247 0AB7 BD 0DBD           JSR     FIXDAM           
+01248 0ABA DE 35             LDX     XTEMP            
+01249 0ABC 39                RTS                      
+01250               *
+01251 0ABD 97 28   FIXTM1    STAA    TIMDEC           
+01252 0ABF 39                RTS                      
+01253               *
+01254               *SUBTRACT FROM ENERGY AMOUNT
+01255               *
+01256 0AC0 DF 35   FIXENG    STX     XTEMP            
+01257 0AC2 CE 0058           LDX     #ENERGY          
+01258 0AC5 7F 0031           CLR     TEMP             
+01259 0AC8 97 32             STAA    TEMP+1           
+01260 0ACA BD 0AD3           JSR     BCDSUB           
+01261 0ACD DE 35             LDX     XTEMP            
+01262 0ACF 39                RTS                      
+01263               *
+01264               * BCD ADDITION
+01265               *
+01266 0AD0 0C      BCDADD    CLC                      
+01267 0AD1 20 0D             BRA     BCDFIX           
+01268               *
+01269               * BCD SUBTRACTION
+01270               *
+01271 0AD3 86 99   BCDSUB    LDAA    #$99             
+01272 0AD5 90 31             SUBA    TEMP             
+01273 0AD7 97 31             STAA    TEMP             
+01274 0AD9 86 99             LDAA    #$99             
+01275 0ADB 90 32             SUBA    TEMP+1           
+01276 0ADD 97 32             STAA    TEMP+1           
+ASM68 6800 Assembler (c) 1988-1995 Evenson Consulting Services        Page 23
+FILE: e:\src\repos\mc6800\games\startrek\startrek.asm      TITLE: STAR
+
+01277 0ADF 0D                SEC                      
+01278               *
+01279 0AE0 A6 01   BCDFIX    LDAA    1,X              
+01280 0AE2 99 32             ADCA    TEMP+1           
+01281 0AE4 19                DAA                      
+01282 0AE5 A7 01             STAA    1,X              
+01283 0AE7 A6 00             LDAA    0,X              
+01284 0AE9 99 31             ADCA    TEMP             
+01285 0AEB 19                DAA                      
+01286 0AEC A7 00             STAA    0,X              
+01287 0AEE 39                RTS                      
+01288               *
+01289               * LONG RANGE SCAN
+01290               *
+01291 0AEF 7D 0063 LRSCAN    TST     DAMLRS           
+01292 0AF2 27 04             BEQ     LRSNDM           
+01293 0AF4 BD 0E31           JSR     RPTDAM           
+01294 0AF7 39                RTS                      
+01295               *
+01296 0AF8 7F 0042 LRSNDM    CLR     TOPFLG           
+01297 0AFB 7F 0043           CLR     BOTFLG           
+01298 0AFE 7F 0044           CLR     LSDFLG           
+01299 0B01 7F 0045           CLR     RSDFLG           
+01300 0B04 CE 1202           LDX     #LRSCST          
+01301 0B07 BD 0259           JSR     PSTRNG           
+01302 0B0A BD 0454           JSR     OUTQUD           
+01303 0B0D BD 024F           JSR     PCRLF            
+01304 0B10 96 47             LDAA    CURQUX           
+01305 0B12 26 03             BNE     LRSCNT           
+01306 0B14 7C 0044           INC     LSDFLG           
+01307 0B17 81 07   LRSCNT    CMPA    #7               
+01308 0B19 26 03             BNE     LRSCN2           
+01309 0B1B 7C 0045           INC     RSDFLG           
+01310 0B1E 96 48   LRSCN2    LDAA    CURQUY           
+01311 0B20 26 03             BNE     LRSCN3           
+01312 0B22 7C 0042           INC     TOPFLG           
+01313 0B25 81 07   LRSCN3    CMPA    #7               
+01314 0B27 26 03             BNE     LRSCN4           
+01315 0B29 7C 0043           INC     BOTFLG           
+01316 0B2C DE 73   LRSCN4    LDX     QUDPTR           
+01317 0B2E 86 F7   LRSCNC    LDAA    #$F7             
+01318 0B30 BD 0470           JSR     FIXXRG           
+01319 0B33 7D 0042           TST     TOPFLG           
+01320 0B36 27 04             BEQ     LRSCN7           
+01321 0B38 8D 68             BSR     OUTTH0           
+01322 0B3A 20 02             BRA     LRSCN8           
+01323               *
+01324 0B3C 8D 18   LRSCN7    BSR     OUTLIN           
+01325 0B3E 86 05   LRSCN8    LDAA    #5               
+01326 0B40 BD 0470           JSR     FIXXRG           
+01327 0B43 8D 11             BSR     OUTLIN           
+01328 0B45 86 05             LDAA    #5               
+01329 0B47 BD 0470           JSR     FIXXRG           
+01330 0B4A 7D 0043           TST     BOTFLG           
+01331 0B4D 27 04             BEQ     LRSCN9           
+01332 0B4F 8D 51             BSR     OUTTH0           
+01333 0B51 20 02             BRA     LRSC10           
+01334               *
+ASM68 6800 Assembler (c) 1988-1995 Evenson Consulting Services        Page 24
+FILE: e:\src\repos\mc6800\games\startrek\startrek.asm      TITLE: STAR
+
+01335 0B53 8D 01   LRSCN9    BSR     OUTLIN           
+01336 0B55 39      LRSC10    RTS                      
+01337               *
+01338               * OUTPUT 1 LINE OF LONG RANGE SCAN
+01339               *
+01340 0B56 A6 00   OUTLIN    LDAA    0,X              
+01341 0B58 7D 0044           TST     LSDFLG           
+01342 0B5B 27 03             BEQ     OUTLN1           
+01343 0B5D 4F                CLRA                     
+01344 0B5E 20 02             BRA     OUTLN2           
+01345 0B60 8D 1A   OUTLN1    BSR     UPDCMP           
+01346 0B62 8D 1B   OUTLN2    BSR     OUTQIN           
+01347 0B64 A6 00             LDAA    0,X              
+01348 0B66 8D 14             BSR     UPDCMP           
+01349 0B68 8D 15             BSR     OUTQIN           
+01350 0B6A A6 00             LDAA    0,X              
+01351 0B6C 7D 0045           TST     RSDFLG           
+01352 0B6F 27 03             BEQ     OUTLN3           
+01353 0B71 4F                CLRA                     
+01354 0B72 20 02             BRA     OUTLN4           
+01355 0B74 8D 06   OUTLN3    BSR     UPDCMP           
+01356 0B76 8D 07   OUTLN4    BSR     OUTQIN           
+01357 0B78 BD 024F           JSR     PCRLF            
+01358 0B7B 39                RTS                      
+01359               *
+01360               * UPDATE COMPUTER HISTORY MAP
+01361               *
+01362 0B7C A7 40   UPDCMP    STAA    64,X             
+01363 0B7E 39                RTS                      
+01364               *
+01365               * OUTPUT QUADRANT INFORMATION
+01366               *
+01367 0B7F 16      OUTQIN    TAB                      
+01368 0B80 84 80             ANDA    #$80             
+01369 0B82 0C                CLC                      
+01370 0B83 49                ROLA                     
+01371 0B84 49                ROLA                     
+01372 0B85 BD 0266           JSR     OUTHR            
+01373 0B88 17                TBA                      
+01374 0B89 84 40             ANDA    #$40             
+01375 0B8B 44                LSRA                     
+01376 0B8C 44                LSRA                     
+01377 0B8D BD 025D           JSR     OUTHL            
+01378 0B90 17                TBA                      
+01379 0B91 84 38             ANDA    #$38             STARS
+01380 0B93 48                ASLA                     
+01381 0B94 BD 025D           JSR     OUTHL            
+01382 0B97 17                TBA                      
+01383 0B98 84 07             ANDA    #$07             KLINGONS
+01384 0B9A BD 0266           JSR     OUTHR            
+01385 0B9D 08                INX                      
+01386 0B9E BD 0276           JSR     OUTS             
+01387 0BA1 39                RTS                      
+01388               *
+01389               * OUTPUT A LINE OF ZEROS
+01390               *
+01391 0BA2 86 03   OUTTH0    LDAA    #3               
+01392 0BA4 97 30             STAA    COUNT            
+ASM68 6800 Assembler (c) 1988-1995 Evenson Consulting Services        Page 25
+FILE: e:\src\repos\mc6800\games\startrek\startrek.asm      TITLE: STAR
+
+01393 0BA6 4F      OUTTH1    CLRA                     
+01394 0BA7 8D D6             BSR     OUTQIN           
+01395 0BA9 7A 0030           DEC     COUNT            
+01396 0BAC 26 F8             BNE     OUTTH1           
+01397 0BAE BD 024F           JSR     PCRLF            
+01398 0BB1 39                RTS                      
+01399               *
+01400               * FIRE PHASORS
+01401               *
+01402 0BB2 7D 0064 PHASOR    TST     DAMPHS           
+01403 0BB5 27 04             BEQ     PHSNDM           
+01404 0BB7 BD 0E31           JSR     RPTDAM           
+01405 0BBA 39                RTS                      
+01406               *
+01407 0BBB 7D 0057 PHSNDM    TST     SHIELD           
+01408 0BBE 27 05             BEQ     PHASR1           
+01409 0BC0 CE 1215           LDX     #MLSHLD          
+01410 0BC3 20 27             BRA     TOOMC1           
+01411               *
+01412 0BC5 CE 1233 PHASR1    LDX     #ENAVLB          REPORT ENERGY
+01413 0BC8 BD 0259           JSR     PSTRNG           
+01414 0BCB DE 58             LDX     ENERGY           
+01415 0BCD DF 31             STX     TEMP             
+01416 0BCF BD 0549           JSR     OUTBCD           
+01417 0BD2 CE 124D           LDX     #FIRENG          
+01418 0BD5 BD 0259           JSR     PSTRNG           
+01419 0BD8 BD 0C6D           JSR     INBCD            
+01420 0BDB 96 40             LDAA    PHSENG           
+01421 0BDD 91 58             CMPA    ENERGY           
+01422 0BDF 22 08             BHI     TOOMCH           
+01423 0BE1 26 0D             BNE     PHASR2           
+01424 0BE3 96 41             LDAA    PHSENG+1         
+01425 0BE5 91 59             CMPA    ENERGY+1         
+01426 0BE7 23 07             BLS     PHASR2           
+01427 0BE9 CE 126B TOOMCH    LDX     #TOMUCH          
+01428 0BEC BD 0259 TOOMC1    JSR     PSTRNG           
+01429 0BEF 39                RTS                      
+01430               *
+01431 0BF0 BD 027B PHASR2    JSR     RANDOM           
+01432 0BF3 81 F4             CMPA    #$F4             
+01433 0BF5 23 08             BLS     PHASR3           
+01434 0BF7 CE 1289           LDX     #PHAMIS          
+01435 0BFA BD 0259           JSR     PSTRNG           
+01436 0BFD 20 63             BRA     PHASR6           
+01437               *
+01438 0BFF 96 40   PHASR3    LDAA    PHSENG           
+01439 0C01 91 3E             CMPA    KLNENG           
+01440 0C03 22 08             BHI     PHASR4           
+01441 0C05 26 4A             BNE     PHASR5           
+01442 0C07 96 41             LDAA    PHSENG+1         
+01443 0C09 91 3F             CMPA    KLNENG+1         
+01444 0C0B 23 44             BLS     PHASR5           
+01445 0C0D 7F 003E PHASR4    CLR     KLNENG           
+01446 0C10 7F 003F           CLR     KLNENG+1         
+01447 0C13 CE 12A0           LDX     #ALKILL          
+01448 0C16 BD 0259           JSR     PSTRNG           
+01449 0C19 CE 1382           LDX     #STILFT          
+01450 0C1C BD 0259           JSR     PSTRNG           
+ASM68 6800 Assembler (c) 1988-1995 Evenson Consulting Services        Page 26
+FILE: e:\src\repos\mc6800\games\startrek\startrek.asm      TITLE: STAR
+
+01451 0C1F D6 26             LDAB    SECKLN           
+01452 0C21 D7 5B             STAB    HITKLS           
+01453 0C23 96 54             LDAA    KLNGCT           
+01454 0C25 10                SBA                      
+01455 0C26 97 54             STAA    KLNGCT           
+01456 0C28 BD 042D           JSR     OUTKLN           
+01457 0C2B 7F 0026           CLR     SECKLN           
+01458 0C2E CE 00FC KILALK    LDX     #SECMAP          
+01459 0C31 86 10             LDAA    #16              
+01460 0C33 97 30             STAA    COUNT            
+01461 0C35 C6 04   KILAL1    LDAB    #4               
+01462 0C37 A6 00             LDAA    0,X              
+01463 0C39 46      KILAL2    RORA                     
+01464 0C3A 25 12             BCS     KILAL4           
+01465 0C3C 46                RORA                     
+01466 0C3D 24 01             BCC     KILAL3           
+01467 0C3F 0C                CLC                      
+01468 0C40 5A      KILAL3    DECB                     
+01469 0C41 26 F6             BNE     KILAL2           
+01470 0C43 46                RORA                     
+01471 0C44 A7 00             STAA    0,X              
+01472 0C46 08                INX                      
+01473 0C47 7A 0030           DEC     COUNT            
+01474 0C4A 26 E9             BNE     KILAL1           
+01475 0C4C 20 14             BRA     PHASR6           
+01476               *
+01477 0C4E 46      KILAL4    RORA                     
+01478 0C4F 20 EF             BRA     KILAL3           
+01479               *
+01480 0C51 CE 0040 PHASR5    LDX     #PHSENG          
+01481 0C54 DF 31             STX     TEMP             
+01482 0C56 CE 003E           LDX     #KLNENG          
+01483 0C59 BD 0AD3           JSR     BCDSUB           
+01484 0C5C CE 12D1           LDX     #KHTADM          
+01485 0C5F BD 0259           JSR     PSTRNG           
+01486 0C62 DE 40   PHASR6    LDX     PHSENG           
+01487 0C64 DF 31             STX     TEMP             
+01488 0C66 CE 0058           LDX     #ENERGY          
+01489 0C69 BD 0AD3           JSR     BCDSUB           
+01490 0C6C 39                RTS                      
+01491               *
+01492               * INPUT A BCD NUMBER
+01493               *
+01494 0C6D 7F 0040 INBCD     CLR     PHSENG           
+01495 0C70 7F 0041           CLR     PHSENG+1         
+01496 0C73 BD E1AC INBCD1    JSR     INCH             
+01497 0C76 81 30             CMPA    #'0              
+01498 0C78 25 20             BLO     EXIT             
+01499 0C7A 8D 1F             BSR     CHECK            
+01500 0C7C 7D 0027           TST     FLAGC            
+01501 0C7F 26 11             BNE     INEROR           
+01502 0C81 C6 04             LDAB    #4               
+01503 0C83 78 0041 INBCD2    ASL     PHSENG+1         
+01504 0C86 79 0040           ROL     PHSENG           
+01505 0C89 5A                DECB                     
+01506 0C8A 26 F7             BNE     INBCD2           
+01507 0C8C 9B 41             ADDA    PHSENG+1         
+01508 0C8E 97 41             STAA    PHSENG+1         
+ASM68 6800 Assembler (c) 1988-1995 Evenson Consulting Services        Page 27
+FILE: e:\src\repos\mc6800\games\startrek\startrek.asm      TITLE: STAR
+
+01509 0C90 20 E1             BRA     INBCD1           
+01510               *
+01511 0C92 CE 12EC INEROR    LDX     #ERR             
+01512 0C95 BD 0248           JSR     PDATA1           
+01513 0C98 20 D9             BRA     INBCD1           
+01514               *
+01515 0C9A 39      EXIT      RTS                      
+01516               *
+01517 0C9B 7F 0027 CHECK     CLR     FLAGC            
+01518 0C9E 81 39             CMPA    #'9              
+01519 0CA0 22 03             BHI     SETFLG           
+01520 0CA2 84 0F             ANDA    #$0F             
+01521 0CA4 39                RTS                      
+01522               *
+01523 0CA5 7C 0027 SETFLG    INC     FLAGC            
+01524 0CA8 39                RTS                      
+01525               *
+01526               * SELF DESTRUCT ROUTINE
+01527               *
+01528 0CA9 CE 1422 SELFDE    LDX     #ABORT1          
+01529 0CAC BD 0259           JSR     PSTRNG           
+01530 0CAF CE 0075           LDX     #PASWRD          
+01531 0CB2 C6 03             LDAB    #3               
+01532 0CB4 BD E1AC SELFD1    JSR     INCH             
+01533 0CB7 A1 00             CMPA    0,X              
+01534 0CB9 26 0E             BNE     SELFD2           
+01535 0CBB 08                INX                      
+01536 0CBC 5A                DECB                     
+01537 0CBD 26 F5             BNE     SELFD1           
+01538 0CBF CE 13F2 SELFDA    LDX     #DISINT          
+01539 0CC2 BD 0259           JSR     PSTRNG           
+01540 0CC5 7C 006C           INC     GAMEND           
+01541 0CC8 39                RTS                      
+01542               *
+01543 0CC9 CE 1454 SELFD2    LDX     #ABORT2          
+01544 0CCC BD 0259           JSR     PSTRNG           
+01545 0CCF 39                RTS                      
+01546               *
+01547               * TELEPORT ROUTINE
+01548               *
+01549 0CD0 86 12   TELEPT    LDAA    #$12             
+01550 0CD2 91 3B             CMPA    TIMUSE+1         
+01551 0CD4 22 21             BHI     TELEP2           
+01552 0CD6 7D 0070           TST     TELFLG           
+01553 0CD9 26 23             BNE     TELEP4           
+01554 0CDB BD 027B           JSR     RANDOM           
+01555 0CDE 81 B0             CMPA    #$B0             POSS DAMAGED
+01556 0CE0 23 03             BLS     TELEP1           
+01557 0CE2 7C 0070           INC     TELFLG           
+01558 0CE5 BD 027B TELEP1    JSR     RANDOM           MALFUNCTION?
+01559 0CE8 81 80             CMPA    #$80             
+01560 0CEA 22 17             BHI     TELEP5           
+01561 0CEC 96 21             LDAA    BASEX            
+01562 0CEE 97 47             STAA    CURQUX           
+01563 0CF0 96 22             LDAA    BASEY            
+01564 0CF2 97 48             STAA    CURQUY           
+01565 0CF4 7E 0974 TELEPA    JMP     STCRSA           
+01566               *
+ASM68 6800 Assembler (c) 1988-1995 Evenson Consulting Services        Page 28
+FILE: e:\src\repos\mc6800\games\startrek\startrek.asm      TITLE: STAR
+
+01567 0CF7 CE 147E TELEP2    LDX     #CANTUS          
+01568 0CFA BD 0259 TELEP3    JSR     PSTRNG           
+01569 0CFD 39                RTS                      
+01570               *
+01571 0CFE CE 1782 TELEP4    LDX     #DMGDST          
+01572 0D01 20 F7             BRA     TELEP3           
+01573               *
+01574 0D03 BD 027B TELEP5    JSR     RANDOM           
+01575 0D06 84 07             ANDA    #7               
+01576 0D08 97 47             STAA    CURQUX           
+01577 0D0A BD 027B           JSR     RANDOM           
+01578 0D0D 84 07             ANDA    #7               
+01579 0D0F 97 48             STAA    CURQUY           
+01580 0D11 CE 14B1           LDX     #SOMWHR          
+01581 0D14 BD 0259           JSR     PSTRNG           
+01582 0D17 20 DB             BRA     TELEPA           
+01583               *
+01584               * KLINGON ATTACK ROUTINE
+01585               *
+01586 0D19 7D 0026 ATTACK    TST     SECKLN           ANY Ks?
+01587 0D1C 26 01             BNE     ATTAC1           
+01588 0D1E 39                RTS                      
+01589               *
+01590 0D1F BD 027B ATTAC1    JSR     RANDOM           MAY NOT ATTACK
+01591 0D22 81 B0             CMPA    #$B0             
+01592 0D24 22 2D             BHI     ATTAC2           
+01593 0D26 CE 0071           LDX     #ATKENG          
+01594 0D29 D6 26             LDAB    SECKLN           
+01595 0D2B 58                ASLB                     
+01596 0D2C BD 0762           JSR     CSCEXT           
+01597 0D2F DE 71             LDX     ATKENG           
+01598 0D31 DF 31             STX     TEMP             
+01599 0D33 7D 0057           TST     SHIELD           
+01600 0D36 26 1C             BNE     ATTAC3           
+01601 0D38 CE 0058           LDX     #ENERGY          
+01602 0D3B BD 0AD3           JSR     BCDSUB           
+01603 0D3E BD 024F           JSR     PCRLF            
+01604 0D41 DE 71             LDX     ATKENG           
+01605 0D43 DF 31             STX     TEMP             
+01606 0D45 BD 0549           JSR     OUTBCD           
+01607 0D48 CE 13A1           LDX     #KATKDN          
+01608 0D4B BD 0248           JSR     PDATA1           
+01609 0D4E C6 FA             LDAB    #$FA             
+01610 0D50 BD 0E04           JSR     MANDAM           
+01611 0D53 39      ATTAC2    RTS                      
+01612               *
+01613 0D54 CE 003C ATTAC3    LDX     #SHENGY          
+01614 0D57 BD 0AD3           JSR     BCDSUB           
+01615 0D5A CE 13BD           LDX     #KATKUP          
+01616 0D5D BD 0259           JSR     PSTRNG           
+01617 0D60 39                RTS                      
+01618               *
+01619               * END OF GAME CLEANUP ROUTINE
+01620               *
+01621 0D61 CE 1574 NRGOUT    LDX     #NMENGS          
+01622 0D64 BD 0259 NRGOU1    JSR     PSTRNG           
+01623 0D67 20 0D             BRA     ENDGAM           
+01624               *
+ASM68 6800 Assembler (c) 1988-1995 Evenson Consulting Services        Page 29
+FILE: e:\src\repos\mc6800\games\startrek\startrek.asm      TITLE: STAR
+
+01625 0D69 CE 15AE NOMTIM    LDX     #NMTMST          
+01626 0D6C 20 F6             BRA     NRGOU1           
+01627               *
+01628 0D6E CE 15DF NOMKLN    LDX     #NMKLST          
+01629 0D71 BD 0259           JSR     PSTRNG           
+01630 0D74 20 08             BRA     ENDGM2           
+01631               *
+01632 0D76 CE 161C ENDGAM    LDX     #FAILST          
+01633 0D79 BD 0259           JSR     PSTRNG           
+01634 0D7C 20 06             BRA     ENDGM3           
+01635               *
+01636 0D7E CE 1657 ENDGM2    LDX     #SUCCST          
+01637 0D81 BD 0259           JSR     PSTRNG           
+01638 0D84 CE 1833 ENDGM3    LDX     #PLAYAG          
+01639 0D87 BD 0259           JSR     PSTRNG           
+01640 0D8A BD E1AC           JSR     INCH             
+01641 0D8D 81 59             CMPA    #'Y              
+01642 0D8F 27 03             BEQ     ENDGM4           
+01643 0D91 7E E0D0           JMP     CONTRL           
+01644               *
+01645 0D94 7E 02A3 ENDGM4    JMP     STRTRK           
+01646               *
+01647               * CLEAR OUT CURRENT QUADRANT
+01648               *
+01649 0D97 DE 73   CLRCQU    LDX     QUDPTR           
+01650 0D99 A6 00             LDAA    0,X              
+01651 0D9B 90 5B             SUBA    HITKLS           CLEAR Ks
+01652 0D9D D6 5C             LDAB    HITSTR           CLEAR Ss
+01653 0D9F 58                ASLB                     
+01654 0DA0 58                ASLB                     
+01655 0DA1 58                ASLB                     
+01656 0DA2 10                SBA                      
+01657 0DA3 7D 005D           TST     HITBAS           CLEAR B?
+01658 0DA6 27 0B             BEQ     CLRCQ2           
+01659 0DA8 84 BF             ANDA    #$BF             
+01660 0DAA C6 0A             LDAB    #$A              
+01661 0DAC D7 21             STAB    BASEX            
+01662 0DAE D7 22             STAB    BASEY            
+01663 0DB0 7F 004E           CLR     CNDFLG           
+01664 0DB3 A7 00   CLRCQ2    STAA    0,X              
+01665 0DB5 4F                CLRA                     
+01666 0DB6 97 5B             STAA    HITKLS           
+01667 0DB8 97 5C             STAA    HITSTR           
+01668 0DBA 97 5D             STAA    HITBAS           
+01669 0DBC 39                RTS                      
+01670               *
+01671               * FIX DAMAGE ROUTINE
+01672               *
+01673 0DBD CE 0061 FIXDAM    LDX     #DAMENG          
+01674 0DC0 6D 00   FIXDM1    TST     0,X              
+01675 0DC2 27 02             BEQ     FIXDM2           
+01676 0DC4 6A 00             DEC     0,X              
+01677 0DC6 08      FIXDM2    INX                      
+01678 0DC7 8C 006A           CPX     #DAMENG+9        
+01679 0DCA 26 F4             BNE     FIXDM1           
+01680 0DCC 39                RTS                      
+01681               *
+01682               * SUPERNOVA GENERATOR
+ASM68 6800 Assembler (c) 1988-1995 Evenson Consulting Services        Page 30
+FILE: e:\src\repos\mc6800\games\startrek\startrek.asm      TITLE: STAR
+
+01683               *
+01684 0DCD BD 027B SUPNOV    JSR     RANDOM           
+01685 0DD0 84 07             ANDA    #7               
+01686 0DD2 16                TAB                      
+01687 0DD3 BD 027B           JSR     RANDOM           
+01688 0DD6 84 07             ANDA    #7               
+01689 0DD8 D7 5A             STAB    TSAVE1           
+01690 0DDA CE 007C           LDX     #QUDMAP          
+01691 0DDD 7C 0020           INC     STPSFL           
+01692 0DE0 BD 06E1           JSR     STPSEX           
+01693 0DE3 E6 00             LDAB    0,X              
+01694 0DE5 C4 07             ANDB    #7               CLEAR Ks
+01695 0DE7 96 54             LDAA    KLNGCT           
+01696 0DE9 10                SBA                      
+01697 0DEA 97 54             STAA    KLNGCT           
+01698 0DEC 86 80             LDAA    #$80             
+01699 0DEE A7 00             STAA    0,X              
+01700 0DF0 CE 174A           LDX     #SUPSTR          
+01701 0DF3 BD 0259           JSR     PSTRNG           
+01702 0DF6 96 5A             LDAA    TSAVE1           
+01703 0DF8 BD 0415           JSR     FIXOUT           
+01704 0DFB BD 046A           JSR     OUTDSH           
+01705 0DFE 96 56             LDAA    ASAVE            
+01706 0E00 BD 0415           JSR     FIXOUT           
+01707 0E03 39                RTS                      
+01708               *
+01709               * GENERATE MAIN DAMAGE
+01710               *
+01711 0E04 CE 0061 MANDAM    LDX     #DAMENG          
+01712 0E07 BD 027B MANDM1    JSR     RANDOM           
+01713 0E0A 11                CBA                      
+01714 0E0B 23 0A             BLS     MANDM2           
+01715 0E0D BD 027B           JSR     RANDOM           
+01716 0E10 84 03             ANDA    #3               
+01717 0E12 0D                SEC                      
+01718 0E13 A9 00             ADCA    0,X              
+01719 0E15 A7 00             STAA    0,X              
+01720 0E17 08      MANDM2    INX                      
+01721 0E18 8C 006A           CPX     #DAMENG+9        
+01722 0E1B 26 EA             BNE     MANDM1           
+01723 0E1D 7D 0066           TST     DAMSHL           
+01724 0E20 27 03             BEQ     MANDM3           
+01725 0E22 7F 0057           CLR     SHIELD           
+01726 0E25 7D 0069 MANDM3    TST     DAMCOM           
+01727 0E28 27 06             BEQ     MANDM4           
+01728 0E2A 7F 006D           CLR     AUTOSR           
+01729 0E2D 7F 006E           CLR     AUTOLR           
+01730 0E30 39      MANDM4    RTS                      
+01731               *
+01732               * REPORT DAMAGE HAS OCCURED
+01733               *
+01734 0E31 CE 1782 RPTDAM    LDX     #DMGDST          
+01735 0E34 BD 0259           JSR     PSTRNG           
+01736 0E37 39      RPTDM8    RTS                      
+01737               *
+01738               * GENERATE A DAMAGE REPORT
+01739               *
+01740 0E38 CE 17BD DAMRPT    LDX     #DMRPST          
+ASM68 6800 Assembler (c) 1988-1995 Evenson Consulting Services        Page 31
+FILE: e:\src\repos\mc6800\games\startrek\startrek.asm      TITLE: STAR
+
+01741 0E3B BD 0259           JSR     PSTRNG           
+01742 0E3E CE 17D0           LDX     #DEVSTR          
+01743 0E41 DF 33             STX     TEMP2            
+01744 0E43 CE 0061           LDX     #DAMENG          
+01745 0E46 6D 00   DMRPT2    TST     0,X              
+01746 0E48 26 15             BNE     DMRPT3           
+01747 0E4A DF 5E   BMPX4     STX     TEMP3            
+01748 0E4C DE 33             LDX     TEMP2            
+01749 0E4E 08                INX                      
+01750 0E4F 08                INX                      
+01751 0E50 08                INX                      
+01752 0E51 08                INX                      
+01753 0E52 08                INX                      
+01754 0E53 08                INX                      
+01755 0E54 08                INX                      
+01756 0E55 08                INX                      
+01757 0E56 08                INX                      
+01758 0E57 08                INX                      
+01759 0E58 08                INX                      
+01760 0E59 DF 33             STX     TEMP2            
+01761 0E5B DE 5E             LDX     TEMP3            
+01762 0E5D 20 19             BRA     DMRPT4           
+01763               *
+01764 0E5F DF 5E   DMRPT3    STX     TEMP3            
+01765 0E61 DE 33             LDX     TEMP2            
+01766 0E63 BD 0259           JSR     PSTRNG           
+01767 0E66 08                INX                      
+01768 0E67 DF 33             STX     TEMP2            
+01769 0E69 DE 5E             LDX     TEMP3            
+01770 0E6B C6 03             LDAB    #3               
+01771 0E6D BD 0276 OUTS4     JSR     OUTS             
+01772 0E70 5A                DECB                     
+01773 0E71 26 FA             BNE     OUTS4            
+01774 0E73 A6 00             LDAA    0,X              
+01775 0E75 BD 042F           JSR     OUTK0            
+01776 0E78 08      DMRPT4    INX                      
+01777 0E79 8C 006A           CPX     #DAMENG+9        
+01778 0E7C 26 C8             BNE     DMRPT2           
+01779 0E7E 20 B7             BRA     RPTDM8           
+01780               *
+01781               * COMPUTER CODE
+01782               *
+01783 0E80 7D 0069 COMPTR    TST     DAMCOM           
+01784 0E83 27 04             BEQ     CMPTR1           
+01785 0E85 BD 0E31           JSR     RPTDAM           
+01786 0E88 39                RTS                      
+01787               *
+01788 0E89 CE 1A7E CMPTR1    LDX     #CPRMPT          
+01789 0E8C BD 0259           JSR     PSTRNG           
+01790 0E8F BD E1AC           JSR     INCH             
+01791 0E92 81 54             CMPA    #'T              
+01792 0E94 27 60             BEQ     TSPRED           
+01793 0E96 81 4D             CMPA    #'M              
+01794 0E98 27 2B             BEQ     CMPMAP           
+01795 0E9A 81 53             CMPA    #'S              
+01796 0E9C 26 EB             BNE     CMPTR1           
+01797 0E9E CE 1B77           LDX     #SRMODE          
+01798 0EA1 BD 0259           JSR     PSTRNG           
+ASM68 6800 Assembler (c) 1988-1995 Evenson Consulting Services        Page 32
+FILE: e:\src\repos\mc6800\games\startrek\startrek.asm      TITLE: STAR
+
+01799 0EA4 7F 006D           CLR     AUTOSR           
+01800 0EA7 BD E1AC           JSR     INCH             
+01801 0EAA 81 59             CMPA    #'Y              
+01802 0EAC 26 03             BNE     AUTO2            
+01803 0EAE 7C 006D           INC     AUTOSR           
+01804 0EB1 CE 1BA5 AUTO2     LDX     #LRMODE          
+01805 0EB4 BD 0259           JSR     PSTRNG           
+01806 0EB7 7F 006E           CLR     AUTOLR           
+01807 0EBA BD E1AC           JSR     INCH             
+01808 0EBD 81 59             CMPA    #'Y              
+01809 0EBF 26 03             BNE     AUTOEX           
+01810 0EC1 7C 006E           INC     AUTOLR           
+01811 0EC4 39      AUTOEX    RTS                      
+01812               *
+01813 0EC5 CE 1B09 CMPMAP    LDX     #CMPHST          
+01814 0EC8 BD 0259           JSR     PSTRNG           
+01815 0ECB CE 00BC           LDX     #COMMAP          
+01816 0ECE BD 024F CMPMP1    JSR     PCRLF            
+01817 0ED1 86 08             LDAA    #8               
+01818 0ED3 97 30             STAA    COUNT            
+01819 0ED5 A6 00   CMPMP2    LDAA    0,X              
+01820 0ED7 81 FF             CMPA    #$FF             
+01821 0ED9 26 0D             BNE     CMPMP3           
+01822 0EDB DF 5E             STX     TEMP3            
+01823 0EDD CE 1B46           LDX     #NOSCAN          
+01824 0EE0 BD 0248           JSR     PDATA1           
+01825 0EE3 DE 5E             LDX     TEMP3            
+01826 0EE5 08                INX                      
+01827 0EE6 20 03             BRA     CMPMP4           
+01828               *
+01829 0EE8 BD 0B7F CMPMP3    JSR     OUTQIN           
+01830 0EEB 7A 0030 CMPMP4    DEC     COUNT            
+01831 0EEE 26 E5             BNE     CMPMP2           
+01832 0EF0 8C 00FC           CPX     #COMMAP+64       
+01833 0EF3 26 D9             BNE     CMPMP1           
+01834 0EF5 39                RTS                      
+01835               *
+01836 0EF6 7D 0065 TSPRED    TST     DAMPHT           
+01837 0EF9 27 04             BEQ     TS2              
+01838 0EFB BD 0E31           JSR     RPTDAM           
+01839 0EFE 39                RTS                      
+01840               *
+01841 0EFF 7F 006B TS2       CLR     PTZFLG           
+01842 0F02 CE 1B4C           LDX     #HWMANY          
+01843 0F05 BD 0259           JSR     PSTRNG           
+01844 0F08 BD E1AC           JSR     INCH             
+01845 0F0B 81 30             CMPA    #'0              
+01846 0F0D 25 F0             BLO     TS2              
+01847 0F0F 27 15             BEQ     TSEX             
+01848 0F11 81 39             CMPA    #'9              
+01849 0F13 2E EA             BGT     TS2              
+01850 0F15 84 0F             ANDA    #$0F             
+01851 0F17 97 6A             STAA    PCOUNT           
+01852 0F19 BD 0817 TS3       JSR     PTRNDM           
+01853 0F1C 7A 006A           DEC     PCOUNT           
+01854 0F1F 27 05             BEQ     TSEX             
+01855 0F21 7D 006B           TST     PTZFLG           
+01856 0F24 27 F3             BEQ     TS3              
+ASM68 6800 Assembler (c) 1988-1995 Evenson Consulting Services        Page 33
+FILE: e:\src\repos\mc6800\games\startrek\startrek.asm      TITLE: STAR
+
+01857 0F26 39      TSEX      RTS                      
+01858               *
+01859               * TRACTOR BEAM ROUTINE
+01860               *
+01861 0F27 7D 0079 TRCTBM    TST     SHUTCR           
+01862 0F2A 26 14             BNE     NPCKUP           
+01863 0F2C 96 7A             LDAA    SHUTLX           
+01864 0F2E 91 47             CMPA    CURQUX           
+01865 0F30 26 0E             BNE     NPCKUP           
+01866 0F32 96 7B             LDAA    SHUTLY           
+01867 0F34 91 48             CMPA    CURQUY           
+01868 0F36 26 08             BNE     NPCKUP           
+01869 0F38 CE 1859           LDX     #SCONBD          
+01870 0F3B 7C 0079           INC     SHUTCR           
+01871 0F3E 20 03             BRA     TRCTEX           
+01872               *
+01873 0F40 CE 1885 NPCKUP    LDX     #NOPICK          
+01874 0F43 BD 0259 TRCTEX    JSR     PSTRNG           
+01875 0F46 39                RTS                      
+01876               *
+01877               * TEXT STRINGS
+01878               *
+01879 0F47    0A   TITLE     FCB     $A               
+01880 0F48    2D20           FCC     /- - - -   S T A R   T R E K   / 
+01881 0F66    2D20           FCC     /- - - -      VERSION 1.2/ 
+01882 0F7E    04             FCB     4                
+01883 0F7F    5348 SHTLNG    FCC     /SHORT OR LONG GAME? (S-L): / 
+01884 0F9A    04             FCB     4                
+01885 0F9B    2055 UPSCAS    FCC     / UP/            
+01886 0F9E    04             FCB     4                
+01887 0F9F    5354 BASINF    FCC     /STARBASE IN QUADRANT: / 
+01888 0FB5    04             FCB     4                
+01889 0FB6    444F DOCKED    FCC     /DOCKED/         
+01890 0FBC    04             FCB     4                
+01891 0FBD    2044 DNSCAS    FCC     / DOWN/          
+01892 0FC2    04             FCB     4                
+01893 0FC3    414C PTEMST    FCC     /ALL TORPEDOS FIRED!/ 
+01894 0FD6    04             FCB     4                
+01895 0FD7    0A   INTRO1    FCB     $A               
+01896 0FD8    4954           FCC     /IT IS STARDATE / 
+01897 0FE7    04             FCB     4                
+01898 0FE8    5448 INTRO2    FCC     /THE KLINGONS NUMBER / 
+01899 0FFC    04             FCB     4                
+01900 0FFD    594F INTRO3    FCC     /YOUR TIME LIMIT / 
+01901 100D    2849           FCC     /(IN STARDATES) = / 
+01902 101E    04             FCB     4                
+01903 101F    594F INTRO4    FCC     /YOU ARE IN QUADRANT / 
+01904 1033    04             FCB     4                
+01905 1034    414E INTRO6    FCC     /AND SECTOR /    
+01906 103F    04             FCB     4                
+01907 1040    0A   COMST     FCB     $A               
+01908 1041    434F           FCC     /COMMAND? /      
+01909 104A    04             FCB     4                
+01910 104B    5448 DWNST     FCC     /THE SHIELDS ARE DOWN, SIR/ 
+01911 1064    04             FCB     4                
+01912 1065    5448 UPSTR     FCC     /THE SHIELDS ARE UP, SIR/ 
+01913 107C    04             FCB     4                
+01914 107D    5748 CRSSTR    FCC     /WHAT COURSE, SIR? (0-7): / 
+ASM68 6800 Assembler (c) 1988-1995 Evenson Consulting Services        Page 34
+FILE: e:\src\repos\mc6800\games\startrek\startrek.asm      TITLE: STAR
+
+01915 1096    04             FCB     4                
+01916 1097    5748 WRPSTR    FCC     /WHAT WARP FACTOR, SIR: / 
+01917 10AE    04             FCB     4                
+01918 10AF    5448 BLOKST    FCC     /THE ENTERPRISE IS BLOCKED AT / 
+01919 10CC    5345           FCC     /SECTOR /        
+01920 10D3    04             FCB     4                
+01921 10D4    5745 KRMSTR    FCC     /WE'VE RAMMED A KLINGON AT SECTOR / 
+01922 10F5    04             FCB     4                
+01923 10F6    594F GLBNDS    FCC     /YOU'VE REACHED THE EDGE OF / 
+01924 1111    5448           FCC     /THE GALAXY AND UNKNOWN/ 
+01925 1127    0D0A           FCB     $D,$A            
+01926 1129    464F           FCC     /FORCES HAVE STOPPED THE ENTERPRISE!/ 
+01927 114C    04             FCB     4                
+01928 114D    594F PHITST    FCC     /YOUR TORPEDO HAS HIT A / 
+01929 1164    04             FCB     4                
+01930 1165    5448 PNOENG    FCC     /THE TORPEDO HAS RUN OUT OF / 
+01931 1180    454E           FCC     /ENERGY/         
+01932 1186    04             FCB     4                
+01933 1187    2020 SDATE     FCC     /  STARDATE: /   
+01934 1193    04             FCB     4                
+01935 1194    2020 CNDTNS    FCC     /  CONDITION: /  
+01936 11A1    04             FCB     4                
+01937 11A2    5945 YELLOW    FCC     /YELLOW!/        
+01938 11A9    04             FCB     4                
+01939 11AA    5245 RED       FCC     /RED!!!/         
+01940 11B0    04             FCB     4                
+01941 11B1    4752 GREEN     FCC     /GREEN/          
+01942 11B6    04             FCB     4                
+01943 11B7    2020 QUADP     FCC     /  QUADRANT: /   
+01944 11C3    04             FCB     4                
+01945 11C4    2020 SECP      FCC     /  SECTOR:   /   
+01946 11D0    04             FCB     4                
+01947 11D1    2020 ENGSTR    FCC     /  ENERGY: /     
+01948 11DB    04             FCB     4                
+01949 11DC    2020 KLSTR     FCC     /  KLINGONS: /   
+01950 11E8    04             FCB     4                
+01951 11E9    2020 SHSTR     FCC     /  SHIELDS: /    
+01952 11F4    04             FCB     4                
+01953 11F5    2020 TRPSTR    FCC     /  TORPEDOS: /   
+01954 1201    04             FCB     4                
+01955 1202    5343 LRSCST    FCC     /SCAN FOR QUADRANT / 
+01956 1214    04             FCB     4                
+01957 1215    594F MLSHLD    FCC     /YOU MUST FIRST LOWER SHIELDS!/ 
+01958 1232    04             FCB     4                
+01959 1233    5448 ENAVLB    FCC     /THE AVAILABLE ENERGY IS: / 
+01960 124C    04             FCB     4                
+01961 124D    484F FIRENG    FCC     /HOW MUCH ENERGY SHALL I USE: / 
+01962 126A    04             FCB     4                
+01963 126B    594F TOMUCH    FCC     /YOU DON'T HAVE ENOUGH ENERGY!/ 
+01964 1288    04             FCB     4                
+01965 1289    5048 PHAMIS    FCC     /PHASORS HAVE MISFIRED!/ 
+01966 129F    04             FCB     4                
+01967 12A0    414C ALKILL    FCC     /ALL KLINGONS IN THIS SECTOR / 
+01968 12BC    4841           FCC     /HAVE BEEN DESTROYED!/ 
+01969 12D0    04             FCB     4                
+01970 12D1    5448 KHTADM    FCC     /THE ENEMY HAS BEEN DAMAGED/ 
+01971 12EB    04             FCB     4                
+01972 12EC    2049 ERR       FCC     / INVALID ENTRY! / 
+ASM68 6800 Assembler (c) 1988-1995 Evenson Consulting Services        Page 35
+FILE: e:\src\repos\mc6800\games\startrek\startrek.asm      TITLE: STAR
+
+01973 12FC    04             FCB     4                
+01974 12FD    5354 STARST    FCC     /STAR, BILLIONS HAVE DIED/ 
+01975 1315    04             FCB     4                
+01976 1316    4241 BASEST    FCC     /BASE, YOUR ONLY SOURCE OF / 
+01977 1330    5355           FCC     /SUPPLY IS NOW GONE!/ 
+01978 1343    04             FCB     4                
+01979 1344    4B4C KLGSTR    FCC     /KLINGON, CONGRATULATIONS/ 
+01980 135C    04             FCB     4                
+01981 135D    454E INTRO0    FCC     /ENTER YOUR 3 LETTER ABORT / 
+01982 1377    5041           FCC     /PASSWORD: /     
+01983 1381    04             FCB     4                
+01984 1382    5448 STILFT    FCC     /THE REMAINING KLINGONS NUMBER / 
+01985 13A0    04             FCB     4                
+01986 13A1    2055 KATKDN    FCC     / UNIT HIT ON THE ENTERPRISE/ 
+01987 13BC    04             FCB     4                
+01988 13BD    4B4C KATKUP    FCC     /KLINGONS HAVE ATTACKED, / 
+01989 13D5    4255           FCC     /BUT THE SHIELDS ARE HOLDING!/ 
+01990 13F1    04             FCB     4                
+01991 13F2    454E DISINT    FCC     /ENTERPRISE HAS BEEN DESTROYED / 
+01992 1410    2D20           FCC     /- ALL HANDS LOST!/ 
+01993 1421    04             FCB     4                
+01994 1422    4142 ABORT1    FCC     /ABORT SEQUENCE STARTED - / 
+01995 143B    5748           FCC     /WHAT WAS YOUR PASSWORD? / 
+01996 1453    04             FCB     4                
+01997 1454    4142 ABORT2    FCC     /ABORT SEQUENCE ABANDONED - / 
+01998 146F    5041           FCC     /PASSWORD ERROR/ 
+01999 147D    04             FCB     4                
+02000 147E    5448 CANTUS    FCC     /THE TELEPORTER REPAIRS ARE / 
+02001 1499    4E4F           FCC     /NOT YET FINISHED, SORRY/ 
+02002 14B0    04             FCB     4                
+02003 14B1    5445 SOMWHR    FCC     /TELEPORTER MALFUNCTION - / 
+02004 14CA    4241           FCC     /BASE NOT REACHED/ 
+02005 14DA    04             FCB     4                
+02006 14DB    07   SPSTRM    FCB     7                
+02007 14DC    5745           FCC     /WE'VE HIT A SPACE STORM - SHIELDS / 
+02008 14FE    4441           FCC     /DAMAGED!/       
+02009 1506    04             FCB     4                
+02010 1507    5448 GALDUM    FCC     /THE 3RD ATTEMPT TO LEAVE THE / 
+02011 1524    4741           FCC     /GALAXY HAS CAUSED AN/ 
+02012 1538    0D0A           FCB     $D,$A            
+02013 153A    4155           FCC     /AUTOMATIC SELF-DESTRUCT SEQUENCE. / 
+02014 155C    4954           FCC     /IT CANNOT BE STOPPED!!!/ 
+02015 1573    04             FCB     4                
+02016 1574    07   NMENGS    FCB     7                
+02017 1575    5448           FCC     /THE ENTERPRISE IS OUT OF ENERGY. / 
+02018 1596    4954           FCC     /IT CAN NO LONGER EXIST./ 
+02019 15AD    04             FCB     4                
+02020 15AE    07   NMTMST    FCB     7                
+02021 15AF    594F           FCC     /YOU HAVE RUN OUT OF STARDATES / 
+02022 15CD    464F           FCC     /FOR THIS MISSION./ 
+02023 15DE    04             FCB     4                
+02024 15DF    0A07 NMKLST    FCB     $A,7             
+02025 15E1    434F           FCC     /CONGRATULATIONS!/ 
+02026 15F1    0A0D           FCB     $A,$D,0,0,0,0    
+02027 15F7    594F           FCC     /YOU HAVE DESTROYED ALL THE KLINGONS./ 
+02028 161B    04             FCB     4                
+02029 161C    594F FAILST    FCC     /YOUR MISSION WAS A FAILURE, / 
+02030 1638    5448           FCC     /THE FEDERATION MUST SURRENDER./ 
+ASM68 6800 Assembler (c) 1988-1995 Evenson Consulting Services        Page 36
+FILE: e:\src\repos\mc6800\games\startrek\startrek.asm      TITLE: STAR
+
+02031 1656    04             FCB     4                
+02032 1657    5448 SUCCST    FCC     /THE FEDERATION HAS BEEN SAVED / 
+02033 1675    4259           FCC     /BY YOUR GALLANT ACTIONS./ 
+02034 168D    0D0A           FCB     $D,$A            
+02035 168F    594F           FCC     /YOU ARE AWARDED THE STARFLEET / 
+02036 16AD    4D45           FCC     /MEDAL OF HONOR./ 
+02037 16BC    04             FCB     4                
+02038 16BD    4D45 SUPDES    FCC     /MESSAGE FROM STARFLEET COMMAND:/ 
+02039 16DC    0D0A           FCB     $D,$A            
+02040 16DE    2020           FCC     /     THE ENTERPRISE HAS JUST BEEN / 
+02041 1700    4445           FCC     /DESTROYED BY A/ 
+02042 170E    0D0A           FCB     $D,$A            
+02043 1710    2020           FCC     /     SUPERNOVA IN IT'S CURRENT / 
+02044 172F    5155           FCC     /QUADRANT - ALL HANDS LOST./ 
+02045 1749    04             FCB     4                
+02046 174A    07   SUPSTR    FCB     7                
+02047 174B    5345           FCC     /SENSORS REPORT A SUPER NOVA IN / 
+02048 176A    5155           FCC     /QUADRANT /      
+02049 1773    04             FCB     4                
+02050 1774    4241 HEVDAM    FCC     /BADLY DAMAGED/  
+02051 1781    04             FCB     4                
+02052 1782    4445 DMGDST    FCC     /DEVICE IS DAMAGED AND / 
+02053 1798    554E           FCC     /UNUSABLE.  REPAIRS HAVE / 
+02054 17B0    4245           FCC     /BEEN STARTED/   
+02055 17BC    04             FCB     4                
+02056 17BD    0A   DMRPST    FCB     $A               
+02057 17BE    4445           FCC     /DEVICE     STATUS/ 
+02058 17CF    04             FCB     4                
+02059 17D0    454E DEVSTR    FCC     /ENGINES   /     
+02060 17DA    04             FCB     4                
+02061 17DB    5348           FCC     /SHORT SCAN/     
+02062 17E5    04             FCB     4                
+02063 17E6    4C4F           FCC     /LONG SCAN /     
+02064 17F0    04             FCB     4                
+02065 17F1    5048           FCC     /PHASORS   /     
+02066 17FB    04             FCB     4                
+02067 17FC    544F           FCC     /TORPEDOS  /     
+02068 1806    04             FCB     4                
+02069 1807    5348           FCC     /SHIELDS   /     
+02070 1811    04             FCB     4                
+02071 1812    5445           FCC     /TELEPORTER/     
+02072 181C    04             FCB     4                
+02073 181D    5452           FCC     /TRACTOR BM/     
+02074 1827    04             FCB     4                
+02075 1828    434F           FCC     /COMPUTER  /     
+02076 1832    04             FCB     4                
+02077 1833    574F PLAYAG    FCC     /WOULD YOU LIKE TO PLAY / 
+02078 184A    4147           FCC     /AGAIN? (Y-N): / 
+02079 1858    04             FCB     4                
+02080 1859    5448 SCONBD    FCC     /THE SHUTTLE CRAFT IS / 
+02081 186E    5245           FCC     /REPORTED ON BOARD, SIR/ 
+02082 1884    04             FCB     4                
+02083 1885    5448 NOPICK    FCC     /THE SENSORS SHOW NOTHING / 
+02084 189E    544F           FCC     /TO BE PICKED UP, SIR/ 
+02085 18B2    04             FCB     4                
+02086 18B3    5448 EXPCMD    FCC     /THE COMMANDS ARE AS FOLLOWS:/ 
+02087 18CF    0D0A           FCB     $D,$A,$A         
+02088 18D2    434D           FCC     /CMND   ACTION/  
+ASM68 6800 Assembler (c) 1988-1995 Evenson Consulting Services        Page 37
+FILE: e:\src\repos\mc6800\games\startrek\startrek.asm      TITLE: STAR
+
+02089 18DF    0D0A           FCB     $D,$A            
+02090 18E1    2045           FCC     / EN    ACTIVATE WARP ENGINGS/ 
+02091 18FD    0D0A           FCB     $D,$A            
+02092 18FF    2053           FCC     / SR    SHORT RANGE SCAN/ 
+02093 1916    0D0A           FCB     $D,$A            
+02094 1918    204C           FCC     / LR    LONG RANGE SCAN/ 
+02095 192E    0D0A           FCB     $D,$A            
+02096 1930    2050           FCC     / PH    FIRE PHASOR BEAMS/ 
+02097 1948    0D0A           FCB     $D,$A            
+02098 194A    2050           FCC     / PT    FIRE PHOTON TORPEDOS/ 
+02099 1965    0D0A           FCB     $D,$A            
+02100 1967    2044           FCC     / DR    DAMAGE REPORT/ 
+02101 197B    0D0A           FCB     $D,$A            
+02102 197D    2053           FCC     / SH    SHIELDS UP OR DOWN/ 
+02103 1996    0D0A           FCB     $D,$A            
+02104 1998    2054           FCC     / TP    TELEPORT TO BASE QUADRANT/ 
+02105 19B8    0D0A           FCB     $D,$A            
+02106 19BA    2053           FCC     / SD    SELF DESTRUCT SEQUENCE/ 
+02107 19D7    0D0A           FCB     $D,$A            
+02108 19D9    2054           FCC     / TB    ACTIVATE TRACTOR BEAMS/ 
+02109 19F6    0D0A           FCB     $D,$A            
+02110 19F8    2043           FCC     / CO    BATTLE COMPUTER/ 
+02111 1A0E    0D0A           FCB     $D,$A            
+02112 1A10    04             FCB     4                
+02113 1A11    5345 SHTSIG    FCC     /SENSORS REPORT SHUTTLE / 
+02114 1A28    4352           FCC     /CRAFT GALILLEO IN THIS / 
+02115 1A3F    5155           FCC     /QUADRANT, SIR/  
+02116 1A4C    04             FCB     4                
+02117 1A4D    5348 SCBKUP    FCC     /SHUTTLE CRAFT SENSORS / 
+02118 1A63    5052           FCC     /PROVIDING BACKUP SCAN, SIR/ 
+02119 1A7D    04             FCB     4                
+02120 1A7E    434F CPRMPT    FCC     /COMPUTER IS CAPABLE OF / 
+02121 1A95    3320           FCC     /3 FUNCTIONS:/   
+02122 1AA1    0D0A           FCB     $D,$A            
+02123 1AA3    2020           FCC     /   T = TORPEDO SPREAD/ 
+02124 1AB8    0D0A           FCB     $D,$A            
+02125 1ABA    2020           FCC     /   M = PRINT SCAN HISTORY MAP/ 
+02126 1AD7    0D0A           FCB     $D,$A            
+02127 1AD9    2020           FCC     /   S = SET AUTO SCAN/ 
+02128 1AED    0D0A           FCB     $D,$A,$A         
+02129 1AF0    454E           FCC     /ENTER COMPUTER COMMAND: / 
+02130 1B08    04             FCB     4                
+02131 1B09    5354 CMPHST    FCC     /STATUS OF QUADRANTS WHEN / 
+02132 1B22    4C41           FCC     /LAST SCANNED (**** = NO SCAN YET)/ 
+02133 1B43    0D0A           FCB     $D,$A,4          
+02134 1B46    2A2A NOSCAN    FCC     /**** /          
+02135 1B4B    04             FCB     4                
+02136 1B4C    454E HWMANY    FCC     /ENTER NUMBER OF TORPEDOS IN / 
+02137 1B68    5350           FCC     /SPREAD (0-9): / 
+02138 1B76    04             FCB     4                
+02139 1B77    4155 SRMODE    FCC     /AUTO SCAN ON FOR SHORT / 
+02140 1B8E    5241           FCC     /RANGE SENSORS? (Y-N): / 
+02141 1BA4    04             FCB     4                
+02142 1BA5    4155 LRMODE    FCC     /AUTO SCAN ON FOR LONG / 
+02143 1BBB    5241           FCC     /RANGE SENSORS? (Y-N): / 
+02144 1BD1    04             FCB     4                
+02145               *
+02146               
+ASM68 6800 Assembler (c) 1988-1995 Evenson Consulting Services        Page 38
+FILE: e:\src\repos\mc6800\games\startrek\startrek.asm      TITLE: STAR
+
+
+No errors
+
+ Total bytes output = 6850

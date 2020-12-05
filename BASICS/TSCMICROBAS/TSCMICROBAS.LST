@@ -1,0 +1,2042 @@
+ASM68 6800 Assembler (c) 1988-1995 Evenson Consulting Services        Page 1
+FILE: e:\src\repos\mc6800\basics\tscmicrobas\tscmicrobas.asm
+
+00001               * MICRO BASIC PLUS SOURCE LISTING
+00002               *
+00003               * MICRO BASIC PLUS
+00004               * COPYRIGHT (C) 1976 BY
+00005               *
+00006               * TECHNICAL SYSTEMS CONSULTANTS
+00007               * BOX 2574
+00008               * W. LAFAYETTE INDIANA 47906
+00009               *
+00010               *
+00011               
+00012               * EQUATES
+00013         A07F STACK     EQU     $A07F            
+00014         8004 PIAADR    EQU     $8004            
+00015         A002 PFILBG    EQU     $A002            
+00016         A004 PFILEN    EQU     $A004            
+00017         1F00 EXTERN    EQU     $1F00            
+00018         E0E3 MONITR    EQU     $E0E3            
+00019         A048 MONPC     EQU     $A048            
+00020         A000 STKBOT    EQU     $A000            
+00021               
+00022               * TEMPORARY STORAGE
+00023               
+00024 0000         RNDM      RMB     4                
+00025 0004         BUFPNT    RMB     2                
+00026 0006         FORSTK    RMB     2                
+00027 0008         DIMPNT    RMB     2                
+00028 000A         XTEMP3    RMB     2                
+00029 000C         DATAST    RMB     2                
+00030 000E         DATAPT    RMB     2                
+00031 0010         TRYVAL    RMB     2                
+00032 0012         CRFLAG    RMB     1                
+00033 0013         QMFLAG    RMB     1                
+00034 0014         ROWVAR    RMB     1                
+00035 0015         ROWCON    RMB     1                
+00036 0016         COLCON    RMB     1                
+00037 0017         TABFLG    RMB     1                
+00038 0018         DIMFLG    RMB     1                
+00039 0019         RUNFLG    RMB     1                
+00040 001A         DATAFL    RMB     1                
+00041 001B         SUBCNT    RMB     1                
+00042 001C         LETFLG    RMB     1                
+00043 001D         FLDCNT    RMB     1                
+00044 001E         NXPNTR    RMB     2                
+00045 0020         XTEMP     RMB     2                
+00046 0022         XSAVE     RMB     2                
+00047 0024         XSAVE2    RMB     2                
+00048 0026         NUMCNT    RMB     1                
+00049 0027         NEGFLG    RMB     1                
+00050 0028         NOEXFL    RMB     1                
+00051 0029         EXTRA     RMB     2                
+00052 002B         COUNT     RMB     1                
+00053 002C         STKCNT    RMB     1                
+00054 002D         AUXCNT    RMB     1                
+00055 002E         SIGN      RMB     1                
+00056 002F         AXSIGN    RMB     1                
+00057 0030         OVFLBF    RMB     1                
+00058 0031         XTEMP2    RMB     2                
+ASM68 6800 Assembler (c) 1988-1995 Evenson Consulting Services        Page 2
+FILE: e:\src\repos\mc6800\basics\tscmicrobas\tscmicrobas.asm
+
+00059 0033         XTEMP4    RMB     2                
+00060 0035         XTEMP5    RMB     2                
+00061 0037         CPX1      RMB     2                
+00062 0039         CPX2      RMB     2                
+00063 003B         STKEND    RMB     3                
+00064 003E         CHRCNT    RMB     1                
+00065 003F         OPSTAK    RMB     32               
+00066 005F         AC        RMB     3                
+00067 0062         NUMBER    RMB     3                
+00068 0065         AX        RMB     3                
+00069 0068         BUFFER    RMB     72               
+00070               
+00071               * LABLE TABLE
+00072               
+00073 00B0         LBLTBL    RMB     78               
+00074 00FE         STKTOP    RMB     2                
+00075               
+00076               * CONSTANTS
+00077               
+00078         0008 BACKSP    EQU     $8               
+00079         0018 DELCOD    EQU     $18              
+00080         0021 PRMPTC    EQU     $21              
+00081               
+00082         0100           ORG     $0100            
+00083               
+00084               * MAIN PROGRAM
+00085               
+00086 0100 7E 01A6 START     JMP     MICBAS           JMP TO BEGIN
+00087 0103 7E 01B0 RESTRT    JMP     FILBUF           
+00088               
+00089               * EXTERNAL I-O ROUTINES
+00090               
+00091 0106 7E E1D1 OUTEEE    JMP     $E1D1            
+00092 0109 BD E1AC INCH      JSR     $E1AC            
+00093 010C 7E 0459 BREAK     JMP     SHTCUT           # INTBRK 
+00094 010F    1EFF MEMEND    FDB     $1EFF            
+00095               
+00096               * KEYWORD AND JUMP TABLE
+00097               
+00098 0111    5052 KEYTBL    FCC     ;PRI;            
+00099 0114    04A6           FDB     PRINT            
+00100               
+00101 0116    494E           FCC     ;INP;            
+00102 0119    0798           FDB     INPUT            
+00103               
+00104 011B    4946           FCC     ;IF ;            
+00105 011E    08B2           FDB     IF               
+00106               
+00107 0120    4C45           FCC     ;LET;            
+00108 0123    0772 LETADR    FDB     LET              
+00109               
+00110 0125    464F           FCC     ;FOR;            
+00111 0128    0976           FDB     FOR              
+00112               
+00113 012A    4E45           FCC     ;NEX;            
+00114 012D    099D           FDB     NEXT             
+00115               
+00116 012F    474F           FCC     ;GOT;            
+ASM68 6800 Assembler (c) 1988-1995 Evenson Consulting Services        Page 3
+FILE: e:\src\repos\mc6800\basics\tscmicrobas\tscmicrobas.asm
+
+00117 0132    0781           FDB     GOTO             
+00118               
+00119 0134    474F           FCC     ;GOS;            
+00120 0137    092B           FDB     GOSUB            
+00121               
+00122 0139    4F4E           FCC     ;ON ;            
+00123 013C    0876           FDB     ONGOTO           
+00124               
+00125 013E    5245           FCC     ;RET;            
+00126 0141    0953           FDB     RETURN           
+00127               
+00128 0143    5245           FCC     ;REA;            
+00129 0146    0826           FDB     READ             
+00130               
+00131 0148    4441           FCC     ;DAT;            
+00132 014B    0817           FDB     DATA             
+00133               
+00134 014D    5245           FCC     ;RES;            
+00135 0150    086C           FDB     RESTOR           
+00136               
+00137 0152    4449           FCC     ;DIM;            
+00138 0155    0671           FDB     DIM              
+00139               
+00140 0157    4558           FCC     ;EXT;            
+00141 015A    0701           FDB     EXTRNL           
+00142               
+00143 015C    4D4F           FCC     ;MON;            
+00144 015F    E0E3           FDB     MONITR           
+00145               
+00146 0161    454E           FCC     ;END;            
+00147 0164    01B0           FDB     FILBUF           
+00148               
+00149 0166    5245           FCC     ;REM;            
+00150 0169    0704           FDB     RUNEXC           
+00151               
+00152 016B    5255           FCC     ;RUN;            
+00153 016E    075F           FDB     RUN              
+00154               
+00155 0170    4C49           FCC     ;LIS;            
+00156 0173    03EC           FDB     LIST             
+00157               
+00158 0175    5343           FCC     ;SCR;            
+00159 0178    01A6           FDB     MICBAS           
+00160 017A    00             FCB     0                
+00161               
+00162 017B    524E FCTTBL    FCC     ;RND;            
+00163 017E    0AC0           FDB     EVAL88           
+00164               
+00165 0180    4142           FCC     ;ABS;            
+00166 0183    0ABC           FDB     EVAL85           
+00168 0185    5347           FCC     ;SGN;            
+00169 0188    0AB4           FDB     EVAL86           
+00170 018A    00             FCB     0                
+00171               
+00172               * INITIALIZATION
+00173               
+00174 018B CE 0100 CLRBEG    LDX     #START           
+00175 018E DF 0A             STX     XTEMP3           SAVE X
+ASM68 6800 Assembler (c) 1988-1995 Evenson Consulting Services        Page 4
+FILE: e:\src\repos\mc6800\basics\tscmicrobas\tscmicrobas.asm
+
+00176 0190 CE 000C CLRBG2    LDX     #DATAST          SET START
+00177 0193 20 08             BRA     CLEAR            GO CLEAR
+00178               
+00179 0195 FE 010F CLREND    LDX     MEMEND           SET END
+00180 0198 DF 0A             STX     XTEMP3           SAVE
+00181 019A FE 0D4D           LDX     ENDSTR           
+00182 019D 4F      CLEAR     CLR A                    CLEAR ACC.
+00183 019E A7 00   CLEAR2    STA A   0,X              CLEAR BYTE
+00184 01A0 08                INX                      BUMP THE POINTER
+00185 01A1 9C 0A             CPX     XTEMP3           DONE?
+00186 01A3 26 F9             BNE     CLEAR2           
+00187 01A5 39                RTS                      RETURN
+00188               
+00189 01A6 8D E3   MICBAS    BSR     CLRBEG           GO CLEAR
+00190 01A8 CE 0D4F           LDX     #STORSP          
+00191 01AB FF 0D4D           STX     ENDSTR           SET END STORAGE:
+00192 01AE 8D E5             BSR     CLREND           GO CLEAR
+00193               
+00194               * GET LINE INTO INPUT BUFFER
+00195               
+00196 01B0 CE 0103 FILBUF    LDX     #RESTRT          
+00197 01B3 FF A048           STX     MONPC            SET UP RETURN POINTER 
+00198 01B6 8E A07F           LDS     #STACK           
+00199 01B9 CE 0068           LDX     #BUFFER          
+00200 01BC DF 0A             STX     XTEMP3           SAVE BOUND 
+00201 01BE 8D D0             BSR     CLRBG2           
+00202 01C0 CE 0D4D           LDX     #ENDSTR          SET PUHCH LIMITS 
+00203 01C3 FF A002           STX     PFILBG           
+00204 01C6 EE 00             LDX     0,X              SET END
+00205 01C8 FF A004           STX     PFILEN           
+00206 01CB DF 08             STX     DIMPNT           
+00207 01CD CE 0068           LDX     #BUFFER          POINT TO BUFFER
+00208 01D0 BD 02EA           JSR     PCRLF            OUT A CR & LF 
+00209 01D3 86 21             LDA A   #PRMPTC          
+00210 01D5 BD 044C           JSR     OUTCH            OUTPUT PROMPT
+00211 01D8 BD 02D0 FILBU2    JSR     INCHAR           GET A CHARACTER
+00212 01DB 27 D3             BEQ     FILBUF           
+00213 01DD A7 00             STA A   0,X              SAVE CHAR.
+00214 01DF 81 0D             CMP A   #$0D             IS IT A C.R. ? 
+00215 01E1 27 08             BEQ     FILBU6           
+00216 01E3 08                INX                      BUMP THE POINTER
+00217 01E4 8C 00B0           CPX     #BUFFER+72       
+00218 01E7 26 EF             BNE     FILBU2           END OF BUFFER? 
+00219 01E9 20 C5             BRA     FILBUF           
+00220 01EB CE 0068 FILBU6    LDX     #BUFFER          RESET POINTER
+00221 01EE BD 0331           JSR     BCDCO1           LINE NO. CONV.
+00222 01F1 DF 31             STX     XTEMP2           SAVE POINTER
+00223 01F3 BD 037B           JSR     FNDKEY           CHECK KEY WORD 
+00224 01F6 4D                TST A                    
+00225 01F7 26 1A             BNE     FILBU8           IF NONZERO THEN OK
+00226 01F9 DE 04             LDX     BUFPNT           POINT TO BUFFER
+00227 01FB A6 00             LDA A   0,X              GET CHARACTER
+00228 01FD 81 0D             CMP A   #$D              IS IT A C.R.? 
+00229 01FF 26 08             BNE     FILBU7           
+00230 0201 D6 28             LDA B   NOEXFL           DIR. EXECUTION? 
+00231 0203 27 AB             BEQ     FILBUF           
+00232 0205 97 12             STA A   CRFLAG           SET FLAG
+00233 0207 20 0A             BRA     FILBU8           IT IS OK
+ASM68 6800 Assembler (c) 1988-1995 Evenson Consulting Services        Page 5
+FILE: e:\src\repos\mc6800\basics\tscmicrobas\tscmicrobas.asm
+
+00234 0209 BD 0745 FILBU7    JSR     TSTLET           LET?
+00235 020C 27 05             BEQ     FILBU8           
+00236 020E 86 10   FILB75    LDA A   #$10             
+00237 0210 7E 0461           JMP     MISTAK           REPORT ERROR #0
+00238 0213 96 3E   FILBU8    LDA A   CHRCNT           GET CHAR. COUNT
+00239 0215 90 26             SUB A   NUMCNT           SUB LINE # DIGITS
+00240 0217 97 3E             STA A   CHRCNT           SAVE
+00241 0219 D6 28             LDA B   NOEXFL           DIRECT EXECUTE ?
+00242 021B 26 06             BNE     STUFLN           IF NOT GO PUT LINE
+00243 021D BD 02EA           JSR     PCRLF            OUTPUT C.R. L.F.
+00244 0220 7E 0741           JMP     RUNEX4           GO TO ROUTINE
+00245               
+00246               * PUT LINE IN PROGRAM STORAGE
+00247               
+00248 0223 FE 010F STUFLN    LDX     MEMEND           
+00249 0226 DF 37             STX     CPX1             
+00250 0228 DE 31             LDX     XTEMP2           SET POINTER
+00251 022A DF 04             STX     BUFPNT           SAVE POINTER
+00252 022C BD 02A5           JSR     FNDLIN           GO FIND LINE IN STORE
+00253 022F DF 22             STX     XSAVE            SAVE POINTER
+00254 0231 5D                TST B                    DID WE FIND IT?
+00255 0232 26 20             BNE     INSERT           IF NOT GO INSERT
+00256               
+00257               
+00258               * REPLACE EXISTING LINE WITH NEW ONE
+00259               
+00260 0234 5C      REPLAC    INC B                    INC THE COUNTER
+00261 0235 A6 00             LDA A   0,X              GET A CHARACTER
+00262 0237 08                INX                      BUMP THE POINTER
+00263 0238 81 0D             CMP A   #$D              IS IT A C.R,? 
+00264 023A 26 F8             BNE     REPLAC           
+00265 023C F7 024C REPLA4    STA B   OFSET2+1         SETUP OFFSET
+00266 023F 86 FF             LDA A   #$FF             GET COUNT
+00267 0241 50                NEG B                    2'S COMP. IT
+00268 0242 8D 46             BSR     ADJEND           GO FIX END PNTR
+00269 0244 DE 22             LDX     XSAVE            RESTORE THE POINTER
+00270 0246 BC 0D4D REPLA5    CPX     ENDSTR           END OF STORAGE?
+00271 0249 27 07             BEQ     REPLA6           
+00272 024B A6 00   OFSET2    LDA A   0,X              
+00273 024D A7 00             STA A   0,X              MOVE A CHARACTER 
+00274 024F 08                INX                      BUMP THE POINTER 
+00275 0250 20 F4             BRA     REPLA5           REPEAT
+00276 0252 DE 22   REPLA6    LDX     XSAVE            RESTORE THE POINTER
+00277               
+00278               * INSERT A LINE INTO PROGRAM STORAGE
+00279               
+00280 0254 96 12   INSERT    LDA A   CRFLAG           LONE C.R. ?
+00281 0256 26 2F             BNE     INSER6           
+00282 0258 FE 0D4D           LDX     ENDSTR           
+00283 025B D6 3E             LDA B   CHRCNT           GET CHAR. COUNT
+00284 025D CB 02             ADD B   #2               BIAS FOR LINE NUM. 
+00285 025F F7 026C           STA B   OFFSET+1         SETUP OFFSET
+00286 0262 8D 26             BSR     ADJEND           FIX END PNTR
+00287 0264 9C 22   INSER2    CPX     XSAVE            DONE?
+00288 0266 27 07             BEQ     INSER3           
+00289 0268 09                DEX                      DEC THE POINTER
+00290 0269 A6 00             LDA A   0,X              GET A CHAR,
+00291 026B A7 00   OFFSET    STA A   0,X              
+ASM68 6800 Assembler (c) 1988-1995 Evenson Consulting Services        Page 6
+FILE: e:\src\repos\mc6800\basics\tscmicrobas\tscmicrobas.asm
+
+00292 026D 20 F5             BRA     INSER2           MOVE IT
+00293 026F 09      INSER3    DEX                      
+00294 0270 BD 0668           JSR     PUTLB2           PUT LAB
+00295 0273 08                INX                      BUMP THE POINTER 
+00296 0274 08                INX                      
+00297 0275 DF 22   INSER4    STX     XSAVE            SAVE POINTER
+00298 0277 DE 04             LDX     BUFPNT           
+00299 0279 A6 00             LDA A   0,X              GET CHAR*
+00300 027B 08                INX                      BUMP THE POINTER
+00301 027C DF 04             STX     BUFPNT           SAVE
+00302 027E DE 22             LDX     XSAVE            RESTOR PNTR
+00303 0280 08                INX                      
+00304 0281 A7 00             STA A   0,X              SAVE IT
+00305 0283 81 0D             CMP A   #$D              IS IT A C.R.? 
+00306 0285 26 EE             BNE     INSER4           
+00307 0287 7E 01B0 INSER6    JMP     FILBUF           60 TO MAIN LOOP
+00308               
+00309               * ADJUST THE END OF PROGRAM POINTER
+00310               
+00311 028A FB 0D4E ADJEND    ADD B   ENDSTR+1         
+00312 028D B9 0D4D           ADC A   ENDSTR           ADD IN VALUE 
+00313 0290 D7 3A             STA B   CPX2+1           
+00314 0292 97 39             STA A   CPX2             SET END POINTER 
+00315 0294 BD 0CB3           JSR     CMPX1            
+00316 0297 24 07             BCC     ADJEN2           
+00317 0299 F7 0D4E           STA B   ENDSTR+1         
+00318 029C B7 0D4D           STA A   ENDSTR           SAVE NEW POINTER
+00319 029F 39                RTS                      RETURN
+00320 02A0 86 90   ADJEN2    LDA A   #$90             SET ERROR
+00321 02A2 7E 0461           JMP     MISTAK           
+00322               
+00323               * TRY TO FIND LINE 
+00324               
+00325 02A5 96 64   FNDLIN    LDA A   NUMBER+2         
+00326 02A7 D6 63             LDA B   NUMBER+1         
+00327 02A9 CE 0D4F FINDLN    LDX     #STORSP          SETUP POINTER
+00328 02AC BC 0D4D FINDL1    CPX     ENDSTR           END OF STORAGE?
+00329 02AF 26 02             BNE     FINDL4           
+00330 02B1 5C      FINDL2    INC B                    
+00331 02B2 39                RTS                      RETURN
+00332 02B3 E1 00   FINDL4    CMP B   0,X              CHECK M.S. DIGITS
+00333 02B5 22 0A             BHI     FINDL6           
+00334 02B7 26 F8             BNE     FINDL2           
+00335 02B9 A1 01             CMP A   1,X              CHECK L.S, DIGITS 
+00336 02BB 22 04             BHI     FINDL6           
+00337 02BD 26 F2             BNE     FINDL2           
+00338 02BF 5F                CLR B                    CEAR FLAG
+00339 02C0 39                RTS                      RETURN
+00340 02C1 8D 03   FINDL6    BSR     FNDCRT           GO FIND C.R,
+00341 02C3 08                INX                      BUMP THE POINTER
+00342 02C4 20 E6             BRA     FINDL1           REPEAT
+00343               
+00344               * FIND A C,R, IN STORAGE
+00345               
+00346 02C6 36      FNDCRT    PSH A                    SAVE A 
+00347 02C7 86 0D             LDA A   #$D              
+00348 02C9 08      FNDVAL    INX                      BUMP THE POINTER
+00349 02CA A1 00             CMP A   0,X              TEST FOR C.R. 
+ASM68 6800 Assembler (c) 1988-1995 Evenson Consulting Services        Page 7
+FILE: e:\src\repos\mc6800\basics\tscmicrobas\tscmicrobas.asm
+
+00350 02CC 26 FB             BNE     FNDVAL           
+00351 02CE 32                PUL A                    RESTORE A
+00352 02CF 39                RTS                      RETURN
+00353               
+00354               * INPUT 
+00355               
+00356 02D0 BD 0109 INCHAR    JSR     INCH             GET THE CHAR.
+00357 02D3 81 08             CMP A   #BACKSP          IS IT A BACKSPACE? 
+00358 02D5 26 0B             BNE     INCHR2           
+00359 02D7 8C 0068           CPX     #BUFFER          BEGINNING OF BUF ? 
+00360 02DA 27 0D             BEQ     INCHR4           
+00361 02DC 09                DEX                      BACKUP ONE POS.
+00362 02DD 7A 003E           DEC     CHRCNT           DEC CHAR. COUNT 
+00363 02E0 20 EE             BRA     INCHAR           
+00364 02E2 81 18   INCHR2    CMP A   #DELCOD          DELETE LINE ?
+00365 02E4 27 03             BEQ     INCHR4           
+00366 02E6 7C 003E           INC     CHRCNT           
+00367 02E9 39      INCHR4    RTS                      RETURN
+00368               
+00369               * PRINT CARRIAGE RETURN & LINEFEED
+00370               
+00371 02EA DF 22   PCRLF     STX     XSAVE            SAVE X REG
+00372 02EC CE 0301           LDX     #CRLFST          POINT TO STRING
+00373 02EF A6 00   PDATA1    LDA A   0,X              GET CHAR
+00374 02F1 81 04             CMP A   #4               IS IT 4?
+00375 02F3 27 06             BEQ     PCRLF2           
+00376 02F5 BD 044C           JSR     OUTCH            OUTPUT CHAR
+00377 02F8 08                INX                      BUMP THE POINTER
+00378 02F9 20 F4             BRA     PDATA1           REPEAT
+00379 02FB DE 22   PCRLF2    LDX     XSAVE            RESTORE X REG
+00380 02FD 7F 001D           CLR     FLDCNT           ZERO FIELD COUNT
+00381 0300 39                RTS                      RETURN
+00382               
+00383 0301    0D0A CRLFST    FCB     $D,$A,0,0,0,0,4  
+00384               
+00385               * TEST FOR STATEMENT TERMINATOR
+00386               
+00387 0308 81 0D   TSTTRM    CMP A   #$D              C,R,?
+00388 030A 27 02             BEQ     TSTTR2           
+00389 030C 81 3A             CMP A   #':              COLON?
+00390 030E 39      TSTTR2    RTS                      RETURN
+00391               
+00392               * CLEAR NUMBER THROUGH NUMBER+2
+00393               
+00394 030F BD 0B51 UPSCLR    JSR     STAKUP           
+00395 0312 4F      CLRNUM    CLR A                    
+00396 0313 97 62             STA A   NUMBER           
+00397 0315 97 63             STA A   NUMBER+1         
+00398 0317 97 64             STA A   NUMBER+2         
+00399 0319 39                RTS                      
+00400               
+00401               * CONVERT NUMBER TO PACKED BCD
+00402               
+00403 031A 8D F6   BCDCON    BSR     CLRNUM           CLEAR NUMBER 
+00404 031C 97 28             STA A   NOEXFL           
+00405 031E 97 27             STA A   NEGFLG           
+00406 0320 97 26             STA A   NUMCNT           
+00407 0322 BD 0368           JSR     SKIPSP           SKIP SPACES
+ASM68 6800 Assembler (c) 1988-1995 Evenson Consulting Services        Page 8
+FILE: e:\src\repos\mc6800\basics\tscmicrobas\tscmicrobas.asm
+
+00408 0325 81 2B             CMP A   #'+              IS IT A +? 
+00409 0327 27 07             BEQ     BCDC01           
+00410 0329 81 2D             CMP A   #'-              IS IT A - ? 
+00411 032B 26 04             BNE     BCDCO1           
+00412 032D 73 0027           COM     NEGFLG           SET FLAG
+00413 0330 08      BCDC01    INX                      
+00414 0331 BD 0CE3 BCDCO1    JSR     CLASS            GET A DIGIT
+00415 0334 C1 03             CMP B   #3               IS IT A NUMBER? 
+00416 0336 27 05             BEQ     BCDCO2           
+00417 0338 96 27             LDA A   NEGFLG           
+00418 033A 7E 0BEA           JMP     FIXSIN           GO FIX UP THE SIGN
+00419 033D 08      BCDCO2    INX                      BUMP THE POINTER
+00420 033E 97 28             STA A   NOEXFL           SET NO EXEC FLU
+00421 0340 84 0F             AND A   #$0F             MASK OFF ASCII
+00422 0342 C6 04             LDA B   #4               SET COUNTER
+00423 0344 78 0064 BCDCO4    ASL     NUMBER+2         
+00424 0347 79 0063           ROL     NUMBER+1         
+00425 034A 79 0062           ROL     NUMBER           SHIFT PREV. OVER
+00426 034D 5A                DEC B                    DEC THE COUNTER 
+00427 034E 26 F4             BNE     BCDCO4           
+00428 0350 9B 64             ADD A   NUMBER+2         
+00429 0352 97 64             STA A   NUMBER+2         SAVE NEW VALUE 
+00430 0354 7C 0026           INC     NUMCNT           INC NUMBER CNTR 
+00431 0357 20 D8             BRA     BCDCO1           
+00432               
+00433               * FIND NEXT BLOCK
+00434               
+00435 0359 DE 04   NXTBLK    LDX     BUFPNT           RESTORE POINTER
+00436 035B A6 00   NXTBL4    LDA A   0,X              GET A CHAR.
+00437 035D 81 00             CMP A   #'               IS IT A SPACE?
+00438 035F 27 07             BEQ     SKIPSP           
+00439 0361 08                INX                      BUMP THE POINTER
+00440 0362 20 F7             BRA     NXTBL4           REPEAT
+00441               
+00442               * CONVERT AND SKIP 
+00443               
+00444 0364 8D B4   CONSKP    BSR     BCDCON           
+00445 0366 09                DEX                      
+00446               
+00447               * SKIP ALL SPACES
+00448               
+00449 0367 08      SKPSP0    INX                      
+00450 0368 A6 00   SKIPSP    LDA A   0,X              GET CHR FROM BUF
+00451 036A 81 20             CMP A   #$20             IS IT A SPACE?
+00452 036C 27 F9             BEQ     SKPSP0           
+00453 036E 39      SKIPS4    RTS                      RETURN
+00454               
+00455               * FIND NEXT BLOCK NOT EXPECTING A SPACE
+00456               
+00457 036F DE 04   NXTSPC    LDX     BUFPNT           SET POINTER
+00458 0371 BD 0CE3 NXTSP4    JSR     CLASS            GO CLASSIFY
+00459 0374 C1 02             CMP B   #2               IS IT A LETTER? 
+00460 0376 26 F0             BNE     SKIPSP           
+00461 0378 08                INX                      BUMP THE POINTER 
+00462 0379 20 F6             BRA     NXTSP4           
+00463               
+00464               * FIND KEY WORD IF POSSIBLE
+00465               
+ASM68 6800 Assembler (c) 1988-1995 Evenson Consulting Services        Page 9
+FILE: e:\src\repos\mc6800\basics\tscmicrobas\tscmicrobas.asm
+
+00466 037B BD 0368 FNDKEY    JSR     SKIPSP           SKIP SPACES
+00467 037E DF 04             STX     BUFPNT           SAVE THE POINTER 
+00468 0380 DF 22             STX     XSAVE            
+00469 0382 CE 0111           LDX     #KEYTBL          POINT TO KEY WORDS
+00470 0385 C6 05   FNDKE2    LDA B   #5               
+00471 0387 A1 00   FNDKE4    CMP A   0,X              TEST THE CHARACTER
+00472 0389 26 12             BNE     FNDKE6           
+00473 038B DF 0A             STX     XTEMP3           SAVE POINTER 
+00474 038D DE 22             LDX     XSAVE            
+00475 038F 08                INX                      BUMP POINTER
+00476 0390 A6 00             LDA A   0,X              GET CHAR. 
+00477 0392 DF 22             STX     XSAVE            
+00478 0394 DE 0A             LDX     XTEMP3           REST. PNTR. 
+00479 0396 08                INX                      
+00480 0397 5A                DEC B                    
+00481 0398 C1 02             CMP B   #2               
+00482 039A 26 EB             BNE     FNDKE4           IF NOT DONE REPEAT
+00483 039C 39      FNDKE5    RTS                      RETURN
+00484 039D 08      FNDKE6    INX                      BUMP THE COUNTER
+00485 039E 5A                DEC B                    
+00486 039F 26 FC             BNE     FNDKE6           
+00487 03A1 A6 00             LDA A   0,X              GET CHARACTER
+00488 03A3 27 F7             BEQ     FNDKE5           IF ZERO, END OF LIST
+00489 03A5 DF 0A             STX     XTEMP3           SAVE POINTER 
+00490 03A7 DE 04             LDX     BUFPNT           
+00491 03A9 DF 22             STX     XSAVE            
+00492 03AB A6 00             LDA A   0,X              GET NEW CHAR.
+00493 03AD DE 0A             LDX     XTEMP3           RESTORE POINTER
+00494 03AF 20 D4             BRA     FNDKE2           REPEAT
+00495               
+00496               
+00497               * OUTPUT A NUMBER FROM PACKED BCD BYTES
+00498               
+00499 03B1 CE 0062 OUTBCD    LDX     #NUMBER          SET POINTER
+00500 03B4 C6 02   OUTBCI    LDA B   #2               SET COUNTER
+00501 03B6 0C                CLC                      
+00502 03B7 A6 00             LDA A   0,X              GET A WORD
+00503 03B9 2A 19             BPL     OUTBC4           IF NOT NEG JMP AHEAD 
+00504 03BB 86 2D             LDA A   #'-              
+00505 03BD BD 044C           JSR     OUTCH            OUTPUT A
+00506 03C0 7C 001D           INC     FLDCNT           
+00507 03C3 20 0F             BRA     OUTBC4           
+00508 03C5 A6 00   OUTBC2    LDA A   0,X              GET DIGITS
+00509 03C7 85 F0             BIT A   #$F0             MASK
+00510 03C9 25 02             BCS     OUTBC3           
+00511 03CB 27 07             BEQ     OUTBC4           JMP IF ZEROES
+00512 03CD BD 0444 OUTBC3    JSR     OUTHL            OUTPUT A DIGIT
+00513 03D0 7C 001D           INC     FLDCNT           
+00514 03D3 0D                SEC                      
+00515 03D4 A6 00   OUTBC4    LDA A   0,X              GET A DIGIT
+00516 03D6 C5 FF             BIT B   #$FF             LAST DIGIT? 
+00517 03D8 27 06             BEQ     OUTBC6           
+00518 03DA 85 0F             BIT A   #$0F             MASK
+00519 03DC 25 02             BCS     OUTBC6           
+00520 03DE 27 07             BEQ     OUTBC8           JMP IF ZEROES
+00521 03E0 BD 0448 OUTBC6    JSR     OUTHR            OUTPUT A DIGIT
+00522 03E3 7C 001D           INC     FLDCNT           
+00523 03E6 0D                SEC                      
+ASM68 6800 Assembler (c) 1988-1995 Evenson Consulting Services        Page 10
+FILE: e:\src\repos\mc6800\basics\tscmicrobas\tscmicrobas.asm
+
+00524 03E7 08      OUTBC8    INX                      BUMP THE POINTER
+00525 03E8 5A                DEC B                    DEC THE COUNTER
+00526 03E9 2A DA             BPL     OUTBC2           REPEAT IF NOT DONE
+00527 03EB 39                RTS                      RETURN
+00528               
+00529               * LIST USERS PROGRAM
+00530               
+00531 03EC BD 036F LIST      JSR     NXTSPC           FIND NEXT 
+00532 03EF 81 0D             CMP A   #$D              
+00533 03F1 27 25             BEQ     LIST3            
+00534 03F3 BD 031A           JSR     BCDCON           GET LINE NUM
+00535 03F6 DF 04             STX     BUFPNT           SAVE POINTER 
+00536 03F8 BD 02A5           JSR     FNDLIN           FIND LINE
+00537 03FB DF 22             STX     XSAVE            SAVE IT
+00538 03FD BD 036F           JSR     NXTSPC           
+00539 0400 81 0D             CMP A   #$D              C.R.?
+00540 0402 26 05             BNE     LIST1            
+00541 0404 7C 001B           INC     SUBCNT           SET TO 1 
+00542 0407 20 0B             BRA     LIST2            
+00543 0409 08      LIST1     INX                      BUMP THE POINTER 
+00544 040A BD 0368           JSR     SKIPSP           
+00545 040D BD 031A           JSR     BCDCON           GET COUNT
+00546 0410 96 64             LDA A   NUMBER+2         
+00547 0412 97 1B             STA A   SUBCNT           SAVE IT
+00548 0414 DE 22   LIST2     LDX     XSAVE            POINT TO LINE
+00549 0416 20 03             BRA     LIST4            
+00550 0418 CE 0D4F LIST3     LDX     #STORSP          SET POINTER
+00551 041B BC 0D4D LIST4     CPX     ENDSTR           END OF STORAGE?
+00552 041E 27 21             BEQ     LIST8            
+00553 0420 BD 02EA           JSR     PCRLF            OUTPUT A 
+00554 0423 C6 01             LDA B   #1               SETUP COUNTER 
+00555 0425 0C                CLC                      
+00556 0426 8D 9D             BSR     OUTBC2           OUT LINE NUMBER
+00557 0428 A6 00   LIST5     LDA A   0,X              GET A CHARACTER
+00558 042A 81 0D             CMP A   #$D              IS IT A C.R.? 
+00559 042C 27 05             BEQ     LIST6            
+00560 042E 8D 1C             BSR     OUTCH            OUTPUT CHARACTER 
+00561 0430 08                INX                      BUMP THE POINTER 
+00562 0431 20 F5             BRA     LIST5            REPEAT
+00563 0433 08      LIST6     INX                      BUMP THE POINTER
+00564 0434 96 1B             LDA A   SUBCNT           GET COUNT 
+00565 0436 27 E3             BEQ     LIST4            
+00566 0438 8B 99             ADD A   #$99             DEC THE COUNT 
+00567 043A 19                DAA                      
+00568 043B 27 04             BEQ     LIST8            
+00569 043D 97 1B             STA A   SUBCNT           SAVE
+00570 043F 20 DA             BRA     LIST4            
+00571 0441 7E 01B0 LIST8     JMP     FILBUF           
+00572               
+00573 0444 44      OUTHL     LSR A                    
+00574 0445 44                LSR A                    
+00575 0446 44                LSR A                    
+00576 0447 44                LSR A                    MOVE TO BOTTOM
+00577 0448 84 0F   OUTHR     AND A   #$0F             MASK
+00578 044A 8B 30             ADD A   #$30             BIAS
+00579 044C BD 010C OUTCH     JSR     BREAK            CHECK FOR BREAK
+00580 044F 7E 0106           JMP     OUTEEE           GO PRINT
+00581               
+ASM68 6800 Assembler (c) 1988-1995 Evenson Consulting Services        Page 11
+FILE: e:\src\repos\mc6800\basics\tscmicrobas\tscmicrobas.asm
+
+00582               * INTERNAL BREAK ROUTINE
+00583               
+00584 0452 36      INTBRK    PSH A                    
+00585 0453 B6 8004           LDA A   PIAADR           CHECK
+00586 0456 2A 02             BPL     BREAK2           
+00587 0458 32                PUL A                    GET CHAR
+00588 0459 39      SHTCUT    RTS                      RETURN
+00589 045A B6 8004 BREAK2    LDA A   PIAADR           
+00590 045D 2A FB             BPL     BREAK2           
+00591 045F 86 99             LDA A   #$99             SET ERROR
+00592               
+00593               * OUTPUT ERROR MESSAGE
+00594               
+00595 0461 36      MISTAK    PSH A                    SAVE A
+00596 0462 BD 02EA           JSR     PCRLF            OUTPUT A CR & LF
+00597 0465 CE 0498 MISTA1    LDX     #ERRSTR          POINT TO ERROR STRING
+00598 0468 BD 02EF           JSR     PDATA1           OUTPUT IT
+00599 046B 32                PUL A                    RESTORE A
+00600 046C 36                PSH A                    SAVE A
+00601 046D BD 0444           JSR     OUTHL            OUTPUT DIGIT
+00602 0470 32      MISTA2    PUL A                    RESTORE A
+00603 0471 BD 0448           JSR     OUTHR            OUT 1'S DIGIT
+00604 0474 D6 19             LDA B   RUNFLG           RUNNING?
+00605 0476 26 03             BNE     RUNER1           
+00606 0478 7E 01B0 MISTA4    JMP     FILBUF           
+00607 047B CE 04A1 RUNER1    LDX     #ERSTR2          POINT TO STRING
+00608 047E BD 02EF           JSR     PDATA1           OUTPUT IT
+00609 0481 DE 04             LDX     BUFPNT           SET POINTER
+00610 0483 09      RUNER2    DEX                      DEC THE POINTER
+00611 0484 8C 0D4F           CPX     #STORSP          BEGINNING? 
+00612 0487 27 07             BEQ     RUNER4           
+00613 0489 A6 00             LDA A   0,X              GET CHAR
+00614 048B 81 0D             CMP A   #$D              C.R.?
+00615 048D 26 F4             BNE     RUNER2           
+00616 048F 08                INX                      BUMP THE POINTER
+00617 0490 C6 01   RUNER4    LDA B   #1               
+00618 0492 0C                CLC                      
+00619 0493 BD 03C5           JSR     OUTBC2           OUT LINE NUM. 
+00620 0496 20 E0             BRA     MISTA4           
+00621 0498    07   ERRSTR    FCB     7                
+00622 0499    4552           FCC     ;ERROR #;        
+00623 04A0    04             FCB     4                
+00624               
+00625 04A1    2041 ERSTR2    FCC     ; AT ;           
+00626 04A5    04             FCB     4                
+00627               
+00628               * PRINT ROUTINE
+00629               
+00630 04A6 BD 036F PRINT     JSR     NXTSPC           FIND NEXT BLOCK
+00631 04A9 BD 0308 PRINT0    JSR     TSTTRM           
+00632 04AC 26 03             BNE     FIELD1           
+00633 04AE 7E 053C           JMP     PRINT8           
+00634 04B1 7F 0012 FIELD1    CLR     CRFLAG           
+00635 04B4 81 2C             CMP A   #',              IS IT A "," 
+00636 04B6 26 20             BNE     PRINT2           
+00637 04B8 D6 1D             LDA B   FLDCNT           GET COUNT
+00638 04BA 86 00   FIELD2    LDA A   #'               SPACE
+00639 04BC BD 044C           JSR     OUTCH            OUTPUT A SPACE 
+ASM68 6800 Assembler (c) 1988-1995 Evenson Consulting Services        Page 12
+FILE: e:\src\repos\mc6800\basics\tscmicrobas\tscmicrobas.asm
+
+00640 04BF 5C                INC B                    
+00641 04C0 C5 07             BIT B   #7               END OF FIELD? 
+00642 04C2 26 F6             BNE     FIELD2           
+00643 04C4 C1 47             CMP B   #$47             END OF LINE? 
+00644 04C6 22 04             BHI     FIELD3           
+00645 04C8 D7 1D             STA B   FLDCNT           SAVE FIELD INFO 
+00646 04CA 20 03             BRA     PRINT1           
+00647 04CC BD 02EA FIELD3    JSR     PCRLF            OUT A C.R. & L.F.
+00648 04CF 7C 0012 PRINT1    INC     CRFLAG           SET FLAG
+00649 04D2 08                INX                      BUMP THE POINTER 
+00650 04D3 BD 0368           JSR     SKIPSP           
+00651 04D6 20 D1             BRA     PRINT0           
+00652 04D8 81 3B   PRINT2    CMP A   #';              IS IT A ";"
+00653 04DA 27 F3             BEQ     PRINT1           
+00654 04DC 81 22             CMP A   #'"              IS IT A QUOTE? 
+00655 04DE 26 05             BNE     PRINT4           
+00656 04E0 08                INX                      BUMP THE POINTER
+00657 04E1 8D 64             BSR     PSTRNG           OUTPUT STRING 
+00658 04E3 20 49             BRA     PRINT6           
+00659 04E5 7F 0017 PRINT4    CLR     TABFLG           CLEAR FLAG
+00660 04E8 81 54             CMP A   #'T              IS IT A T?
+00661 04EA 26 06             BNE     PRIN45           
+00662 04EC 97 17             STA A   TABFLG           SET FLAG 
+00663 04EE 86 41             LDA A   #'A              
+00664 04F0 20 06             BRA     PRIN47           
+00665 04F2 81 53   PRIN45    CMP A   #'S              IS IT A S?
+00666 04F4 26 2E             BNE     PRIN55           
+00667 04F6 86 50             LDA A   #'P              
+00668 04F8 A1 01   PRIN47    CMP A   1,X              
+00669 04FA 26 28             BNE     PRIN55           
+00670 04FC BD 0371           JSR     NXTSP4           FIND NEXT
+00671 04FF BD 0A26           JSR     EXPR             EVALUATE
+00672 0502 BD 061E           JSR     BINCON           CONVERT 
+00673 0505 D6 64             LDA B   NUMBER+2         
+00674 0507 27 25             BEQ     PRINT6           
+00675 0509 96 17             LDA A   TABFLG           CHECK FLAG
+00676 050B 27 07             BEQ     PRINT5           
+00677 050D 5A                DEC B                    
+00678 050E D1 1D             CMP B   FLDCNT           CHECK COUNT
+00679 0510 23 1C             BLS     PRINT6           
+00680 0512 20 02             BRA     PRIN51           
+00681 0514 DB 1D   PRINT5    ADD B   FLDCNT           
+00682 0516 86 00   PRIN51    LDA A   #'               SPACE
+00683 0518 BD 044C           JSR     OUTCH            OUTPUT SPACE
+00684 051B 7C 001D           INC     FLDCNT           BUMP COUNTER 
+00685 051E D1 1D             CMP B   FLDCNT           
+00686 0520 26 F4             BNE     PRIN51           REPEAT
+00687 0522 20 0A   PRIN52    BRA     PRINT6           
+00688 0524 BD 0A26 PRIN55    JSR     EXPR             EVAL EXPRESSION
+00689 0527 DF 22             STX     XSAVE            SAVE POINTER
+00690 0529 BD 03B1           JSR     OUTBCD           OUTPUT VALUE
+00691 052C DE 22             LDX     XSAVE            RESTORE
+00692 052E BD 0CDE PRINT6    JSR     SKYCLS           
+00693 0531 5A                DEC B                    
+00694 0532 26 03             BNE     PRINT7           CHECK FOR ERROR
+00695 0534 7E 04A9           JMP     PRINT0           
+00696 0537 86 31   PRINT7    LDA A   #$31             
+00697 0539 7E 0461           JMP     MISTAK           
+ASM68 6800 Assembler (c) 1988-1995 Evenson Consulting Services        Page 13
+FILE: e:\src\repos\mc6800\basics\tscmicrobas\tscmicrobas.asm
+
+00698 053C 7D 0012 PRINT8    TST     CRFLAG           C.R. ?
+00699 053F 26 03             BNE     PRINT9           
+00700 0541 BD 02EA           JSR     PCRLF            OUTPUT C.R. L.F 
+00701 0544 7E 0704 PRINT9    JMP     RUNEXC           
+00702               
+00703               * PRINT STRING ROUTINE
+00704               
+00705 0547 A6 00   PSTRNG    LDA A   0,X              GET A CHAR.
+00706 0549 81 22             CMP A   #'"              IS I T A QUOTE? 
+00707 054B 27 0E             BEQ     PSTRN4           
+00708 054D BD 0308           JSR     TSTTRM           IS IT A C.R.? 
+00709 0550 27 0D             BEQ     PSTRN8           
+00710 0552 BD 044C           JSR     OUTCH            OUTPUT CHARACTER
+00711 0555 7C 001D           INC     FLDCNT           BUMP FIELD CNT
+00712 0558 08                INX                      BUMP THE POINTER
+00713 0559 20 EC             BRA     PSTRNG           REPEAT
+00714 055B 08      PSTRN4    INX                      
+00715 055C 7E 0368           JMP     SKIPSP           
+00716 055F 86 32   PSTRN8    LDA A   #$32             
+00717 0561 7E 0461           JMP     MISTAK           REPORT ERROR
+00718               
+00719               * FIND LABLE ROUTINE
+00720               
+00721 0564 DF 04   FNDVAR    STX     BUFPNT           SAVE POINTER
+00722 0566 BD 0CE5           JSR     CLASS1           GO CLASSIFY CHAR.
+00723 0569 C1 02             CMP B   #2               CHECK FOR LETTER
+00724 056B 26 2F             BNE     FNDL25           ERROR 
+00725 056D 7F 0020           CLR     XTEMP            
+00726 0570 16                TAB                      SAVE LABLE
+00727 0571 48                ASL A                    MULT IT BY 2
+00728 0572 1B                ABA                      ADD IT 
+00729 0573 80 13             SUB A   #$13             
+00730 0575 97 21             STA A   XTEMP+1          
+00731 0577 DE 20             LDX     XTEMP            POINT TO IT
+00732 0579 39                RTS                      RETURN
+00733               
+00734               * FIND DIMENSIONED VARIABLE
+00735               
+00736 057A A6 00   FNDLB0    LDA A   0,X              
+00737 057C 08      FNDLBL    INX                      ADVANCE POINTER
+00738 057D 7F 0018           CLR     DIMFLG           
+00739 0580 8D E2             BSR     FNDVAR           GO FIND VAR. 
+00740 0582 5F                CLR B                    
+00741 0583 A6 00             LDA A   0,X              GET CHAR.
+00742 0585 81 0A             CMP A   #$0A             CHECK FOR 1 DIM 
+00743 0587 27 06             BEQ     FNDLB2           
+00744 0589 81 0B             CMP A   #$0B             CHECK IF 2 DIM 
+00745 058B 27 01             BEQ     FNDLB1           
+00746 058D 39                RTS                      
+00747 058E 5C      FNDLB1    INC B                    SET FLAG-2 DIM
+00748 058F A6 01   FNDLB2    LDA A   1,X              SET POINTER 
+00749 0591 36                PSH A                    
+00750 0592 A6 02             LDA A   2,X              
+00751 0594 36                PSH A                    
+00752 0595 37                PSH B                    SAVE B
+00753 0596 BD 036F           JSR     NXTSPC           FIND NEXT 
+00754 0599 33                PUL B                    
+00755 059A 81 28             CMP A   #'(              IS IT A PAREN?
+ASM68 6800 Assembler (c) 1988-1995 Evenson Consulting Services        Page 14
+FILE: e:\src\repos\mc6800\basics\tscmicrobas\tscmicrobas.asm
+
+00756 059C 26 71   FNDL25    BNE     FNDLB9           
+00757 059E 5D                TST B                    
+00758 059F 27 13             BEQ     FNDLB3           
+00759 05A1 08                INX                      
+00760 05A2 BD 0A29           JSR     EXPRO            GO EVALUATE 
+00761 05A5 96 64             LDA A   NUMBER+2         GET RESULT
+00762 05A7 36                PSH A                    SAVE IT
+00763 05A8 BD 0B62           JSR     STAKDN           RESTORE
+00764 05AB BD 036F           JSR     NXTSPC           FIND NEXT
+00765 05AE 81 2C             CMP A   #',              IS IT A COMMA? 
+00766 05B0 26 5D             BNE     FNDLB9           
+00767 05B2 20 02             BRA     FNDLB4           
+00768 05B4 4F      FNDLB3    CLR A                    
+00769 05B5 36                PSH A                    SET ROWV
+00770 05B6 4C      FNDLB4    INC A                    
+00771 05B7 97 18             STA A   DIMFLG           SET FLAG 
+00772 05B9 08                INX                      
+00773 05BA BD 0A29           JSR     EXPRO            
+00774 05BD 08                INX                      
+00775 05BE DF 04             STX     BUFPNT           SAVE POINTER 
+00776 05C0 32                PUL A                    
+00777 05C1 97 14             STA A   ROWVAR           SAVE 
+00778 05C3 32                PUL A                    
+00779 05C4 97 21             STA A   XTEMP+1          SAVE 
+00780 05C6 32                PUL A                    
+00781 05C7 97 20             STA A   XTEMP            SAVE
+00782 05C9 DE 20             LDX     XTEMP            SET POINTER
+00783 05CB A6 00             LDA A   0,X              GET CHAR
+00784 05CD 97 16             STA A   COLCON           SAVE IT
+00785 05CF 08                INX                      BUMP THE POINTER 
+00786 05D0 08                INX                      
+00787 05D1 DF 20             STX     XTEMP            
+00788 05D3 BD 030F           JSR     UPSCLR           
+00789 05D6 96 14             LDA A   ROWVAR           GET VAR.
+00790 05D8 DE 20             LDX     XTEMP            
+00791 05DA 09                DEX                      DEC POINTER
+00792 05DB A1 00             CMP A   0,X              CHECK
+00793 05DD 22 30             BHI     FNDLB9           
+00794 05DF 97 64             STA A   NUMBER+2         
+00795 05E1 BD 030F           JSR     UPSCLR           PUSH STACK
+00796 05E4 96 16             LDA A   COLCON           GET CONST,
+00797 05E6 91 5E             CMP A   AC-1             CHECK
+00798 05E8 27 02             BEQ     FNDL45           
+00799 05EA 23 23             BLS     FNDLB9           ERROR!
+00800 05EC 8B 01   FNDL45    ADD A   #1               
+00801 05EE 19                DAA                      BIAS IT 
+00802 05EF 97 64             STA A   NUMBER+2         
+00803 05F1 BD 0BF4           JSR     MULT             GO MULTIPLY
+00804 05F4 BD 0BCA           JSR     ADD              GO ADD
+00805 05F7 BD 0614 FNDLB5    JSR     TIMTHR           
+00806               
+00807               * ROUTINE TO ADD VALUE TO X-REG.
+00808               
+00809 05FA 96 20   ADDX      LDA A   XTEMP            GET M.S.BYTE 
+00810 05FC D6 21             LDA B   XTEMP+1          
+00811 05FE DB 64             ADD B   NUMBER+2         
+00812 0600 99 63             ADC A   NUMBER+1         
+00813 0602 97 20             STA A   XTEMP            SAVE SUM 
+ASM68 6800 Assembler (c) 1988-1995 Evenson Consulting Services        Page 15
+FILE: e:\src\repos\mc6800\basics\tscmicrobas\tscmicrobas.asm
+
+00814 0604 D7 21             STA B   XTEMP+1          
+00815 0606 BD 0B62           JSR     STAKDN           
+00816 0609 DE 20             LDX     XTEMP            SET POINTER
+00817 060B 7F 0018           CLR     DIMFLG           RESTORE FLAG
+00818 060E 39                RTS                      RETURN
+00819               
+00820 060F 86 14   FNDLB9    LDA A   #$14             SET ERROR
+00821 0611 7E 0461           JMP     MISTAK           GO REPORT
+00822               
+00823               * ROUTINE TO MULTIPLY BY 3
+00824               
+00825 0614 BD 030F TIMTHR    JSR     UPSCLR           
+00826 0617 86 03             LDA A   #$3              SET MULTIPLIER 
+00827 0619 97 64             STA A   NUMBER+2         
+00828 061B BD 0BF4           JSR     MULT             GO MULTIPLY
+00829               
+00830               * BCD TO BINARY CONVERT.
+00831               
+00832 061E 96 64   BINCON    LDA A   NUMBER+2         GET LS BYTE
+00833 0620 36                PSH A                    SAVE 
+00834 0621 96 63             LDA A   NUMBER+1         
+00835 0623 36                PSH A                    SAVE: 
+00836 0624 5F                CLR B                    
+00837 0625 D7 63             STA B   NUMBER+1         
+00838 0627 D7 64             STA B   NUMBER+2         INITIALIZE 
+00839 0629 96 62             LDA A   NUMBER           
+00840 062B 8D 12             BSR     ADSHF1           ADD AND SHIFT 
+00841 062D 32                PUL A                    
+00842 062E 36                PSH A                    
+00843 062F 8D 0A             BSR     ADSHF0           GO ADD IN AND SHIFT
+00844 0631 32                PUL A                    GET MS BYTE AGAIN
+00845 0632 8D 0B             BSR     ADSHF1           GO ADD IN AND SHIFT
+00846 0634 32                PUL A                    GET LS BYTE 
+00847 0635 36                PSH A                    
+00848 0636 8D 03             BSR     ADSHF0           
+00849 0638 32                PUL A                    
+00850 0639 20 1D             BRA     ADDIN            G0 ADD IN ONES
+00851 063B 44      ADSHF0    LSR A                    
+00852 063C 44                LSR A                    
+00853 063D 44                LSR A                    
+00854 063E 44                LSR A                    MOVE TO LS HALF
+00855 063F 8D 17   ADSHF1    BSR     ADDIN            GO ADD IN
+00856 0641 D6 63             LDA B   NUMBER+1         
+00857 0643 48                ASL A                    
+00858 0644 59                ROL B                    MULT BY 2 
+00859 0645 37                PSH B                    
+00860 0646 36                PSH A                    SAVE 
+00861 0647 48                ASL A                    
+00862 0648 59                ROL B                    
+00863 0649 48                ASL A                    
+00864 064A 59                ROL B                    MULT BY 4, =*8 
+00865 064B 97 64             STA A   NUMBER+2         
+00866 064D 32                PUL A                    
+00867 064E D7 63             STA B   NUMBER+1         
+00868 0650 8D 08             BSR     ADDIN1           GO ADD IN 
+00869 0652 32                PUL A                    
+00870 0653 9B 63             ADD A   NUMBER+1         
+00871 0655 97 63             STA A   NUMBER+1         MULTIPLY BY TEN 
+ASM68 6800 Assembler (c) 1988-1995 Evenson Consulting Services        Page 16
+FILE: e:\src\repos\mc6800\basics\tscmicrobas\tscmicrobas.asm
+
+00872 0657 39                RTS                      
+00873 0658 84 0F   ADDIN     AND A   #$0F             MASK
+00874 065A 9B 64   ADDIN1    ADD A   NUMBER+2         
+00875 065C 97 64             STA A   NUMBER+2         
+00876 065E 24 03             BCC     ADDIN2           CHECK FOR CARRY 
+00877 0660 7C 0063           INC     NUMBER+1         
+00878 0663 39      ADDIN2    RTS                      
+00879               
+00880               * PUT LABLE ROUTINE
+00881               
+00882 0664 96 62   PUTLBL    LDA A   NUMBER           
+00883 0666 A7 00             STA A   0,X              PUT M.S. BYTE
+00884 0668 96 62   PUTLB2    LDA A   NUMBER           +1
+00885 066A A7 01             STA A   1,X              PUT NEXT 
+00886 066C 96 64             LDA A   NUMBER+2         
+00887 066E A7 02             STA A   2,X              PUT L.S. BYTE
+00888 0670 39                RTS                      RETURN
+00889               
+00890               * DIMENSION
+00891               
+00892 0671 DE 06   DIM       LDX     FORSTK           SET BOUNDS 
+00893 0673 DF 37             STX     CPX1             
+00894 0675 BD 036F           JSR     NXTSPC           
+00895 0678 BD 0368 DIMN      JSR     SKIPSP           CLASSIFY
+00896 067B BD 0564           JSR     FNDVAR           
+00897 067E DF 0A             STX     XTEMP3           SAVE IT
+00898 0680 BD 036F           JSR     NXTSPC           GET TO NEXT
+00899 0683 81 28             CMP A   #'(              IS IT A PARENT 
+00900 0685 26 20             BNE     DIM9             
+00901 0687 08      DIM01     INX                      BUMP THE POINTER
+00902 0688 BD 0364           JSR     CONSKP           CONVERT DIM
+00903 068B 81 29             CMP A   #')              IS IT A PAREN 
+00904 068D 26 05             BNE     DIM1             
+00905 068F 4F                CLR A                    
+00906 0690 5F                CLR B                    
+00907 0691 36                PSH A                    SAVE IT 
+00908 0692 20 18             BRA     DIM2             
+00909 0694 81 2C   DIM1      CMP A   #',              COMMA?
+00910 0696 26 0F             BNE     DIM9             ERROR!
+00911 0698 96 64             LDA A   NUMBER+2         
+00912 069A 27 0B             BEQ     DIM9             
+00913 069C 36                PSH A                    SAVE
+00914 069D 08                INX                      BUMP THE POINTER
+00915 069E BD 0364           JSR     CONSKP           CONVERT 
+00916 06A1 C6 01             LDA B   #1               
+00917 06A3 81 29             CMP A   #')              PAREN? 
+00918 06A5 27 05             BEQ     DIM2             
+00919 06A7 86 40   DIM9      LDA A   #$40             SET ERROR
+00920 06A9 7E 0461           JMP     MISTAK           REPORT
+00921 06AC 96 64   DIM2      LDA A   NUMBER+2         
+00922 06AE 27 F7             BEQ     DIM9             
+00923 06B0 36                PSH A                    SAVE
+00924 06B1 DF 04             STX     BUFPNT           SAVE POINTER
+00925 06B3 DE 0A             LDX     XTEMP3           SET X 
+00926 06B5 86 0A             LDA A   #$0A             
+00927 06B7 1B                ABA                      SET MARKER
+00928 06B8 A7 00             STA A   0,X              SAVE IT
+00929 06BA 96 08             LDA A   DIMPNT           GET POINTER
+ASM68 6800 Assembler (c) 1988-1995 Evenson Consulting Services        Page 17
+FILE: e:\src\repos\mc6800\basics\tscmicrobas\tscmicrobas.asm
+
+00930 06BC A7 01             STA A   1,X              SAVE IT 
+00931 06BE 96 09             LDA A   DIMPNT+1         
+00932 06C0 A7 02             STA A   2,X              
+00933 06C2 DE 08             LDX     DIMPNT           SET POINTER 
+00934 06C4 32                PUL A                    
+00935 06C5 A7 00             STA A   0,X              SAVE 1ST DIM
+00936 06C7 08                INX                      BUMP THE POINTER 
+00937 06C8 33                PUL B                    
+00938 06C9 E7 00             STA B   0,X              SAVE 2ND DIM 
+00939 06CB 08                INX                      
+00940 06CC DF 20             STX     XTEMP            SAVE POINTER 
+00941 06CE 8B 01             ADD A   #1               
+00942 06D0 19                DAA                      BIAS 
+00943 06D1 36                PSH A                    
+00944 06D2 17                TBA                      
+00945 06D3 8B 01             ADD A   #1               BIAS
+00946 06D5 19                DAA                      ADJUST
+00947 06D6 16                TAB                      SAVE
+00948 06D7 BD 0312           JSR     CLRNUM           CLEAR STORAGE 
+00949 06DA D7 64             STA B   NUMBER+2         
+00950 06DC BD 030F           JSR     UPSCLR           GO CLEAR 
+00951 06DF 32                PUL A                    
+00952 06E0 97 64             STA A   NUMBER+2         
+00953 06E2 BD 0BF4           JSR     MULT             MULTIPLY
+00954 06E5 BD 05F7           JSR     FNDLB5           GO FIX X
+00955 06E8 BD 0CB1           JSR     CMPX             TEST BOUNDS 
+00956 06EB 23 03             BLS     DIM5             
+00957 06ED 7E 02A0           JMP     ADJEN2           
+00958 06F0 DF 08   DIM5      STX     DIMPNT           SAVE RESULT
+00959 06F2 DE 04             LDX     BUFPNT           RESTORE F'NTR 
+00960 06F4 08                INX                      
+00961 06F5 BD 0368           JSR     SKIPSP           SKIP SPACES 
+00962 06F8 BD 0308           JSR     TSTTRM           
+00963 06FB 27 07             BEQ     RUNEXC           
+00964 06FD 08                INX                      BUMP THE POINTER
+00965 06FE 7E 0678           JMP     DIMN             
+00966               
+00967               * EXTERNAL ROUTINE JUMP
+00968               
+00969 0701 BD 1F00 EXTRNL    JSR     EXTERN           GO TO IT 
+00970               
+00971               * RUN EXECUTIVE
+00972               
+00973 0704 4F      RUNEXC    CLR A                    
+00974 0705 97 12             STA A   CRFLAG           
+00975 0707 97 1C             STA A   LETFLG           
+00976 0709 97 18             STA A   DIMFLG           
+00977 070B 97 2C             STA A   STKCNT           
+00978 070D 96 19             LDA A   RUNFLG           RUN MODE?
+00979 070F 26 03             BNE     RUNEX0           
+00980 0711 7E 01B0 RUNEXA    JMP     FILBUF           
+00981 0714 DE 04   RUNEX0    LDX     BUFPNT           SET POINTER
+00982 0716 86 0D   RUNE05    LDA A   #$D              
+00983 0718 C6 3A             LDA B   #':              SETUP TERMINATORS
+00984 071A A1 00   RUNEX1    CMP A   0,X              C.R. ?
+00985 071C 27 07             BEQ     RUNEX2           
+00986 071E E1 00             CMP B   0,X              IS IT A ':' ? 
+00987 0720 27 0A             BEQ     RUNE27           
+ASM68 6800 Assembler (c) 1988-1995 Evenson Consulting Services        Page 18
+FILE: e:\src\repos\mc6800\basics\tscmicrobas\tscmicrobas.asm
+
+00988 0722 08                INX                      BUMP THE POINTER
+00989 0723 20 F5             BRA     RUNEX1           REPEAT
+00990 0725 08      RUNEX2    INX                      
+00991 0726 BC 0D4D RUNE22    CPX     ENDSTR           END OF STORAGE?
+00992 0729 27 E6             BEQ     RUNEXA           
+00993 072B 08      RUNE25    INX                      BUMP THE POINTER
+00994 072C 08      RUNE27    INX                      
+00995 072D BD 010C           JSR     BREAK            GO CHECK BREAK
+00996 0730 BD 037B RUNEX3    JSR     FNDKEY           FIND KEY WORD 
+00997 0733 4D                TST A                    
+00998 0734 26 0B             BNE     RUNEX4           
+00999 0736 DE 04             LDX     BUFPNT           SET POINTER 
+01000 0738 8D 0B             BSR     TSTLET           
+01001 073A 27 05             BEQ     RUNEX4           
+01002 073C 86 10             LDA A   #$10             
+01003 073E 7E 0461 RUNE35    JMP     MISTAK           
+01004 0741 EE 00   RUNEX4    LDX     0,X              
+01005 0743 6E 00             JMP     0,X              GO TO ROUTINE
+01006               
+01007               * TEST FOR IMPLIED LET
+01008               
+01009 0745 BD 0CE3 TSTLET    JSR     CLASS            CHECK CHAR.
+01010 0748 C1 02             CMP B   #2               LETTER?
+01011 074A 26 12             BNE     TSTLE2           
+01012 074C 08                INX                      BUMP THE POINTER
+01013 074D BD 0368           JSR     SKIPSP           SKIP SPACES
+01014 0750 81 3D             CMP A   #'=              EQUALS?
+01015 0752 27 04             BEQ     TSTLE1           
+01016 0754 81 28             CMP A   #'(              LEFT PARENT 
+01017 0756 26 06             BNE     TSTLE2           
+01018 0758 CE 0123 TSTLE1    LDX     #LETADR          SET POINTER
+01019 075B 97 1C             STA A   LETFLG           SET FLAG 
+01020 075D 5F                CLR B                    
+01021 075E 39      TSTLE2    RTS                      
+01022               
+01023               * RUN ROUTINE
+01024               
+01025 075F BD 018B RUN       JSR     CLRBEG           
+01026 0762 BD 0195           JSR     CLREND           
+01027 0765 FE 010F           LDX     MEMEND           
+01028 0768 DF 06             STX     FORSTK           
+01029 076A CE 0D4F           LDX     #STORSP          SET POINTER 
+01030 076D 7C 0019           INC     RUNFLG           
+01031 0770 20 B4             BRA     RUNE22           
+01032               
+01033               * LET ROUTINE
+01034               
+01035 0772 DE 04   LET       LDX     BUFPNT           
+01036 0774 96 1C             LDA A   LETFLG           TEST FLAG 
+01037 0776 26 03             BNE     LET2             
+01038 0778 BD 0359           JSR     NXTBLK           FIND NEXT
+01039 077B BD 0965 LET2      JSR     EXPEQU           
+01040 077E 7E 0704           JMP     RUNEXC           
+01041               
+01042               * GOTO ROUTINE
+01043               
+01044 0781 BD 036F GOTO      JSR     NXTSPC           FIND BLOCK
+01045 0784 BD 0A26 GOTO1     JSR     EXPR             GO EVALUATE
+ASM68 6800 Assembler (c) 1988-1995 Evenson Consulting Services        Page 19
+FILE: e:\src\repos\mc6800\basics\tscmicrobas\tscmicrobas.asm
+
+01046 0787 BD 02A5 GOTO2     JSR     FNDLIN           GO FIND LINE
+01047 078A 5D      GOTO3     TST B                    FIND?
+01048 078B 27 05             BEQ     GOTO5            
+01049 078D 86 16             LDA A   #$16             SET ERROR
+01050 078F 7E 0461 GOTO4     JMP     MISTAK           REPORT 
+01051 0792 5C      GOTO5     INC B                    
+01052 0793 D7 19             STA B   RUNFLG           SET RUN FLAG 
+01053 0795 7E 0726           JMP     RUNE22           
+01054               
+01055               * INPUT ROUTINE
+01056               
+01057 0798 BD 036F INPUT     JSR     NXTSPC           FIND NEXT
+01058 079B 7F 0013 INPUT0    CLR     QMFLAG           CLEAR FLAG
+01059 079E BD 0368 INPUT1    JSR     SKIPSP           SKIP SPACES
+01060 07A1 81 22             CMP A   #'"              IS IT A QUOTE?
+01061 07A3 26 06             BNE     INPUT2           
+01062 07A5 08                INX                      BUMP THE POINTER
+01063 07A6 BD 0547           JSR     PSTRNG           OUTPUT STRING 
+01064 07A9 20 3B             BRA     INPUT6           
+01065 07AB BD 057C INPUT2    JSR     FNDLBL           FIND LABLE
+01066 07AE DF 33             STX     XTEMP4           SAVE POINTER
+01067 07B0 CE 0068 INPUT3    LDX     #BUFFER          SET POINTER
+01068 07B3 96 13             LDA A   QMFLAG           TEST FLAG
+01069 07B5 26 07             BNE     INPUT4           
+01070 07B7 86 3F             LDA A   #'?              
+01071 07B9 97 13             STA A   QMFLAG           SET FLAG
+01072 07BB BD 044C           JSR     OUTCH            OUT A ?
+01073 07BE BD 0109 INPUT4    JSR     INCH             GET A DIGIT
+01074 07C1 81 18             CMP A   #DELCOD          DELETE?
+01075 07C3 26 05             BNE     INPU45           
+01076 07C5 7F 0013           CLR     QMFLAG           
+01077 07C8 20 E6             BRA     INPUT3           
+01078 07CA A7 00   INPU45    STA A   0,X              SAVE IT
+01079 07CC 08                INX                      
+01080 07CD 81 2C             CMP A   #',              1S IT COMMA? 
+01081 07CF 27 09             BEQ     INPUT5           
+01082 07D1 81 0D             CMP A   #$D              IS IT A C.R.?
+01083 07D3 26 E9             BNE     INPUT4           
+01084 07D5 97 12             STA A   CRFLAG           SET FLAG
+01085 07D7 BD 02EA           JSR     PCRLF            OUTPUT A CR & LF
+01086 07DA CE 0068 INPUT5    LDX     #BUFFER          SET POINTER
+01087 07DD BD 031A           JSR     BCDCON           GO CNVRT NUM. 
+01088 07E0 DE 33             LDX     XTEMP4           
+01089 07E2 8D 2D             BSR     LABLS2           
+01090 07E4 DF 04             STX     BUFPNT           SAVE POINTER
+01091 07E6 81 2C   INPUT6    CMP A   #',              IS IT A COMMA?
+01092 07E8 26 07             BNE     INPUT7           
+01093 07EA 08                INX                      
+01094 07EB 96 12             LDA A   CRFLAG           TEST FLAG
+01095 07ED 27 AF             BEQ     INPUT1           
+01096 07EF 20 AA             BRA     INPUT0           
+01097 07F1 BD 0308 INPUT7    JSR     TSTTRM           
+01098 07F4 26 13             BNE     INPUT9           
+01099 07F6 96 12   INPU72    LDA A   CRFLAG           TEST FLAG
+01100 07F8 27 03             BEQ     INPUT8           
+01101 07FA 7E 0704 INPU75    JMP     RUNEXC           
+01102 07FD BD 0109 INPUT8    JSR     INCH             GET CHAR.
+01103 0800 81 0D             CMP A   #$D              C.R.?
+ASM68 6800 Assembler (c) 1988-1995 Evenson Consulting Services        Page 20
+FILE: e:\src\repos\mc6800\basics\tscmicrobas\tscmicrobas.asm
+
+01104 0802 26 F9             BNE     INPUT8           
+01105 0804 BD 02EA           JSR     PCRLF            
+01106 0807 20 F1             BRA     INPU75           
+01107 0809 86 45   INPUT9    LDA A   #$45             
+01108 080B 7E 0461           JMP     MISTAK           REPORT ERROR
+01109               
+01110               
+01111               * GET AND PUT LABLE
+01112               
+01113 080E BD 057C LABLES    JSR     FNDLBL           GO FIND IT
+01114 0811 BD 0664 LABLS2    JSR     PUTLBL           GO PUT IT
+01115 0814 7E 036F           JMP     NXTSPC           GET TO NEXT SET
+01116               
+01117               
+01118               * DATA ROUTINE
+01119               
+01120 0817 96 19   DATA      LDA A   RUNFLG           RUNNING?
+01121 0819 27 49             BEQ     READ6            
+01122 081B BD 036F           JSR     NXTSPC           FIND NEXT
+01123 081E 97 1A             STA A   DATAFL           SET DATA FLAG
+01124 0820 DF 0C             STX     DATAST           SET POINTER 
+01125 0822 DF 0E             STX     DATAPT           
+01126 0824 20 3E             BRA     READ6            RETURN
+01127               
+01128               
+01129               * READ DATA ROUTINE
+01130               
+01131 0826 96 19   READ      LDA A   RUNFLG           RUNNING?
+01132 0828 27 3A             BEQ     READ6            
+01133 082A 96 1A             LDA A   DATAFL           CHECK FLAG 
+01134 082C 27 39             BEQ     READ8            
+01135 082E BD 0359           JSR     NXTBLK           GET NEXT
+01136 0831 BD 0368 READ2     JSR     SKIPSP           GO CLASSIFY
+01137 0834 BD 057C           JSR     FNDLBL           
+01138 0837 DF 33             STX     XTEMP4           
+01139 0839 DE 04             LDX     BUFPNT           
+01140 083B DF 35             STX     XTEMP5           SAVE IT
+01141 083D DE 0E             LDX     DATAPT           GET DATA PNTR
+01142 083F BD 0A26           JSR     EXPR             GET DATA
+01143 0842 A6 00             LDA A   0,X              GET CHAR.
+01144 0844 BD 0308           JSR     TSTTRM           TEST IT
+01145 0847 26 04             BNE     READ25           
+01146 0849 DE 0C             LDX     DATAST           SET POINTER 
+01147 084B 20 01             BRA     READ3            
+01148 084D 08      READ25    INX                      BUMP THE POINTER
+01149 084E DF 0E   READ3     STX     DATAPT           
+01150 0850 DE 35             LDX     XTEMP5           
+01151 0852 DF 04             STX     BUFPNT           
+01152 0854 DE 33             LDX     XTEMP4           
+01153 0856 8D B9             BSR     LABLS2           
+01154 0858 81 2C             CMP A   #',              IS IT A COMMA? 
+01155 085A 26 03             BNE     READ4            
+01156 085C 08                INX                      
+01157 085D 20 D2             BRA     READ2            REPEAT
+01158 085F BD 0308 READ4     JSR     TSTTRM           
+01159 0862 26 03             BNE     READ8            ERROR
+01160 0864 7E 0704 READ6     JMP     RUNEXC           RETURN
+01161 0867 86 51   READ8     LDA A   #$51             
+ASM68 6800 Assembler (c) 1988-1995 Evenson Consulting Services        Page 21
+FILE: e:\src\repos\mc6800\basics\tscmicrobas\tscmicrobas.asm
+
+01162 0869 7E 0461           JMP     MISTAK           
+01163               
+01164               * RESTORE DATA STRING
+01165               
+01166 086C DF 22   RESTOR    STX     XSAVE            SAVE POINTER
+01167 086E DE 0C             LDX     DATAST           
+01168 0870 DF 0E             STX     DATAPT           FIX DATA PNTR
+01169 0872 DE 22             LDX     XSAVE            RESTORE POINTER 
+01170 0874 20 EE             BRA     READ6            
+01171               
+01172               * ON GOTO ROUTINE
+01173 0876 BD 0359 ONGOTO    JSR     NXTBLK           FIND NEXT BLOCK
+01174 0879 BD 0A26           JSR     EXPR             EVAL. EXPR.
+01175 087C 96 64             LDA A   NUMBER+2         
+01176 087E 84 0F             AND A   #$0F             MASK L.S. DIGIT
+01177 0880 36                PSH A                    SAVE A
+01178 0881 7F 0012           CLR     CRFLAG           
+01179 0884 08                INX                      BUMP THE POINTER 
+01180 0885 08                INX                      
+01181 0886 A6 00             LDA A   0,X              GET CHAR
+01182 0888 81 54             CMP A   #'T              IS IT A "T"? 
+01183 088A 27 02             BEQ     ONGOT0           
+01184 088C 97 12             STA A   CRFLAG           SET FLAG
+01185 088E BD 035B ONGOT0    JSR     NXTBL4           GET NEXT
+01186 0891 DF 22             STX     XSAVE            SAVE X
+01187 0893 32                PUL A                    RESTORE A
+01188 0894 4A      ONGOT1    DEC A                    
+01189 0895 27 11             BEQ     ONGOT4           
+01190 0897 E6 00   ONGOT2    LDA B   0,X              GET A CHAR,
+01191 0899 08                INX                      BUMP THE POINTER
+01192 089A C1 2C             CMP B   #',              IS IT A COMMA? 
+01193 089C 26 04             BNE     ONGOT3           
+01194 089E DF 22             STX     XSAVE            SAVE THE POINTER
+01195 08A0 20 F2             BRA     ONGOT1           REPEAT
+01196 08A2 C1 0D   ONGOT3    CMP B   #$D              C^R^ ?
+01197 08A4 26 F1             BNE     ONGOT2           
+01198 08A6 DE 22             LDX     XSAVE            RESTORE POINTER
+01199 08A8 D6 12   ONGOT4    LDA B   CRFLAG           CHECK FLAG
+01200 08AA 27 03             BEQ     ONGOT6           
+01201 08AC 7E 0932           JMP     GOSUB2           
+01202 08AF 7E 0784 ONGOT6    JMP     GOTO1            
+01203               
+01204               * ROUTINE
+01205               
+01206 08B2 BD 036F IF        JSR     NXTSPC           FIND NEXT
+01207 08B5 BD 0A26           JSR     EXPR             EUAL EXPR
+01208 08B8 A6 00             LDA A   0,X              GET CHAR
+01209 08BA 8D 63             BSR     CLSREL           REL OPERATOR?
+01210 08BC 26 5C             BNE     IF9              ERROR!
+01211 08BE 36                PSH A                    SAVE A
+01212 08BF A6 01             LDA A   1,X              GET CHAR
+01213 08C1 8D 5C             BSR     CLSREL           REL OP?
+01214 08C3 32                PUL A                    RESTORE A 
+01215 08C4 26 04             BNE     IF1              
+01216 08C6 E6 01             LDA B   1,X              
+01217 08C8 1B                ABA                      FORM REL CODE
+01218 08C9 08                INX                      BUMP THE POINTER
+01219 08CA 08      IF1       INX                      
+ASM68 6800 Assembler (c) 1988-1995 Evenson Consulting Services        Page 22
+FILE: e:\src\repos\mc6800\basics\tscmicrobas\tscmicrobas.asm
+
+01220 08CB 36                PSH A                    SAVE A
+01221 08CC BD 0A26           JSR     EXPR             EVAL EXPR 
+01222 08CF 32                PUL A                    
+01223 08D0 84 0F             AND A   #$0F             MASK
+01224 08D2 80 09             SUB A   #9               BIAS IT
+01225 08D4 2B 44             BMI     IF9              ERROR?
+01226 08D6 48                ASL A                    TIMES FOUR 
+01227 08D7 48                ASL A                    
+01228 08D8 B7 08E2           STA A   OFSET3+1         
+01229 08DB BD 0BC4           JSR     SUB              GO COMPARE
+01230 08DE BD 0CBE           JSR     ZCHK             SET CC REG
+01231 08E1 20 FE   OFSET3    BRA     *                
+01232 08E3 2F 18   BRATBL    BLE     IF4              BRANCH TABLE 
+01233 08E5 20 30             BRA     IF8              
+01234 08E7 26 14             BNE     IF4              
+01235 08E9 20 2C             BRA     IF8              
+01236 08EB 2C 10             BGE     IF4              
+01237 08ED 20 28             BRA     IF8              
+01238 08EF 2D 0C             BLT     IF4              
+01239 08F1 20 24             BRA     IF8              
+01240 08F3 27 08             BEQ     IF4              
+01241 08F5 20 20             BRA     IF8              
+01242 08F7 2E 04             BGT     IF4              
+01243 08F9 20 1C             BRA     IF8              
+01244 08FB 20 1D             BRA     IF9              ERROR!
+01245 08FD DE 04   IF4       LDX     BUFPNT           SET POINTER
+01246 08FF A6 00             LDA A   0,X              GET CHAR
+01247 0901 81 54             CMP A   #'T              IS IT A "T"? 
+01248 0903 26 0F             BNE     IF6              
+01249 0905 BD 036F           JSR     NXTSPC           
+01250 0908 DF 04             STX     BUFPNT           SAVE POINTER
+01251 090A BD 0CE5           JSR     CLASS1           GO CLASSIFY
+01252 090D C1 03             CMP B   #3               IS IT A NUMBER? 
+01253 090F 26 03             BNE     IF6              
+01254 0911 7E 0784           JMP     GOTO1            GO TO GOTO
+01255 0914 7E 0730 IF6       JMP     RUNEX3           
+01256 0917 7E 0704 IF8       JMP     RUNEXC           GO PROCESS CMND
+01257 091A 86 62   IF9       LDA A   #$62             SET ERROR
+01258 091C 7E 0461           JMP     MISTAK           
+01259               
+01260               * CLASSIFY RELATIONAL OPERATION
+01261               
+01262 091F 81 3B   CLSREL    CMP A   #$3B             
+01263 0921 23 06             BLS     CLSRE5           
+01264 0923 81 3E             CMP A   #$3E             CHECK CHAR 
+01265 0925 22 02             BHI     CLSRE5           
+01266 0927 5F                CLR B                    CLEAR FLAG
+01267 0928 39                RTS                      RETURN
+01268 0929 5C      CLSRE5    INC B                    SET FLAG
+01269 092A 39                RTS                      RETURN
+01270               
+01271               * GOSUB ROUTINE
+01272               
+01273 092B D6 19   GOSUB     LDA B   RUNFLG           
+01274 092D 27 E8             BEQ     IF8              
+01275 092F BD 036F           JSR     NXTSPC           FIND NEXT
+01276 0932 7C 001B GOSUB2    INC     SUBCNT           
+01277 0935 BD 0A26           JSR     EXPR             EVALUATE EXPR 
+ASM68 6800 Assembler (c) 1988-1995 Evenson Consulting Services        Page 23
+FILE: e:\src\repos\mc6800\basics\tscmicrobas\tscmicrobas.asm
+
+01278 0938 09                DEX                      
+01279 0939 BD 02C6           JSR     FNDCRT           FIND C.R.
+01280 093C 08                INX                      BUMP THE POINTER
+01281 093D A6 00             LDA A   0,X              GET LINE NO 
+01282 093F 36                PSH A                    
+01283 0940 A6 01             LDA A   1,X              
+01284 0942 36                PSH A                    SAVE AS RET. ADD. 
+01285 0943 9F 37             STS     CPX1             SAVE SP
+01286 0945 CE A023           LDX     #STKBOT+35       
+01287 0948 BD 0CB1           JSR     CMPX             CHECK BOUNDS 
+01288 094B 23 03             BLS     GOSUB4           
+01289 094D 7E 02A0           JMP     ADJEN2           RPT OVFL
+01290 0950 7E 0787 GOSUB4    JMP     GOTO2            
+01291               
+01292               * RETURN ROUTINE
+01293               
+01294 0953 86 73   RETURN    LDA A   #$73             
+01295 0955 7A 001B           DEC     SUBCNT           DEC COUNTER 
+01296 0958 2A 03             BPL     RETUR2           
+01297 095A 7E 0461           JMP     MISTAK           ERROR!
+01298 095D 32      RETUR2    PUL A                    GET RET. ADD. 
+01299 095E 33                PUL B                    
+01300 095F BD 02A9           JSR     FINDLN           GO FIND LINE
+01301 0962 7E 078A           JMP     GOTO3            
+01302               
+01303               * EXPRESSION EQUATE
+01304               
+01305 0965 BD 057A EXPEQU    JSR     FNDLB0           FIND LABLE
+01306 0968 DF 33             STX     XTEMP4           SAVE
+01307 096A BD 036F           JSR     NXTSPC           
+01308 096D 08                INX                      
+01309 096E BD 0A26           JSR     EXPR             GO EVALUATE 
+01310 0971 DE 33             LDX     XTEMP4           GET POINTER 
+01311 0973 7E 0664           JMP     PUTLBL           INSTALL 
+01312               
+01313               * FOR ROUTINE
+01314               
+01315 0976 BD 0359 FOR       JSR     NXTBLK           FIND NEXT
+01316 0979 36                PSH A                    
+01317 097A 8D E9             BSR     EXPEQU           
+01318 097C DE 08             LDX     DIMPNT           
+01319 097E DF 37             STX     CPX1             
+01320 0980 DE 06             LDX     FORSTK           
+01321 0982 32                PUL A                    
+01322 0983 A7 00             STA A   0,X              
+01323 0985 96 05             LDA A   BUFPNT+1         
+01324 0987 09                DEX                      DEC THE POINTER 
+01325 0988 A7 00             STA A   0,X              
+01326 098A 96 04             LDA A   BUFPNT           SET UP INDEX 
+01327 098C 09                DEX                      
+01328 098D A7 00             STA A   0,X              
+01329 098F 09                DEX                      
+01330 0990 BD 0CB1           JSR     CMPX             CHECK FOR OVFLW 
+01331 0993 22 03             BHI     FOR5             
+01332 0995 7E 02A0           JMP     ADJEN2           
+01333 0998 DF 06   FOR5      STX     FORSTK           SAVE POINTER
+01334 099A 7E 0704           JMP     RUNEXC           
+01335               
+ASM68 6800 Assembler (c) 1988-1995 Evenson Consulting Services        Page 24
+FILE: e:\src\repos\mc6800\basics\tscmicrobas\tscmicrobas.asm
+
+01336               * NEXT ROUTINE
+01337               
+01338 099D BD 0359 NEXT      JSR     NXTBLK           FIND NEXT
+01339 09A0 DF 1E             STX     NXPNTR           
+01340 09A2 DE 06             LDX     FORSTK           SET POINTER
+01341 09A4 BC 010F NEXT1     CPX     MEMEND           OVFLW?
+01342 09A7 26 04             BNE     NEXT2            
+01343 09A9 DE 04             LDX     BUFPNT           RESTORE PNTR
+01344 09AB 20 74             BRA     NEXT9            ERROR!
+01345 09AD 08      NEXT2     INX                      FIXUP POINTER
+01346 09AE 08                INX                      
+01347 09AF 08                INX                      
+01348 09B0 A1 00             CMP A   0,X              CHECK
+01349 09B2 26 F0             BNE     NEXT1            
+01350 09B4 09                DEX                      FIX POINTER 
+01351 09B5 09                DEX                      
+01352 09B6 09                DEX                      
+01353 09B7 DF 06             STX     FORSTK           
+01354 09B9 08                INX                      
+01355 09BA EE 00             LDX     0,X              
+01356 09BC DF 04             STX     BUFPNT           SAVE IT
+01357 09BE BD 057C           JSR     FNDLBL           FIND LABLE
+01358 09C1 DF 33             STX     XTEMP4           SAVE IT
+01359 09C3 BD 036F           JSR     NXTSPC           FIND NEXT
+01360 09C6 BD 0A26           JSR     EXPR             EVALUATE
+01361 09C9 BD 0B51           JSR     STAKUP           
+01362 09CC DE 33             LDX     XTEMP4           RESTORE PNTR
+01363 09CE BD 0B44           JSR     GETVAL           GET LABLE VALUE 
+01364 09D1 DE 04             LDX     BUFPNT           
+01365 09D3 A6 00             LDA A   0,X              GET CHAR
+01366 09D5 81 53             CMP A   #'S              IS IT STEP? 
+01367 09D7 27 08             BEQ     NEXT4            
+01368 09D9 BD 030F           JSR     UPSCLR           
+01369 09DC 4C                INC A                    
+01370 09DD 97 64             STA A   NUMBER+2         
+01371 09DF 20 0A             BRA     NEXT5            
+01372 09E1 BD 0371 NEXT4     JSR     NXTSP4           
+01373 09E4 BD 0A26           JSR     EXPR             
+01374 09E7 96 62             LDA A   NUMBER           
+01375 09E9 97 1C             STA A   LETFLG           SHOW NEG. 
+01376 09EB BD 0BCA NEXT5     JSR     ADD              GO ADD IN STEP
+01377 09EE CE 0010           LDX     #TRYVAL          SET POINTER
+01378 09F1 BD 0664           JSR     PUTLBL           SAVE LABLE
+01379 09F4 BD 0BC4           JSR     SUB              COMPARE
+01380 09F7 BD 0CBE           JSR     ZCHK             SET CC REG
+01381 09FA D6 1C             LDA B   LETFLG           CHK FLAG 
+01382 09FC 2B 05             BMI     NEXT6            
+01383 09FE 06                TAP                      SET CC
+01384 09FF 2C 12             BGE     NEXT8            
+01385 0A01 20 03             BRA     NEXT7            
+01386 0A03 06      NEXT6     TAP                      SET CC
+01387 0A04 2F 0D             BLE     NEXT8            
+01388 0A06 DE 06   NEXT7     LDX     FORSTK           
+01389 0A08 08                INX                      FIXUP PNTR 
+01390 0A09 08                INX                      
+01391 0A0A 08                INX                      
+01392 0A0B DF 06             STX     FORSTK           SAVE IT
+01393 0A0D DE 1E             LDX     NXPNTR           
+ASM68 6800 Assembler (c) 1988-1995 Evenson Consulting Services        Page 25
+FILE: e:\src\repos\mc6800\basics\tscmicrobas\tscmicrobas.asm
+
+01394 0A0F DF 04             STX     BUFPNT           SAVE
+01395 0A11 20 0B             BRA     NEXT85           
+01396 0A13 CE 0010 NEXT8     LDX     #TRYVAL          
+01397 0A16 BD 0B44           JSR     GETVAL           
+01398 0A19 DE 33             LDX     XTEMP4           
+01399 0A1B BD 0664           JSR     PUTLBL           
+01400 0A1E 7E 0704 NEXT85    JMP     RUNEXC           
+01401 0A21 86 81   NEXT9     LDA A   #$81             SET ERROR
+01402 0A23 7E 0461 NEXTIO    JMP     MISTAK           
+01403               
+01404               * EXPRESSION HANDLER
+01405               
+01406 0A26 7F 002C EXPR      CLR     STKCNT           SET COUNT = 0
+01407 0A29 96 2C   EXPRO     LDA A   STKCNT           
+01408 0A2B 97 2D             STA A   AUXCNT           
+01409 0A2D 8D 04             BSR     EVAL             
+01410 0A2F 4D                TST A                    CHECK FOR ERROR
+01411 0A30 26 F1             BNE     NEXTIO           
+01412 0A32 39      EXPR1     RTS                      RETURN 
+01413               *
+01414               **EVAL 
+01415               * EVALUATE AN ALGEBRAIC STRING 
+01416               *
+01417 0A33 9F FE   EVAL      STS     STKTOP           SAVE SP TOP
+01418 0A35 BD 0CDE EVA0A     JSR     SKYCLS           
+01419 0A38 DF 04             STX     BUFPNT           
+01420 0A3A C1 01             CMP B   #1               SEE IF EMPTY EXPRESSION 
+01421 0A3C 26 04             BNE     EVAL0            
+01422 0A3E 86 21             LDA A   #$21             
+01423 0A40 20 4A             BRA     EVAL3            
+01424 0A42 54      EVAL0     LSR B                    SET UP
+01425 0A43 C1 03             CMP B   #3               CHECK FOR UNARY + OR -
+01426 0A45 26 03             BNE     EVAL1            
+01427 0A47 BD 030F           JSR     UPSCLR           
+01428 0A4A DE 04   EVAL1     LDX     BUFPNT           
+01429 0A4C BD 0CDE EVAL1A    JSR     SKYCLS           GET NEXT CHAR
+01430 0A4F DF 04             STX     BUFPNT           
+01431 0A51 C1 04             CMP B   #4               CHECK FOR OPERATORS 
+01432 0A53 23 02             BLS     EVAL1Z           
+01433 0A55 C6 05             LDA B   #5               SET UP
+01434 0A57 58      EVAL1Z    ASL B                    
+01435 0A58 F7 0A5C           STA B   OFFREL+1         SET UP BRANCH
+01436 0A5B 20 FE   OFFREL    BRA     *                
+01437 0A5D 20 2B             BRA     EVAL2            ERROR
+01438 0A5F 20 1B             BRA     EVAL4            TERMINATOR
+01439 0A61 20 38             BRA     EVAL8            LETTER
+01440 0A63 20 2C             BRA     EVAL7            NUMBER
+01441 0A65 20 04             BRA     EVAL1C           RIGHT PAREN
+01442 0A67 36                PSH A                    SAVE 
+01443 0A68 08                INX                      
+01444 0A69 20 CA             BRA     EVA0A            AGAIN
+01445 0A6B 30      EVAL1C    TSX                      GET SP
+01446 0A6C 09                DEX                      ADJUST 
+01447 0A6D D6 18             LDA B   DIMFLG           
+01448 0A6F 9C FE             CPX     STKTOP           CHECK FOR EMPTY 
+01449 0A71 27 06             BEQ     EVAL1E           
+01450 0A73 32                PUL A                    
+01451 0A74 5F                CLR B                    
+ASM68 6800 Assembler (c) 1988-1995 Evenson Consulting Services        Page 26
+FILE: e:\src\repos\mc6800\basics\tscmicrobas\tscmicrobas.asm
+
+01452 0A75 81 28             CMP A   #'(              CHECK FOR L PAREN ON STACK
+01453 0A77 27 F2             BEQ     EVAL1C           IF SO, OK
+01454 0A79 5D      EVAL1E    TST B                    CHECK FOR ALRIGHT
+01455 0A7A 27 0E             BEQ     EVAL2            IF NOT SET, ERROR
+01456 0A7C 4F      EVAL4     CLR A                    
+01457 0A7D D6 2C             LDA B   STKCNT           GET STACK STKCNT
+01458 0A7F 5A                DEC B                    CHECK OP STACK 
+01459 0A80 D1 2D             CMP B   AUXCNT           
+01460 0A82 26 06             BNE     EVAL2            IF NOT EMPTY, ERROR 
+01461 0A84 30                TSX                      
+01462 0A85 09                DEX                      ALIGN
+01463 0A86 9C FE             CPX     STKTOP           CHECK OPERATOR STACK
+01464 0A88 27 04             BEQ     EVAL3A           IF NOT EMPTY° ERROR
+01465 0A8A 86 20   EVAL2     LDA A   #$20             SET ERROR NUMBER
+01466 0A8C 9E FE   EVAL3     LDS     STKTOP           GET SP
+01467 0A8E DE 04   EVAL3A    LDX     BUFPNT           SET POINTER 
+01468 0A90 39                RTS                      
+01469 0A91 BD 0B51 EVAL7     JSR     STAKUP           SHIFT OP STACK UP
+01470 0A94 DE 04             LDX     BUFPNT           
+01471 0A96 BD 031A           JSR     BCDCON           GET OPERAND 
+01472 0A99 20 59             BRA     EVAL12           
+01473 0A9B A6 01   EVAL8     LDA A   1,X              GET NEXT CHAR
+01474 0A9D BD 0CE5           JSR     CLASS1           GO CLASSIFY
+01475 0AA0 C1 02             CMP B   #2               CHECK FOR LETTER
+01476 0AA2 26 28             BNE     EVAL9            IF NOT, VARIABLE
+01477 0AA4 A6 00             LDA A   0,X              GET CHAR BACK
+01478 0AA6 DF 22             STX     XSAVE            SET FOR ENTRY TO FIMDKEY 
+01479 0AA8 CE 017B           LDX     #FCTTBL          
+01480 0AAB BD 0385           JSR     FNDKE2           GO CHECK FUNCTION
+01481 0AAE 4D                TST A                    CHECK SUCCESS 
+01482 0AAF 27 CB             BEQ     EVAL4            
+01483 0AB1 7E 0741           JMP     RUNEX4           GO SERVICE
+01484 0AB4 86 3F   EVAL86    LDA A   #'?              GET STGNUM OPERATOR
+01485 0AB6 36      EVAL87    PSH A                    PUT ON STACK
+01486 0AB7 DE 22             LDX     XSAVE            
+01487 0AB9 7E 0A35           JMP     EVA0A            
+01488 0ABC 86 40   EVAL85    LDA A   #'@              GET ABS OPERATOR
+01489 0ABE 20 F6             BRA     EVAL87           
+01490 0AC0 BD 030F EVAL88    JSR     UPSCLR           MOVE STACK UP
+01491 0AC3 BD 0D2A           JSR     RANDOM           COMPUTE RANDOM # 
+01492 0AC6 97 64             STA A   NUMBER+2         
+01493 0AC8 DE 22   EVAL89    LDX     XSAVE            RESTORE POINTER
+01494 0ACA 20 28             BRA     EVAL12           
+01495 0ACC D6 FE   EVAL9     LDA B   STKTOP           
+01496 0ACE 37                PSH B                    
+01497 0ACF D6 FF             LDA B   STKTOP+1         
+01498 0AD1 37                PSH B                    
+01499 0AD2 D6 2D             LDA B   AUXCNT           GET COUNTER
+01500 0AD4 37                PSH B                    SAVE
+01501 0AD5 D6 18             LDA B   DIMFLG           GET FLAG
+01502 0AD7 37                PSH B                    SAVE
+01503 0AD8 BD 057A           JSR     FNDLB0           FIND VARIABLE STORAGE
+01504 0ADB 33                PUL B                    GET FLAG
+01505 0ADC D7 18             STA B   DIMFLG           RESTORE
+01506 0ADE 33                PUL B                    GET COUNTER
+01507 0ADF D7 2D             STA B   AUXCNT           RESTORE 
+01508 0AE1 33                PUL B                    
+01509 0AE2 D7 FF             STA B   STKTOP+1         
+ASM68 6800 Assembler (c) 1988-1995 Evenson Consulting Services        Page 27
+FILE: e:\src\repos\mc6800\basics\tscmicrobas\tscmicrobas.asm
+
+01510 0AE4 33                PUL B                    
+01511 0AE5 D7 FE             STA B   STKTOP           
+01512 0AE7 BD 0B51           JSR     STAKUP           
+01513 0AEA DE 20             LDX     XTEMP            
+01514 0AEC BD 0B44           JSR     GETVAL           MOVE VALUE TO NUMBER 
+01515 0AEF 20 05             BRA     EVA12A           
+01516 0AF1 DE 04   EVA11C    LDX     BUFPNT           RESTORE POINTER 
+01517 0AF3 08                INX                      
+01518 0AF4 DF 04   EVAL12    STX     BUFPNT           SAVE POINTER 
+01519 0AF6 30      EVA12A    TSX                      
+01520 0AF7 09                DEX                      
+01521 0AF8 9C FE             CPX     STKTOP           CHECK OPERATOR STACK
+01522 0AFA 27 37             BEQ     EVAL10           IF EMPTY, DON'T OPERATE 
+01523 0AFC 32                PUL A                    
+01524 0AFD 36                PSH A                    PUT BACK
+01525 0AFE 81 28             CMP A   #'(              CHECK FOR LEFT PAREM
+01526 0B00 27 31             BEQ     EVAL10           IF SO, DON'T OPERATE
+01527 0B02 BD 0CE5           JSR     CLASS1           GO CLASSYFY 
+01528 0B05 37                PSH B                    
+01529 0B06 54                LSR B                    SET UP ID 
+01530 0B07 96 2C             LDA A   STKCNT           GET COUNT 
+01531 0B09 4A                DEC A                    
+01532 0B0A C1 04             CMP B   #4               CHECK FOR ABS OR SON
+01533 0B0C 27 04             BEQ     EVA12C           IF SO, GO AHEAD
+01534 0B0E 91 2D             CMP A   AUXCNT           OTHERWISE CHECK FOR 2 OPER
+01535 0B10 27 21             BEQ     EVAL10           IF NOT, ABORT
+01536 0B12 81 09   EVA12C    CMP A   #9               CHECK OVERFLOW
+01537 0B14 23 04             BLS     EVA12D           OK
+01538 0B16 86 24             LDA A   #$24             SET ERROR
+01539 0B18 20 16             BRA     EVAL19           
+01540 0B1A 32      EVA12D    PUL A                    GET CLASSIFICATION
+01541 0B1B 33                PUL B                    GET OPERATOR
+01542 0B1C 80 06             SUB A   #6               REMOVE BIAS
+01543 0B1E 48                ASL A                    #2
+01544 0B1F B7 0B26           STA A   OPOFF+1          SET UP JMP
+01545 0B22 CE 0B36           LDX     #OPTBL           POINT
+01546 0B25 EE 00   OPOFF     LDX     0,X              
+01547 0B27 AD 00             JSR     0,X              GO OPERATE
+01548 0B29 BD 0CBE           JSR     ZCHK             CHECK RESULT
+01549 0B2C 28 C8             BVC     EVA12A           IF NO OVFL, GO OPERATE AGA
+01550 0B2E 86 23   EVAL18    LDA A   #$23             SET ERROR NUMBER
+01551 0B30 7E 0A8C EVAL19    JMP     EVAL3            
+01552 0B33 7E 0A4A EVAL10    JMP     EVAL1            
+01553 0B36    0BCA OPTBL     FDB     ADD              
+01554 0B38    0BC4           FDB     SUB              
+01555 0B3A    0C82           FDB     SIGNUM           
+01556 0B3C    0BBC           FDB     ABSVAL           
+01557 0B3E    0BF4           FDB     MULT             
+01558 0B40    0C15           FDB     DIVIDE           
+01559 0B42    0C94           FDB     EXPON            
+01560               *
+01561               ** GET VALUE
+01562               * MOVE 3 BYTES POINTED TO BY X TO NUMBER
+01563               *
+01564 0B44 A6 00   GETVAL    LDA A   0,X              GET VALUE
+01565 0B46 97 62             STA A   NUMBER           STORE
+01566 0B48 A6 01             LDA A   1,X              
+01567 0B4A 97 63             STA A   NUMBER+1         
+ASM68 6800 Assembler (c) 1988-1995 Evenson Consulting Services        Page 28
+FILE: e:\src\repos\mc6800\basics\tscmicrobas\tscmicrobas.asm
+
+01568 0B4C A6 02             LDA A   2,X              
+01569 0B4E 97 64             STA A   NUMBER+2         
+01570 0B50 39                RTS                      
+01571               *
+01572               *
+01573               ** STACKUP
+01574               * ROLL OPERATIONAL STACK UPWARD
+01575               *
+01576 0B51 CE 003B STAKUP    LDX     #STKEND          POINT TO END
+01577 0B54 E6 03   STAKU2    LDA B   3,X              
+01578 0B56 E7 00             STA B   0,X              MOVE
+01579 0B58 08                INX                      
+01580 0B59 8C 0062           CPX     #NUMBER          SEE IF DONE
+01581 0B5C 26 F6             BNE     STAKU2           
+01582 0B5E 7C 002C           INC     STKCNT           
+01583 0B61 39                RTS                      
+01584               *
+01585               *
+01586               ** STACKDOWN
+01587               * ROLL OPERATIONAL STACK DOWNWARD
+01588               *
+01589 0B62 CE 0064 STAKDN    LDX     #AX-1            POINT TO STORE
+01590 0B65 E6 00   STAKD1    LDA B   0,X              
+01591 0B67 E7 03             STA B   3,X              
+01592 0B69 09                DEX                      
+01593 0B6A 8C 003A           CPX     #STKEND-1        SEE IF DONE
+01594 0B6D 26 F6             BNE     STAKD1           
+01595 0B6F 7A 002C           DEC     STKCNT           
+01596 0B72 39                RTS                      
+01597               *
+01598               *
+01599               ** UADD
+01600               * UNSIGNED ADD OF AX TO NUMBER 
+01601               *
+01602 0B73 0C      UADD      CLC                      ZERO THE CARRY 
+01603 0B74 CE 0064 UADD1     LDX     #NUMBER+2        POINT TO STORE 
+01604 0B77 A6 00   UADD2     LDA A   0,X              GET ADDEND
+01605 0B79 A9 03             ADC A   3,X              ADD IN AUGEND
+01606 0B7B 19                DAA                      
+01607 0B7C A7 00             STA A   0,X              SAVE 
+01608 0B7E 09                DEX                      
+01609 0B7F 8C 0061           CPX     #NUMBER-1        SEE IF DONE 
+01610 0B82 26 F3             BNE     UADD2            
+01611 0B84 37      UADD22    PSH B                    
+01612 0B85 C6 02             LDA B   #$02             SET FOR OVFL
+01613 0B87 85 F0             BIT A   #$F0             AND AGAIN
+01614 0B89 26 01             BNE     UADD25           
+01615 0B8B 5F                CLR B                    RESET OFVL
+01616 0B8C DA 30   UADD25    ORA B   OVFLBF           
+01617 0B8E D7 30             STA B   OVFLBF           SET OVFL IF NECESSARY
+01618 0B90 17                TBA                      
+01619 0B91 33                PUL B                    
+01620 0B92 39      UADD3     RTS                      
+01621               *
+01622               *
+01623               **USUB
+01624               * UNSIGNED SUBTRACT OF AX FROM NUMBER
+01625               *
+ASM68 6800 Assembler (c) 1988-1995 Evenson Consulting Services        Page 29
+FILE: e:\src\repos\mc6800\basics\tscmicrobas\tscmicrobas.asm
+
+01626 0B93 8D 03   USUB      BSR     TENCOM           GO TEN'S COMPLEMENT
+01627 0B95 0D                SEC                      FIX UP
+01628 0B96 20 DC             BRA     UADD1            GO ADD
+01629               * 
+01630               *
+01631               **TENCOM
+01632               * UNSIGNED TEN'S COMPLEMENT OF AX (ALMOST)
+01633               *
+01634 0B98 CE 0067 TENCOM    LDX     #AX+2            POINT TO AX
+01635 0B9B 86 99   TENCO1    LDA A   #$99             
+01636 0B9D A0 00             SUB A   0,X              SUBTRACT FROM 99
+01637 0B9F A7 00             STA A   0,X              SAVE
+01638 0BA1 09                DEX                      
+01639 0BA2 8C 0064           CPX     #AX-1            
+01640 0BA5 26 F4             BNE     TENCO1           
+01641 0BA7 84 0F             AND A   #$0F             RESET SIGN
+01642 0BA9 A7 01             STA A   1,X              STORE
+01643 0BAB 39                RTS                      
+01644               * 
+01645               *
+01646               ** SET SIN
+01647               * CALCULATE RESULT SIGN 
+01648               *
+01649 0BAC 7F 0030 SETSIN    CLR     OVFLBF           CLEAR OVFL INDICATOR
+01650 0BAF 96 65   SETSI0    LDA A   AX               GET SIGN
+01651 0BB1 16                TAB                      SAVE
+01652 0BB2 C4 0F             AND B   #$0F             RESET SIGN
+01653 0BB4 D7 65             STA B   AX               PUT BACK
+01654 0BB6 97 2F             STA A   AXSIGN           SAVE SIGN
+01655 0BB8 98 62             EOR A   NUMBER           FORM NEW SIGN
+01656 0BBA 97 2E             STA A   SIGN             SAVE
+01657 0BBC D6 62   ABSVAL    LDA B   NUMBER           GET MS BYTE
+01658 0BBE C4 0F             AND B   #$0F             RESET SIGN
+01659 0BC0 D7 62             STA B   NUMBER           PUT BACK
+01660 0BC2 4D                TST A                    TEST NEW SIGN
+01661 0BC3 39                RTS                      
+01662               * 
+01663               *
+01664               **
+01665               * SUBTRACT AX FROM NUMBER
+01666               *
+01667 0BC4 96 62   SUB       LDA A   NUMBER           GET MS BYTE
+01668 0BC6 88 F0             EOR A   #$F0             CHANGE SIGN
+01669 0BC8 97 62             STA A   NUMBER           PUT BACK
+01670               * GO INTO ADD 
+01671               *
+01672               *
+01673               * ADD
+01674               * ADD AX TO NUMBER
+01675               *
+01676 0BCA 8D 58   ADD       BSR     RELAY            
+01677 0BCC 8D DE             BSR     SETSIN           GO CALCULATE SIGN
+01678 0BCE 2A 0A             BPL     ADD0             USE EITHER SIGN
+01679 0BD0 8D C1             BSR     USUB             OTHERWISE SUBTRACT
+01680 0BD2 06                TAP                      SET CCR
+01681 0BD3 28 09             BVC     ADD1             CHECK OVERFLOW
+01682 0BD5 73 002F           COM     AXSIGN           CHANGE FOR AX SMALLER
+01683 0BD8 20 0B             BRA     ADD15            
+ASM68 6800 Assembler (c) 1988-1995 Evenson Consulting Services        Page 30
+FILE: e:\src\repos\mc6800\basics\tscmicrobas\tscmicrobas.asm
+
+01684 0BDA 8D 97   ADD0      BSR     UADD             GO ADD
+01685 0BDC 20 0A             BRA     ADD2             GO FIX SIGN
+01686 0BDE 8D 44   ADD1      BSR     RELAY            COPY NUMBER TO AX
+01687 0BE0 BD 030F           JSR     UPSCLR           RESTORE
+01688 0BE3 8D AE             BSR     USUB             GO NEGATE
+01689 0BE5 7F 0030 ADD15     CLR     OVFLBF           
+01690 0BE8 96 2F   ADD2      LDA A   AXSIGN           GET OLD SIGN
+01691               * 
+01692               *
+01693               ** FIXSIN
+01694               * SET THE SIGN ON THE RESULT 
+01695               *
+01696 0BEA 84 F0   FIXSIN    AND A   #$F0             MASK
+01697 0BEC C6 0F             LDA B   #$0F             SET MASK
+01698 0BEE D4 62             AND B   NUMBER           RESET SIGN
+01699 0BF0 1B                ABA                      TACK ON SIGN
+01700 0BF1 97 62             STA A   NUMBER           PUT BACK
+01701 0BF3 39      FIX2      RTS                      
+01702               *
+01703               *
+01704               ** MULT
+01705               * MULTIPLY AC BY AX 
+01706               *
+01707 0BF4 8D 2E   MULT      BSR     RELAY            MOVE STACK
+01708 0BF6 8D B4             BSR     SETSIN           GO CALC. SIGNS
+01709 0BF8 BD 030F MULT0     JSR     UPSCLR           MOVE STACK UP
+01710 0BFB C6 05             LDA B   #5               SET COUNTER
+01711 0BFD 96 5F   MULT1     LDA A   AC               GET MS BYTE OF AC
+01712 0BFF 27 08             BEQ     MULT3            IF ZERO , LOOP
+01713 0C01 BD 0B73 MULT2     JSR     UADD             ADD IN AX 
+01714 0C04 7A 005F           DEC     AC               ONCE DONE 
+01715 0C07 26 F8             BNE     MULT2            
+01716 0C09 5A      MULT3     DEC B                    ONCE DONE
+01717 0C0A 27 3D             BEQ     MULT4            CHECK IF ALL DONE
+01718 0C0C 8D 4A             BSR     ACLEFT           SHIFT AC LEFT
+01719 0C0E 96 62             LDA A   NUMBER           
+01720 0C10 BD 0B84           JSR     UADD22           
+01721 0C13 20 E8             BRA     MULT1            
+01722               * 
+01723               * 
+01724               ** DIVIDE 
+01725               * DIVIDE AC-NUMBER BY AX 
+01726               *
+01727 0C15 8D 0D   DIVIDE    BSR     RELAY            
+01728 0C17 CE 0065           LDX     #AX              
+01729 0C1A BD 0CC1           JSR     ZCHK1            GO CHECK IF AX=O
+01730 0C1D 26 08             BNE     DIVID1           IF NOT, OK
+01731 0C1F 86 22   DIVID0    LDA A   #$22             SET ERROR
+01732 0C21 7E 0A8C           JMP     EVAL3            
+01733 0C24 7E 0B62 RELAY     JMP     STAKDN           RELAY TO STACK DOWN
+01734 0C27 BD 0BAC DIVID1    JSR     SETSIN           CALC, SIGNS
+01735 0C2A BD 0B51           JSR     STAKUP           PUSH BACK
+01736 0C2D 8D 29             BSR     ACLEFT           SHIFT DOWN
+01737 0C2F 6F 02             CLR     2,X              
+01738 0C31 6F 03             CLR     3,X              ZERO OUT NUMBER
+01739 0C33 C6 05             LDA B   #5               SET LOOP COUNT
+01740 0C35 8D 21   DIVID2    BSR     ACLEFT           MOVE AC DOWN
+01741 0C37 BD 0B98 DIVI2A    JSR     TENCOM           TAKE 10'S COMP
+ASM68 6800 Assembler (c) 1988-1995 Evenson Consulting Services        Page 31
+FILE: e:\src\repos\mc6800\basics\tscmicrobas\tscmicrobas.asm
+
+01742 0C3A 8D 2E   DIVID3    BSR     DADD             GO SPECIAL ADD
+01743 0C3C 85 F0             BIT A   #$F0             CHECK FOR OVERFLOW
+01744 0C3E 26 13             BNE     DIVID4           
+01745 0C40 BD 0B98           JSR     TENCOM           IF SO, RESTORE AX
+01746 0C43 0C                CLC                      
+01747 0C44 8D 25             BSR     DADD1            ADD BACK IN
+01748 0C46 5A                DEC B                    ONE PASS MADE
+01749 0C47 26 EC             BNE     DIVID2           
+01750 0C49 96 2E   MULT4     LDA A   SIGN             GET THE SIGN
+01751 0C4B 8D 9D             BSR     FIXSIN           GO FIX UP THE SIGN
+01752 0C4D CE 005E           LDX     #AC-1            POINT TO AC
+01753 0C50 7E 0B65           JMP     STAKD1           MOVE STACK BACK
+01754 0C53 7C 0064 DIVID4    INC     NUMBER+2         ADD ONE IN
+01755 0C56 20 E2             BRA     DIVID3           GO DO AGAIN
+01756               * 
+01757               * 
+01758               ** ACLEFT
+01759               * SHIFT AC-NUMBER LEFT 4 BITS
+01760               *
+01761 0C58 86 04   ACLEFT    LDA A   #4               SET FOR 4 BITS
+01762 0C5A CE 0064 ACLEF1    LDX     #AX-1            POINT X 
+01763 0C5D 0C                CLC                      
+01764 0C5E 69 00   ACLEF2    ROL     0,X              ROTATE
+01765 0C60 09                DEX                      
+01766 0C61 8C 005E           CPX     #AC-1            CHECK IF DONE 
+01767 0C64 26 F8             BNE     ACLEF2           
+01768 0C66 4A                DEC A                    CHECK FOR DONE 
+01769 0C67 26 F1             BNE     ACLEF1           
+01770 0C69 39                RTS                      
+01771               *
+01772               *
+01773               ** DADD
+01774               * ADD AX TO A C
+01775               *
+01776 0C6A 0D      DADD      SEC                      
+01777 0C6B CE 0061 DADD1     LDX     #AC+2            
+01778 0C6E 96 5F             LDA A   AC               GET MS BYTE
+01779 0C70 84 0F             AND A   #$0F             RESET SIGN
+01780 0C72 97 5F             STA A   AC               STORE BACK
+01781 0C74 A6 00   DADD2     LDA A   0,X              GET ADDEND
+01782 0C76 A9 06             ADC A   6,X              ADD IN
+01783 0C78 19                DAA                      
+01784 0C79 A7 00             STA A   0,X              SAVE 
+01785 0C7B 09                DEX                      
+01786 0C7C 8C 005E           CPX     #AC-1            SEE IF DONE
+01787 0C7F 26 F3             BNE     DADD2            
+01788 0C81 39                RTS                      
+01789               *
+01790               ** SIGNUM
+01791               * CALCULATE SIGNUM FUNCTION
+01792               *
+01793 0C82 8D 3A   SIGNUM    BSR     ZCHK             GO CHECK = O
+01794 0C84 27 0B             BEQ     SIGNU2           IF SOY RESULT =0
+01795 0C86 D6 62             LDA B   NUMBER           OTHERWISE GET SIGN
+01796 0C88 8D 07   SIGNU1    BSR     SIGNU2           GO CLEAR
+01797 0C8A 7C 0064           INC     NUMBER+2         MAKE = I
+01798 0C8D 17                TBA                      SET FOR FIXSIN
+01799 0C8E 7E 0BEA           JMP     FIXSIN           GO SET THE SIGN
+ASM68 6800 Assembler (c) 1988-1995 Evenson Consulting Services        Page 32
+FILE: e:\src\repos\mc6800\basics\tscmicrobas\tscmicrobas.asm
+
+01800 0C91 7E 0312 SIGNU2    JMP     CLRNUM           
+01801               *
+01802               *
+01803               ** EXPON
+01804               * CALCULATE EXPONENTIATION
+01805               * ONLY POSITIVE EXPONENTS UP TO 99 ALLOWED
+01806               *
+01807 0C94 8D 8E   EXPON     BSR     RELAY            MOVE OPERANDS DOWN
+01808 0C96 5F                CLR B                    
+01809 0C97 D7 30             STA B   OVFLBF           CLEAR OVER FLOW
+01810 0C99 96 67             LDA A   AX+2             GET EXPONENT
+01811 0C9B 27 EB             BEQ     SIGNU1           IF O, GO MAKE RESULT +1
+01812 0C9D BD 0B51           JSR     STAKUP           GET TWO COPIES
+01813 0CA0 8D 82             BSR     RELAY            MOVE DOWN
+01814 0CA2 8B 99   EXPON1    ADD A   #$99             DECREMENT
+01815 0CA4 19                DAA                      
+01816 0CA5 27 16             BEQ     CMPX2            WHEN 0 ALL DONE
+01817 0CA7 36                PSH A                    SAVE EXP
+01818 0CA8 BD 0BAF           JSR     SETSI0           GO FIX SIGNS
+01819 0CAB BD 0BF8           JSR     MULT0            GO MULTIPLY
+01820 0CAE 32                PUL A                    GET EXPONENT
+01821 0CAF 20 F1             BRA     EXPON1           LOOP
+01822               * 
+01823               *
+01824               ** CMPX
+01825               * FULL COMPARE ON X
+01826               * COMPARES X WITH CONTENTS OF CPX1
+01827               *
+01828 0CB1 DF 39   CMPX      STX     CPX2             SAVE
+01829 0CB3 96 39   CMPX1     LDA A   CPX2             GET MS BYTE
+01830 0CB5 91 37             CMP A   CPX1             COMPARE
+01831 0CB7 26 04             BNE     CMPX2            IF NOT EQUAL, DONE
+01832 0CB9 D6 3A             LDA B   CPX2+1           GET LS BYTE
+01833 0CBB D1 38             CMP B   CPX1+1           COMPARE
+01834 0CBD 39      CMPX2     RTS                      DOME
+01835               * 
+01836               * 
+01837               ** ZCHK
+01838               * CHECK OPERAND FOR EQUAL TO 0 
+01839               *
+01840 0CBE CE 0062 ZCHK      LDX     #NUMBER          
+01841 0CC1 5F      ZCHK1     CLR B                    
+01842 0CC2 6D 02             TST     2,X              
+01843 0CC4 26 0E             BNE     ZCHK2            
+01844 0CC6 6D 01             TST     1,X              
+01845 0CC8 26 0A             BNE     ZCHK2            
+01846 0CCA A6 00             LDA A   0,X              GET MS BYTE 
+01847 0CCC 84 0F             AND A   #$0F             
+01848 0CCE 26 04             BNE     ZCHK2            CHECK FOR 0
+01849 0CD0 A7 00             STA A   0,X              RESET SIGN BITS 
+01850 0CD2 C6 04             LDA B   #4               
+01851 0CD4 A6 00   ZCHK2     LDA A   0,X              GET MS BYTE
+01852 0CD6 46                ROR A                    MOVE A SIGN BIT TO N
+01853 0CD7 84 08             AND A   #8               MASK N BIT
+01854 0CD9 1B                ABA                      MERGE Z AND N
+01855 0CDA 9A 30             ORA A   OVFLBF           ADD IN V
+01856 0CDC 06                TAP                      SET CCR 
+01857 0CDD 39                RTS                      
+ASM68 6800 Assembler (c) 1988-1995 Evenson Consulting Services        Page 33
+FILE: e:\src\repos\mc6800\basics\tscmicrobas\tscmicrobas.asm
+
+01858               *
+01859               *
+01860               **
+01861 0CDE BD 0368 SKYCLS    JSR     SKIPSP           
+01862 0CE1 20 02             BRA     CLASS1           
+01863               * 
+01864               * 
+01865               **CLASS
+01866               *CLASSIFY A CHARACTER IN THE A ACCUMULATOR
+01867               *CLASSIFICATION RETURNED IN B
+01868               *  0 ERROR
+01869               *  1 TERMINATOR
+01870               *  2 LETTER
+01871               *  3 NUMBER
+01872               *  4 )
+01873               *  5 (
+01874               *  6 +
+01875               *  7 -
+01876               *  8 SGN
+01877               *  9 ABS
+01878               * 10 *
+01879               * 11 /
+01880               * 12 ~
+01881 0CE3 A6 00   CLASS     LDA A   0,X              GET CHAR
+01882 0CE5 C6 01   CLASS1    LDA B   #1               SET UP
+01883 0CE7 81 0D             CMP A   #$D              CHECK FOR CR 
+01884 0CE9 27 17             BEQ     CLAS25           
+01885 0CEB 5A                DEC B                    
+01886 0CEC 36                PSH A                    SAVE CHAR
+01887 0CED 80 28   CLAS2B    SUB A   #'(              REMOVE BIAS
+01888 0CEF 2B 10             BMI     CLASS2           CHECK ILLEGAL
+01889 0CF1 81 18             CMP A   #'@-'(           CHECK LIMIT
+01890 0CF3 23 0E             BLS     CLASS3           NOT LETTER
+01891 0CF5 81 32             CMP A   #'Z-'(           CHECK FOR LETTER 
+01892 0CF7 23 06             BLS     CLAS1B           
+01893 0CF9 81 36             CMP A   #'^-'(           CHECK FOR ILLEGAL 
+01894 0CFB 26 04             BNE     CLASS2           
+01895 0CFD C6 0A             LDA B   #10              FIX UP
+01896 0CFF CB 02   CLAS1B    ADD B   #02              
+01897 0D01 32      CLASS2    PUL A                    RESTORE CHARACTER
+01898 0D02 39      CLAS25    RTS                      DONE
+01899 0D03 DF 24   CLASS3    STX     XSAVE2           SAVE X REG
+01900 0D05 CE 0D11           LDX     #CLSTBL          POINT TO TABLE 
+01901 0D08 B7 0D0C           STA A   CLSOFF+1         SET BIAS
+01902 0D0B E6 00   CLSOFF    LDA B   0,X              GET CLASSIFICATION
+01903 0D0D DE 24             LDX     XSAVE2           RESTORE X REG, 
+01904 0D0F 20 F0             BRA     CLASS2           
+01905 0D11    0504 CLSTBL    FCB     5,4,10,6,1,7,0,11,3,3,3,3 
+01906 0D1D    0303           FCB     3,3,3,3,3,3,1,1,1,1,1,8,9 
+01907               *
+01908               *
+01909               * RANDOM GENERATOR
+01910               *
+01911 0D2A C6 08   RANDOM    LDA B   #8               SET COUNTER
+01912 0D2C CE 0000           LDX     #RNDM            
+01913 0D2F A6 03   RPT       LDA A   3,X              GET M.S. BYTE OF RANDOM NO
+01914 0D31 48                ASL A                    SHIFT IT LEFT THREE:
+01915 0D32 48                ASL A                    TIMES TO GET BIT 28
+ASM68 6800 Assembler (c) 1988-1995 Evenson Consulting Services        Page 34
+FILE: e:\src\repos\mc6800\basics\tscmicrobas\tscmicrobas.asm
+
+01916 0D33 48                ASL A                    IN LINE WITH BIT 31
+01917 0D34 A8 03             EOR A   3,X              XOR A WITH RANDOM NO
+01918 0D36 48                ASL A                    PUT BIT 28.XOR31 IN
+01919 0D37 48                ASL A                    CARRY BY SHIFTING LEFT
+01920 0D38 69 00             ROL     0,X              ROTATE ALL FOUR BYTES OF
+01921 0D3A 69 01             ROL     1,X              THE RANDOM NO, ROTATING
+01922 0D3C 69 02             ROL     2,X              THE CARRY INTO THE LSB
+01923 0D3E 69 03             ROL     3,X              THE MSB IS LOST
+01924 0D40 5A                DEC B                    DECREMENT THE COUNTER
+01925 0D41 26 EC             BNE     RPT              IF ITS NOT O, GO REPEAT
+01926 0D43 A6 00             LDA A   0,X              PUT RANDOM # IN A
+01927 0D45 81 9F             CMP A   #$9F             CHECK IN RANGE
+01928 0D47 22 E1             BHI     RANDOM           IN NOT GET ANOTHER
+01929 0D49 8B 00             ADD A   #0               SET HALF CARRY 
+01930 0D4B 19                DAA                      
+01931 0D4C 39                RTS                      
+01932 0D4D         ENDSTR    RMB     2                
+01933         0D4F STORSP    EQU     *                
+01934               
+01935         1F00           ORG     EXTERN           
+01936 1F00 39                RTS                      
+01937         0000           END                      
+
+No errors
+
+ Total bytes output = 3408

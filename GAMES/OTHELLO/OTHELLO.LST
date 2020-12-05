@@ -1,0 +1,769 @@
+ASM68 6800 Assembler (c) 1988-1995 Evenson Consulting Services        Page 1
+FILE: e:\src\repos\mc6800\othello\othello.asm      TITLE: OTHELLO
+
+00001                        NAM     OTHELLO          
+00002               *****************************
+00003               * OTHELLO GAME
+00004               * BY UNKNOWN SOURCE
+00005               * RECOVERED FROM OLD FLOPPIES
+00006               *
+00007               * ADOPTED TO RUN ON THE MC3
+00008               * BY DANIEL TUFVESSON 2014
+00009               *****************************
+00010               
+00011         E1D1 OUTEEE    EQU     $E1D1            
+00012         E1AC INEEE     EQU     $E1AC            
+00013         E1D1 CONTRL    EQU     $E1D1            
+00014               
+00015         0020           ORG     $0020            
+00016               
+00017 0020         TROW      RMB     1                
+00018 0021         TCOL      RMB     1                
+00019 0022         CROW      RMB     2                
+00020 0024         CPUTRY    RMB     1                
+00021 0025         CPUSCR    RMB     1                
+00022 0026         FORFIT    RMB     1                
+00023 0027         ROW       RMB     1                
+00024 0028         COL       RMB     1                
+00025 0029         PIECE     RMB     1                
+00026         002A           ORG     *                
+00027 002A    4F   XXOO      FCC     'O'              
+00028 002B    00   WAIT      FCB     0                NO WAIT
+00029 002C    02   STRTGY    FCB     2                BEST STRATEGY
+00030 002D    01   WHO1ST    FCB     1                HUMAN FIRST
+00031 002E         COUNT     RMB     1                
+00032 002F         TEMPX1    RMB     2                
+00033 0031         TEMP1     RMB     1                
+00034 0032         RDIR      RMB     1                
+00035 0033         CDIR      RMB     1                
+00036               
+00037 0034         CPU       RMB     1                
+00038 0035         ME        RMB     1                
+00039 0036         TOTAL     RMB     1                
+00040 0037         FLAG      RMB     1                
+00041 0038         FLAG1     RMB     1                
+00042 0039         SCORE1    RMB     1                
+00043 003A         SCORE2    RMB     1                
+00044 003B         SCORE3    RMB     1                
+00045 003C         MATRIX    RMB     8*8              
+00046               
+00047         0100           ORG     $100             
+00048               
+00049 0100 CE 0517 START     LDX     #GREET           LDS    #$C07F    GREETINGS
+00050 0103 8D 6C             BSR     OUTIN            
+00051 0105 81 59             CMPA    #'Y              
+00052 0107 26 02             BNE     PROMT1           
+00053 0109 20 03             BRA     PROMT2           
+00054               
+00055               * SHOULD CPU WAIT?
+00056               
+00057 010B CE 0703 PROMT1    LDX     #IWAIT           
+00058 010E 8D 61   PROMT2    BSR     OUTIN            WAIT?
+ASM68 6800 Assembler (c) 1988-1995 Evenson Consulting Services        Page 2
+FILE: e:\src\repos\mc6800\othello\othello.asm      TITLE: OTHELLO
+
+00059 0110 5F                CLRB                     
+00060 0111 81 59             CMPA    #'Y              
+00061 0113 26 04             BNE     STORWT           
+00062 0115 BD 04F1           JSR     PDATA1           
+00063 0118 5C                INCB                     
+00064 0119 D7 2B   STORWT    STAB    WAIT             
+00065 011B CE 0756           LDX     #BEST            STRATEGY?
+00066 011E 8D 51             BSR     OUTIN            
+00067 0120 5F                CLRB                     
+00068 0121 81 4E             CMPA    #'N              
+00069 0123 27 02             BEQ     STORBT           
+00070 0125 C6 02             LDAB    #2               
+00071 0127 D7 2C   STORBT    STAB    STRTGY           
+00072 0129 CE 07BA           LDX     #XORO            WANT X OR O ?
+00073 012C 8D 43             BSR     OUTIN            
+00074 012E 81 58             CMPA    #'X              
+00075 0130 27 02             BEQ     STORXO           
+00076 0132 86 4F             LDAA    #'O              
+00077 0134 97 2A   STORXO    STAA    XXOO             
+00078 0136 CE 07D7           LDX     #FIRST           MOVE?
+00079 0139 8D 36             BSR     OUTIN            
+00080 013B 5F                CLRB                     
+00081 013C 81 4E             CMPA    #'N              
+00082 013E 27 01             BEQ     STOR1            
+00083 0140 5C                INCB                     
+00084 0141 D7 2D   STOR1     STAB    WHO1ST           
+00085 0143 BD 0507           JSR     PCRLF            
+00086               
+00087               * INITIAL BOARD
+00088               
+00089 0146 C6 2E   INITAL    LDAB    #'.              
+00090 0148 CE 003C           LDX     #MATRIX          
+00091 014B E7 00   ZAP       STAB    0,X              STAB   0,X+
+00092 014D 08                INX                      
+00093 014E 8C 007D           CPX     #MATRIX+65       
+00094 0151 26 F8             BNE     ZAP              
+00095 0153 CE 4F58           LDX     #$4F58           O X
+00096 0156 DF 57             STX     MATRIX+27        
+00097 0158 CE 584F           LDX     #$584F           X O
+00098 015B DF 5F             STX     MATRIX+35        
+00099               
+00100               * INITIAL PIECE SCORE
+00101               
+00102 015D CE 0204           LDX     #$0204           
+00103 0160 DF 34             STX     CPU              CPU=ME=2
+00104 0162 DF 35             STX     ME               TOTAL=4
+00105 0164 97 26             STAA    FORFIT           =0
+00106               
+00107               * PRINT INITIAL BOARD
+00108               
+00109 0166 BD 03FC           JSR     PRINT            
+00110               
+00111               * WHO'S FIRST?
+00112               
+00113 0169 7D 002D           TST     WHO1ST           
+00114 016C 27 11             BEQ     COMPTR           
+00115 016E 7E 025C           JMP     HUMAN            
+00116 0171 BD 04F1 OUTIN     JSR     PDATA1           
+ASM68 6800 Assembler (c) 1988-1995 Evenson Consulting Services        Page 3
+FILE: e:\src\repos\mc6800\othello\othello.asm      TITLE: OTHELLO
+
+00117 0174 BD E1AC INE       JSR     INEEE            
+00118 0177 81 1B             CMPA    #$1B             ESCAPE
+00119 0179 26 03             BNE     RTS1             
+00120 017B 7E 0367           JMP     REPLAY           
+00121 017E 39      RTS1      RTS                      
+00122               
+00123               * SHOULD CPU WAIT
+00124               
+00125 017F 7D 002B COMPTR    TST     WAIT             
+00126 0182 27 02             BEQ     CPUGO            
+00127 0184 8D EE             BSR     INE              
+00128               
+00129               * SETUP CPU'S PIECE
+00130               
+00131 0186 96 2A   CPUGO     LDAA    XXOO             
+00132 0188 88 17             EORA    #$17             FLIP
+00133 018A 97 29             STAA    PIECE            
+00134               
+00135               * INITIAL VARIABLES
+00136               
+00137 018C 86 40             LDAA    #64              
+00138 018E 97 24             STAA    CPUTRY           
+00139 0190 7F 0027           CLR     ROW              
+00140 0193 7F 0028           CLR     COL              
+00141 0196 7F 0025           CLR     CPUSCR           
+00142 0199 7F 003B           CLR     SCORE3           
+00143               
+00144               * CHECK FOR EMPTY SQUARE
+00145               
+00146 019C CE 0027 TESTPT    LDX     #ROW             
+00147 019F BD 0387           JSR     GETMTX           
+00148 01A2 81 2E             CMPA    #'.              
+00149 01A4 26 38             BNE     NOGOOD           
+00150               
+00151               * TEST FOR PROPER NEIGHBOR
+00152               
+00153 01A6 BD 039B           JSR     PROPER           
+00154 01A9 4D                TSTA                     
+00155 01AA 27 32             BEQ     NOGOOD           
+00156               
+00157               * CHECK FOR FLANKED ROW
+00158               
+00159 01AC 7F 0037           CLR     FLAG             
+00160 01AF BD 0428           JSR     SCORE            
+00161 01B2 D6 39             LDAB    SCORE1           
+00162 01B4 27 28             BEQ     NOGOOD           
+00163               
+00164               * BEST MOVE SO FAR?
+00165               
+00166 01B6 96 27             LDAA    ROW              
+00167 01B8 27 04             BEQ     CKROW            
+00168 01BA 81 07             CMPA    #7               
+00169 01BC 26 02             BNE     CKROW1           
+00170 01BE DB 2C   CKROW     ADDB    STRTGY           
+00171 01C0 96 28   CKROW1    LDAA    COL              
+00172 01C2 27 04             BEQ     ADSTRT           
+00173 01C4 81 07             CMPA    #7               
+00174 01C6 26 02             BNE     CKSCOR           
+ASM68 6800 Assembler (c) 1988-1995 Evenson Consulting Services        Page 4
+FILE: e:\src\repos\mc6800\othello\othello.asm      TITLE: OTHELLO
+
+00175 01C8 DB 2C   ADSTRT    ADDB    STRTGY           
+00176 01CA D1 25   CKSCOR    CMPB    CPUSCR           
+00177 01CC 22 06             BHI     STCPUS           
+00178 01CE 26 0E             BNE     NOGOOD           
+00179 01D0 C5 01             BITB    #1               RANDOM CHOICE
+00180 01D2 27 0A             BEQ     NOGOOD           
+00181               
+00182               * FOUND BETTER MOVE FOR CPU
+00183               
+00184 01D4 96 39   STCPUS    LDAA    SCORE1           
+00185 01D6 97 3B             STAA    SCORE3           
+00186 01D8 D7 25             STAB    CPUSCR           
+00187 01DA DE 27             LDX     ROW              
+00188 01DC DF 22             STX     CROW             
+00189               
+00190               * ALL SQ'S TESTED?
+00191               
+00192 01DE 7A 0024 NOGOOD    DEC     CPUTRY           
+00193 01E1 27 14             BEQ     TSTSCR           
+00194               
+00195               * TRY AGAIN
+00196               
+00197 01E3 5F                CLRB                     
+00198 01E4 7C 0028           INC     COL              
+00199 01E7 96 28             LDAA    COL              
+00200 01E9 81 07             CMPA    #7               
+00201 01EB 23 03             BLS     DOROW            
+00202 01ED D7 28             STAB    COL              
+00203 01EF 5C                INCB                     
+00204 01F0 96 27   DOROW     LDAA    ROW              
+00205 01F2 1B                ABA                      
+00206 01F3 97 27             STAA    ROW              
+00207 01F5 20 A5             BRA     TESTPT           
+00208               
+00209               * ANY CAPTURED?
+00210               
+00211 01F7 7D 003B TSTSCR    TST     SCORE3           
+00212 01FA 27 53             BEQ     CPUFOR           
+00213               
+00214               * UPDATE SCORES
+00215               
+00216 01FC 7F 0026 GOODMV    CLR     FORFIT           
+00217 01FF 96 34             LDAA    CPU              
+00218 0201 9B 3B             ADDA    SCORE3           
+00219 0203 4C                INCA                     
+00220 0204 97 34             STAA    CPU              
+00221 0206 96 35             LDAA    ME               
+00222 0208 90 3B             SUBA    SCORE3           
+00223 020A 97 35             STAA    ME               
+00224 020C 7C 0036           INC     TOTAL            
+00225               
+00226               * PRINT CPU'S MOVE
+00227               
+00228 020F CE 094F           LDX     #IMOVE           
+00229 0212 BD 04F1           JSR     PDATA1           
+00230 0215 96 22             LDAA    CROW             
+00231 0217 8B 31             ADDA    #$31             MAKE ASCII
+00232 0219 BD E1D1           JSR     OUTEEE           
+ASM68 6800 Assembler (c) 1988-1995 Evenson Consulting Services        Page 5
+FILE: e:\src\repos\mc6800\othello\othello.asm      TITLE: OTHELLO
+
+00233 021C 96 23             LDAA    CROW+1           
+00234 021E 8B 41             ADDA    #$41             MAKE ASCII LETTER
+00235 0220 BD E1D1           JSR     OUTEEE           OUTPUT LETTER
+00236               
+00237               * PRINT # CAPTURED
+00238               
+00239 0223 CE 095C           LDX     #THAT1           
+00240 0226 BD 04F1           JSR     PDATA1           THAT GIVES ME
+00241 0229 CE 003B           LDX     #SCORE3          
+00242 022C BD 04DA           JSR     PRTDEC           
+00243 022F CE 096C           LDX     #YOUR            
+00244 0232 BD 04F1           JSR     PDATA1           YOUR PIECES
+00245               
+00246               * FLIP CAPTURED PIECES
+00247               
+00248 0235 DE 22             LDX     CROW             
+00249 0237 DF 27             STX     ROW              
+00250 0239 7C 0037           INC     FLAG             
+00251 023C BD 0428           JSR     SCORE            
+00252 023F BD 03FC           JSR     PRINT            
+00253               
+00254               * TEST FOR END OF GAME
+00255               
+00256 0242 96 35             LDAA    ME               
+00257 0244 27 06             BEQ     THEND            
+00258 0246 96 36   TSTTOT    LDAA    TOTAL            
+00259 0248 81 40             CMPA    #64              
+00260 024A 26 10             BNE     HUMAN            
+00261 024C 7E 0300 THEND     JMP     THEEND           
+00262               
+00263               * CPU FORFITS MOVE
+00264               
+00265 024F CE 097E CPUFOR    LDX     #CPU0            
+00266 0252 BD 04F1           JSR     PDATA1           
+00267 0255 96 26             LDAA    FORFIT           
+00268 0257 26 F3             BNE     THEND            
+00269 0259 7C 0026           INC     FORFIT           
+00270               
+00271               * GET HUMAN'S ROW,COL I/P
+00272               
+00273 025C 96 2A   HUMAN     LDAA    XXOO             
+00274 025E 97 29             STAA    PIECE            
+00275 0260 CE 07A3           LDX     #MOVE            
+00276 0263 BD 0171           JSR     OUTIN            
+00277 0266 81 58             CMPA    #'X              
+00278 0268 26 05             BNE     CHKCOL           
+00279 026A BD 03FC           JSR     PRINT            
+00280 026D 20 ED             BRA     HUMAN            
+00281 026F 81 38   CHKCOL    CMPA    #'8              
+00282 0271 22 77             BHI     HUMFOR           
+00283 0273 80 31             SUBA    #$31             
+00284 0275 25 73             BCS     HUMFOR           
+00285 0277 97 27             STAA    ROW              
+00286 0279 BD 0174           JSR     INE              
+00287 027C 81 48             CMPA    #'H              
+00288 027E 22 6A             BHI     HUMFOR           
+00289 0280 80 41             SUBA    #$41             =A
+00290 0282 25 66             BCS     HUMFOR           
+ASM68 6800 Assembler (c) 1988-1995 Evenson Consulting Services        Page 6
+FILE: e:\src\repos\mc6800\othello\othello.asm      TITLE: OTHELLO
+
+00291 0284 97 28             STAA    COL              
+00292               
+00293               * OCCUPIED SQ?
+00294               
+00295 0286 CE 0027           LDX     #ROW             
+00296 0289 BD 0387           JSR     GETMTX           
+00297 028C CE 0777           LDX     #SORRY           
+00298 028F 81 2E             CMPA    #'.              
+00299 0291 26 17             BNE     PRNT2            
+00300               
+00301               * PROPER NEIGHBOR?
+00302               
+00303 0293 BD 039B EMPTY     JSR     PROPER           
+00304 0296 CE 07F1           LDX     #NONEXT          
+00305 0299 4D                TSTA                     
+00306 029A 27 0E             BEQ     PRNT2            
+00307               
+00308               * FLANK?
+00309               
+00310 029C 7F 0037 CKFLNK    CLR     FLAG             
+00311 029F BD 0428           JSR     SCORE            
+00312 02A2 7D 0039           TST     SCORE1           
+00313 02A5 26 08             BNE     LEGAL            
+00314 02A7 CE 082A           LDX     #NOFLNK          
+00315 02AA BD 04F1 PRNT2     JSR     PDATA1           
+00316 02AD 20 AD   HUM1      BRA     HUMAN            
+00317               
+00318               * ALL LEGAL
+00319               
+00320 02AF 7F 0026 LEGAL     CLR     FORFIT           
+00321 02B2 CE 085D           LDX     #THAT            
+00322 02B5 BD 04F1           JSR     PDATA1           
+00323 02B8 CE 0039           LDX     #SCORE1          
+00324 02BB BD 04DA           JSR     PRTDEC           
+00325 02BE CE 086F           LDX     #OFMY            
+00326 02C1 BD 04F1           JSR     PDATA1           
+00327               
+00328               * UPDATE SCORES
+00329               
+00330 02C4 96 35             LDAA    ME               
+00331 02C6 9B 39             ADDA    SCORE1           
+00332 02C8 4C                INCA                     
+00333 02C9 97 35             STAA    ME               
+00334 02CB 96 34             LDAA    CPU              
+00335 02CD 90 39             SUBA    SCORE1           
+00336 02CF 97 34             STAA    CPU              
+00337 02D1 7C 0036           INC     TOTAL            
+00338               
+00339               * FLIP BOARD PIECES
+00340               
+00341 02D4 7C 0037           INC     FLAG             
+00342 02D7 BD 0428           JSR     SCORE            
+00343 02DA BD 03FC           JSR     PRINT            
+00344               
+00345               * TEST FOR END OF GAME
+00346               
+00347 02DD 96 34             LDAA    CPU              
+00348 02DF 27 1F             BEQ     THEEND           
+ASM68 6800 Assembler (c) 1988-1995 Evenson Consulting Services        Page 7
+FILE: e:\src\repos\mc6800\othello\othello.asm      TITLE: OTHELLO
+
+00349 02E1 96 36             LDAA    TOTAL            
+00350 02E3 81 40             CMPA    #64              
+00351 02E5 27 19             BEQ     THEEND           
+00352 02E7 7E 017F GOCPU     JMP     COMPTR           
+00353               
+00354               * HUMAN FORFITS MOVE
+00355               
+00356 02EA CE 0999 HUMFOR    LDX     #HUM0            
+00357 02ED BD 0171           JSR     OUTIN            
+00358 02F0 81 59             CMPA    #'Y              
+00359 02F2 26 B9             BNE     HUM1             
+00360 02F4 BD 0507 BYEBYE    JSR     PCRLF            
+00361 02F7 96 26             LDAA    FORFIT           
+00362 02F9 26 05             BNE     THEEND           
+00363 02FB 7C 0026           INC     FORFIT           
+00364 02FE 20 E7             BRA     GOCPU            
+00365 0300 CE 087E THEEND    LDX     #YOUHAV          
+00366 0303 BD 04F1           JSR     PDATA1           
+00367 0306 CE 0035           LDX     #ME              
+00368 0309 BD 04DA           JSR     PRTDEC           
+00369 030C CE 0889           LDX     #ANDI            
+00370 030F BD 04F1           JSR     PDATA1           
+00371 0312 CE 0034           LDX     #CPU             
+00372 0315 BD 04DA           JSR     PRTDEC           
+00373 0318 CE 089D           LDX     #PTEXT           
+00374 031B BD 04F1           JSR     PDATA1           
+00375               
+00376               * DETERMINE WINNER
+00377               
+00378 031E CE 08BF           LDX     #ATIE            TIE
+00379 0321 96 35             LDAA    ME               
+00380 0323 91 34             CMPA    CPU              
+00381 0325 27 3D             BEQ     PRNT1            TIE
+00382 0327 22 0C             BHI     HUMWON           
+00383 0329 CE 08A7           LDX     #IWON            
+00384 032C BD 04F1           JSR     PDATA1           
+00385 032F D6 34             LDAB    CPU              
+00386 0331 D0 35             SUBB    ME               
+00387 0333 20 0A             BRA     HOWBAD           
+00388 0335 CE 08C7 HUMWON    LDX     #MEWON           
+00389 0338 BD 04F1           JSR     PDATA1           
+00390 033B D6 35             LDAB    ME               
+00391 033D D0 34             SUBB    CPU              
+00392               
+00393               * HOW BAD WAS OTHER GUY TROUNCED?
+00394               
+00395 033F CE 08D2 HOWBAD    LDX     #TTYPE           
+00396 0342 BD 04F1           JSR     PDATA1           
+00397 0345 CE 08DE           LDX     #PERFCT          
+00398 0348 D1 36             CMPB    TOTAL            
+00399 034A 27 18             BEQ     PRNT1            PERFECT GAME
+00400 034C CE 090B           LDX     #SQEAK           
+00401 034F C1 05             CMPB    #5               
+00402 0351 23 11             BLS     PRNT1            SQUEAKER
+00403 0353 CE 0900           LDX     #HOT             
+00404 0356 C1 0A             CMPB    #10              
+00405 0358 23 0A             BLS     PRNT1            HOT GAME
+00406 035A CE 08F8           LDX     #FIGHT           
+ASM68 6800 Assembler (c) 1988-1995 Evenson Consulting Services        Page 8
+FILE: e:\src\repos\mc6800\othello\othello.asm      TITLE: OTHELLO
+
+00407 035D C1 0F             CMPB    #15              
+00408 035F 23 03             BLS     PRNT1            FIGHT!
+00409 0361 CE 08ED           LDX     #WALK            WALKAWAY!
+00410 0364 BD 04F1 PRNT1     JSR     PDATA1           
+00411 0367 CE 0916 REPLAY    LDX     #ANOTHR          PLAY AGAIN?
+00412 036A BD 0171           JSR     OUTIN            
+00413 036D 81 4E             CMPA    #'N              
+00414 036F 27 06             BEQ     FIN              
+00415 0371 BD 0507           JSR     PCRLF            
+00416 0374 7E 0146           JMP     INITAL           
+00417 0377 CE 0939 FIN       LDX     #THANX           
+00418 037A BD 04F1           JSR     PDATA1           
+00419 037D 7E E1D1           JMP     CONTRL           
+00420               
+00421               *********************
+00422               * STORMX SUBROUTINE *
+00423               *********************
+00424               
+00425 0380 8D 05   STORMX    BSR     GETMTX           POINT TO PLACE
+00426 0382 96 29             LDAA    PIECE            
+00427 0384 A7 00             STAA    0,X              
+00428 0386 39                RTS                      
+00429               
+00430               *********************
+00431               * GETMTX SUBROUTINE *
+00432               *********************
+00433               
+00434 0387 A6 00   GETMTX    LDAA    0,X              PASSED ROW # (0-7)
+00435 0389 E6 01             LDAB    1,X              PASSED COL # (0-7)
+00436 038B 48                ASLA                     MULTIPLY
+00437 038C 48                ASLA                     BY
+00438 038D 48                ASLA                     EIGHT
+00439 038E CE 003C           LDX     #MATRIX          START ADDR
+00440 0391 1B                ABA                      
+00441 0392 27 04             BEQ     LOADA            
+00442 0394 08      BUILDX    INX                      BUMP
+00443 0395 4A                DECA                     
+00444 0396 26 FC             BNE     BUILDX           
+00445 0398 A6 00   LOADA     LDAA    0,X              MATRIX ELEMENT REQ'D
+00446 039A 39                RTS                      
+00447               
+00448               *********************
+00449               * PROPER SUBROUTINE *
+00450               *********************
+00451               
+00452 039B 96 29   PROPER    LDAA    PIECE            OTHER PLAYER'S PIECE
+00453 039D 88 17             EORA    #$17             FLIP
+00454 039F 97 31             STAA    TEMP1            
+00455 03A1 86 08             LDAA    #8               8 NEIGHBORS
+00456 03A3 97 2E             STAA    COUNT            TO CHECK
+00457 03A5 CE 03EC           LDX     #NEIBOR          START ADDR
+00458 03A8 DF 2F             STX     TEMPX1           OF NEIGHBOR
+00459 03AA D6 27   GETROW    LDAB    ROW              ROW COORD
+00460 03AC A6 00             LDAA    0,X              ROW'S DIRECTION
+00461 03AE 27 0D             BEQ     SETR             =0
+00462 03B0 2B 07             BMI     MROW             =-
+00463 03B2 5C      AROW      INCB                     
+00464 03B3 C1 07             CMPB    #7               OFF OF BOARD
+ASM68 6800 Assembler (c) 1988-1995 Evenson Consulting Services        Page 9
+FILE: e:\src\repos\mc6800\othello\othello.asm      TITLE: OTHELLO
+
+00465 03B5 22 28             BHI     NONEIB           YES
+00466 03B7 20 04             BRA     SETR             NO
+00467 03B9 5D      MROW      TSTB                     OFF OF BOARD
+00468 03BA 27 23             BEQ     NONEIB           YES
+00469 03BC 5A                DECB                     NO
+00470 03BD D7 20   SETR      STAB    TROW             STORE NEIGHBOR'S ROW #
+00471 03BF D6 28   GETCOL    LDAB    COL              COL COORD
+00472 03C1 DE 2F             LDX     TEMPX1           COL'S
+00473 03C3 A6 01             LDAA    1,X              DIRECTION
+00474 03C5 27 0D             BEQ     SETC             =0
+00475 03C7 2B 07             BMI     MCOL             =-
+00476 03C9 5C      ACOL      INCB                     
+00477 03CA C1 07             CMPB    #7               OFF OF BOARD
+00478 03CC 22 11             BHI     NONEIB           YES
+00479 03CE 20 04             BRA     SETC             NO
+00480 03D0 5D      MCOL      TSTB                     OFF       OF BOARD
+00481 03D1 27 0C             BEQ     NONEIB           YES
+00482 03D3 5A                DECB                     NO
+00483 03D4 D7 21   SETC      STAB    TCOL             STORE NEIGHBOR'S COL #
+00484 03D6 CE 0020           LDX     #TROW            GET PIECE
+00485 03D9 8D AC             BSR     GETMTX           AT NEIGHBOR'S COORDS
+00486 03DB 91 31             CMPA    TEMP1            GET OTHER PLAYER'S PIECE
+00487 03DD 27 0C             BEQ     RTS2             IS PROPER
+00488               
+00489               * NO NEIGHBOR
+00490               
+00491 03DF DE 2F   NONEIB    LDX     TEMPX1           
+00492 03E1 08                INX                      BUMP NEIGHBOR POINTER
+00493 03E2 08                INX                      
+00494 03E3 DF 2F             STX     TEMPX1           
+00495 03E5 7A 002E           DEC     COUNT            DEC COUNT
+00496 03E8 26 C0             BNE     GETROW           OF ENTRIES TO CHECK
+00497 03EA 4F                CLRA                     FLAG=NO NEIGHBOR
+00498 03EB 39      RTS2      RTS                      
+00499 03EC    0001 NEIBOR    FCB     0,1              DOWN
+00500 03EE    FF01           FCB     $FF,1            LOWER-LEFT
+00501 03F0    FF00           FCB     $FF,0            LEFT
+00502 03F2    FFFF           FCB     $FF,$FF          UPPER-LEFT
+00503 03F4    00FF           FCB     0,$FF            UP
+00504 03F6    01FF           FCB     1,$FF            UPPER-RIGHT
+00505 03F8    0100           FCB     1,0              RIGHT
+00506 03FA    0101           FCB     1,1              LOWER RIGHT
+00507               
+00508               ********************
+00509               * PRINT SUBROUTINE *
+00510               ********************
+00511               
+00512 03FC CE 09C1 PRINT     LDX     #LETTER          
+00513 03FF BD 04F1           JSR     PDATA1           
+00514 0402 CE 003C           LDX     #MATRIX          
+00515 0405 86 30             LDAA    #'0              
+00516 0407 4C      BOARD     INCA                     
+00517 0408 97 2E             STAA    COUNT            
+00518 040A BD E1D1           JSR     OUTEEE           LINE #
+00519 040D C6 08             LDAB    #8               8 CHARS TO PRINT
+00520 040F 86 20   EIGHT     LDAA    #$20             
+00521 0411 BD E1D1           JSR     OUTEEE           SPACE
+00522 0414 A6 00             LDAA    0,X              OUTPUT
+ASM68 6800 Assembler (c) 1988-1995 Evenson Consulting Services        Page 10
+FILE: e:\src\repos\mc6800\othello\othello.asm      TITLE: OTHELLO
+
+00523 0416 BD E1D1           JSR     OUTEEE           CHAR
+00524 0419 08                INX                      BUMP      CHAR PTR
+00525 041A 5A                DECB                     DEC CHAR COUNT
+00526 041B 26 F2             BNE     EIGHT            MORE TO DO
+00527 041D 8D 06             BSR     PCR              
+00528 041F 96 2E             LDAA    COUNT            
+00529 0421 81 38             CMPA    #'8              
+00530 0423 26 E2             BNE     BOARD            BOARD
+00531 0425 7E 0507 PCR       JMP     PCRLF            
+00532               
+00533               ********************
+00534               * SCORE SUBROUTINE *
+00535               ********************
+00536               
+00537 0428 7D 0037 SCORE     TST     FLAG             HERE FOR SCORE ONLY
+00538 042B 27 06             BEQ     NOSTOR           YES
+00539 042D CE 0027           LDX     #ROW             
+00540 0430 BD 0380           JSR     STORMX           PUT PIECE ON BOARD
+00541 0433 7F 0039 NOSTOR    CLR     SCORE1           ZERO OVERALL CTR
+00542 0436 86 08             LDAA    #8               
+00543 0438 97 2E             STAA    COUNT            8 NEIGHBORS TO CHECK
+00544 043A CE 03EC           LDX     #NEIBOR          START ADDR
+00545 043D DF 2F             STX     TEMPX1           OF NEIGHBOR
+00546 043F DE 2F   LOOP1     LDX     TEMPX1           ADDR OF 'NEW' NEIGHBORS
+00547 0441 A6 00             LDAA    0,X              
+00548 0443 97 32             STAA    RDIR             ROW VECT
+00549 0445 A6 01             LDAA    1,X              
+00550 0447 97 33             STAA    CDIR             COL VECT
+00551 0449 7F 0038           CLR     FLAG1            ZERO STORAGE FLAG
+00552 044C 96 27   LOOP1A    LDAA    ROW              PASSED ROW #
+00553 044E 97 20             STAA    TROW             
+00554 0450 96 28             LDAA    COL              PASSED COL #
+00555 0452 97 21             STAA    TCOL             
+00556 0454 7F 003A           CLR     SCORE2           ZERO INTERMEDIATE SCORE
+00557 0457 96 32   LOOP2     LDAA    RDIR             ROW VECT
+00558 0459 27 15             BEQ     NEWCOL           =0
+00559 045B 2B 0B             BMI     NROW             =-
+00560 045D 7C 0020 PROW      INC     TROW             TROW=TROW+1
+00561 0460 96 20             LDAA    TROW             
+00562 0462 81 07             CMPA    #7               OFF OF BOARD
+00563 0464 22 5F             BHI     END1             YES
+00564 0466 20 08             BRA     NEWCOL           NO
+00565 0468 7D 0020 NROW      TST     TROW             OFF OF BOARD
+00566 046B 27 58             BEQ     END1             YES
+00567 046D 7A 0020           DEC     TROW             ROW=ROW-1
+00568 0470 96 33   NEWCOL    LDAA    CDIR             COL VECT
+00569 0472 27 15             BEQ     CHECK            =0
+00570 0474 2B 0B             BMI     NCOL             =-
+00571 0476 7C 0021 PCOL      INC     TCOL             COL=COL+1
+00572 0479 96 21             LDAA    TCOL             
+00573 047B 81 07             CMPA    #7               OFF OF BOARD
+00574 047D 22 46             BHI     END1             YES
+00575 047F 20 08             BRA     CHECK            
+00576 0481 7D 0021 NCOL      TST     TCOL             OFF OF BOARD
+00577 0484 27 3F             BEQ     END1             YES
+00578 0486 7A 0021           DEC     TCOL             COL=COL-1
+00579 0489 CE 0020 CHECK     LDX     #TROW            GET PIECE
+00580 048C BD 0387           JSR     GETMTX           AT TROW,TCOL
+ASM68 6800 Assembler (c) 1988-1995 Evenson Consulting Services        Page 11
+FILE: e:\src\repos\mc6800\othello\othello.asm      TITLE: OTHELLO
+
+00581 048F 16                TAB                      
+00582 0490 96 29             LDAA    PIECE            GET OPPONENTS CODE
+00583 0492 88 17             EORA    #$17             FLIP
+00584 0494 11                CBA                      CAPTURED OPPONENT'S PIECE
+00585 0495 26 10             BNE     ISME             NO
+00586 0497 7C 003A           INC     SCORE2           YES
+00587 049A 7D 0038           TST     FLAG1            STORE IT?
+00588 049D 27 B8             BEQ     LOOP2            NO
+00589 049F CE 0020           LDX     #TROW            YES
+00590 04A2 BD 0380           JSR     STORMX           
+00591 04A5 20 B0             BRA     LOOP2            
+00592 04A7 D1 29   ISME      CMPB    PIECE            FOUND ONE OF MY PIECES
+00593 04A9 26 1A             BNE     END1             NO-FOUND BLANK
+00594 04AB 7D 0038           TST     FLAG1            HERE ON SCORE PASS
+00595 04AE 26 06             BNE     TEST             NO
+00596 04B0 96 3A             LDAA    SCORE2           UPDATE
+00597 04B2 9B 39             ADDA    SCORE1           # PIECES
+00598 04B4 97 39             STAA    SCORE1           CAPTURED
+00599 04B6 7D 0037 TEST      TST     FLAG             FOR REAL?
+00600 04B9 27 0A             BEQ     END1             NO
+00601 04BB 7D 0038           TST     FLAG1            OPPONENT'S PIECES FLIPPED 
+00602 04BE 26 05             BNE     END1             YES
+00603 04C0 7C 0038           INC     FLAG1            NO-SET FLAG
+00604 04C3 20 87             BRA     LOOP1A           FLIP OPPONENT
+00605 04C5 96 30   END1      LDAA    TEMPX1+1         
+00606 04C7 8B 02             ADDA    #2               UPDATE
+00607 04C9 D6 2F             LDAB    TEMPX1           NEIGHBOR
+00608 04CB C9 00             ADCB    #0               POINTER
+00609 04CD 97 30             STAA    TEMPX1+1         
+00610 04CF D7 2F             STAB    TEMPX1           
+00611 04D1 7A 002E           DEC     COUNT            ALL CHECKED?
+00612 04D4 27 03             BEQ     RETURN           YES
+00613 04D6 7E 043F           JMP     LOOP1            
+00614 04D9 39      RETURN    RTS                      
+00615               
+00616               ********************
+00617               *PRTDEC SUBROUTINE *
+00618               ********************
+00619               
+00620 04DA E6 00   PRTDEC    LDAB    0,X              LOAD PASSED HEX #
+00621 04DC 4F                CLRA                     ZERO      HIGH ORDER DIGIT
+00622 04DD 4C      DECLOP    INCA                     
+00623 04DE C0 0A             SUBB    #10              NN=NN-10
+00624 04E0 24 FB             BCC     DECLOP           
+00625 04E2 CB 0A             ADDB    #10              RESTORE B
+00626 04E4 4A                DECA                     
+00627 04E5 27 02             BEQ     OUTB             SUPPRESS LEADING ZERO
+00628 04E7 8D 01             BSR     OUTASC           
+00629 04E9 17      OUTB      TBA                      
+00630 04EA 8B 30   OUTASC    ADDA    #'0              
+00631 04EC 7E E1D1           JMP     OUTEEE           
+00632               
+00633               *********************
+00634               * PDATA1 SUBROUTINE *
+00635               *********************
+00636               
+00637 04EF 8D 23   PDATA2    BSR     OUTE             
+00638 04F1 A6 00   PDATA1    LDAA    0,X              
+ASM68 6800 Assembler (c) 1988-1995 Evenson Consulting Services        Page 12
+FILE: e:\src\repos\mc6800\othello\othello.asm      TITLE: OTHELLO
+
+00639 04F3 08                INX                      
+00640 04F4 81 5E             CMPA    #'^              
+00641 04F6 26 04             BNE     CKCR             
+00642 04F8 86 10             LDAA    #$10             
+00643 04FA 8D 11             BSR     CLRSCN           CLEAR SCREEN
+00644 04FC 81 2F   CKCR      CMPA    #'/              C.R.?
+00645 04FE 26 02             BNE     CKEND            
+00646 0500 8D 05             BSR     PCRLF            C.R. L.F.
+00647 0502 81 3B   CKEND     CMPA    #';              
+00648 0504 26 E9             BNE     PDATA2           
+00649 0506 39                RTS                      
+00650 0507 86 0D   PCRLF     LDAA    #$D              
+00651 0509 8D 09             BSR     OUTE             
+00652 050B 86 0A             LDAA    #$A              
+00653 050D 8D 05   CLRSCN    BSR     OUTE             
+00654 050F 8D 00   NUL4      BSR     NUL2             
+00655 0511 8D 00   NUL2      BSR     NUL1             
+00656 0513 4F      NUL1      CLRA                     
+00657 0514 7E E1D1 OUTE      JMP     OUTEEE           
+00658               
+00659 0517    2F5E GREET     FCC     '/^^^'           
+00660 051B    4752           FCC     'GREETINGS FROM OTHELLO/' 
+00661 0532    444F INST0     FCC     'DO YOU WANT INSTRUCTIONS?;' 
+00662 054C    2F2F INST1     FCC     '//OTHELLO IS PLAYED ON AN ' 
+00663 0566    3820           FCC     '8 BY 8 CHECKER BOARD WITH ' 
+00664 0580    2F52           FCC     '/ROWS NUMBERED 1 TO 8 ' 
+00665 0596    414E           FCC     'AND COLUMNS A TO H.' 
+00666 05A9    2F54           FCC     '/THE INITIAL CONFIGURATION ' 
+00667 05C4    4953           FCC     'IS ALL BLANK EXCEPT' 
+00668 05D7    2F46           FCC     '/FOR THE CENTER FOUR SQUARES, ' 
+00669 05F5    5748           FCC     'WHICH FORM THE PATTERN:/' 
+00670 060D    2020           FCC     '          O X/' 
+00671 061B    2020           FCC     '          X O/' 
+00672 0629    5055           FCC     'PUT YOUR PIECE SO THAT MINE ' 
+00673 0645    4953           FCC     'IS '            
+00674 0648    4245           FCC     'BETWEEN 2 OF YOURS, SUCH ' 
+00675 0661    4153           FCC     'AS:/'           
+00676 0665    2020           FCC     '        X O X/' 
+00677 0673    2020           FCC     '          X O/' 
+00678 0681    5448           FCC     'THIS WILL "FLIP" MY TOP ' 
+00679 0699    224F           FCC     '"O" INTO YOUR "X"/' 
+00680 06AB    2F4E           FCC     '/NOTE: YOU MAY CAPTURE ' 
+00681 06C2    3120           FCC     '1 OR MORE OF '  
+00682 06CF    4D59           FCC     'MY PIECES THIS WAY,/' 
+00683 06E3    4F52           FCC     'OR YOU MAY FORFEIT BY ' 
+00684 06F9    5459           FCC     'TYPING "Z"'     
+00685 0703    2F2F IWAIT     FCC     '//SHOULD I WAIT BEFORE ' 
+00686 071A    4D41           FCC     'MAKING MY MOVES?;' 
+00687 072B    2F4F OKWAIT    FCC     '/OK. TYPING ANY CHARACTER ' 
+00688 0745    5749           FCC     'WILL LET ME GO!/;' 
+00689 0756    2F53 BEST      FCC     '/SHOULD I PLAY MY BEST ' 
+00690 076D    5354           FCC     'STRATEGY?;'     
+00691 0777    2F53 SORRY     FCC     '/SORRY, THAT SQUARE IS ' 
+00692 078E    4F43           FCC     'OCCUPIED. TRY AGAIN!;' 
+00693 07A3    2F59 MOVE      FCC     '/YOUR MOVE--(ROW,COL)?;' 
+00694 07BA    2F44 XORO      FCC     '/DO YOU WANT TO HAVE X OR O?;' 
+00695 07D7    2F44 FIRST     FCC     '/DO YOU WANT TO GO FIRST?;' 
+00696 07F1    2F53 NONEXT    FCC     '/SORRY, YOU ARE NOT NEXT TO ' 
+ASM68 6800 Assembler (c) 1988-1995 Evenson Consulting Services        Page 13
+FILE: e:\src\repos\mc6800\othello\othello.asm      TITLE: OTHELLO
+
+00697 080D    4F4E           FCC     'ONE OF MY PIECES. TRY AGAIN!;' 
+00698 082A    2F53 NOFLNK    FCC     '/SORRY, THAT MOVE DOES NOT ' 
+00699 0845    464C           FCC     'FLANK A ROW. TRY AGAIN!;' 
+00700 085D    5E2F THAT      FCC     '^/THAT GIVES YOU ;' 
+00701 086F    204F OFMY      FCC     ' OF MY PIECES/;' 
+00702 087E    07   YOUHAV    FCB     7                
+00703 087F    594F           FCC     'YOU HAVE ;'     
+00704 0889    2050 ANDI      FCC     ' PIECES AND I HAVE ;' 
+00705 089D    2050 PTEXT     FCC     ' PIECES!/;'     
+00706 08A7    534F IWON      FCC     'SORRY, I WON THAT ONE!/;' 
+00707 08BF    4120 ATIE      FCC     'A TIE!/;'       
+00708 08C7    594F MEWON     FCC     'YOU WON!!/;'    
+00709 08D2    5448 TTYPE     FCC     'THAT WAS A ;'   
+00710 08DE    5045 PERFCT    FCC     'PERFECT GAME!/;' 
+00711 08ED    5741 WALK      FCC     'WALKAWAY!/;'    
+00712 08F8    4649 FIGHT     FCC     'FIGHT!/;'       
+00713 0900    484F HOT       FCC     'HOT GAME!/;'    
+00714 090B    5351 SQEAK     FCC     'SQUEAKER!/;'    
+00715 0916    2F44 ANOTHR    FCC     '/DO YOU WANT TO PLAY' 
+00716 092A    2041           FCC     ' ANOTHER GAME?;' 
+00717 0939    2F54 THANX     FCC     '/THANKS FOR PLAYING!/;' 
+00718 094F    5E5E IMOVE     FCC     '^^I MOVE TO ;'  
+00719 095C    2F54 THAT1     FCC     '/THAT GIVES ME ;' 
+00720 096C    204F YOUR      FCC     ' OF YOUR PIECES./;' 
+00721 097E    4920 CPU0      FCC     'I HAVE TO FORFIT MY MOVE!/;' 
+00722 0999    2F41 HUM0      FCC     '/ARE YOU FORFEITING ' 
+00723 09AD    594F           FCC     'YOUR TURN (Y OR N)?;' 
+00724 09C1    2F20 LETTER    FCC     '/  A B C D E F G H/;' 
+00725               
+00726         0100           END     START            
+
+No errors
+
+ Total bytes output = 2353
