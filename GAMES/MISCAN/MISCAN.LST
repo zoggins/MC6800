@@ -1,0 +1,267 @@
+ASM68 6800 Assembler (c) 1988-1995 Evenson Consulting Services        Page 1
+FILE: miscan.asm
+
+00001               *      "MISSIONARIES AND CANNIBALS" GAME
+00002               *      ORIGINAL PROGRAM BY PHILIP N. THEURER
+00003               *      REV. 1.0 BY MOTOROLA MICROSYSTEMS NOVEMBER 25, 1976
+00004               *      STARTING ADDRESS: 0100
+00006         0080           ORG     $0080            
+00007 0080         MISA      RMB     1                
+00008 0081         MISB      RMB     1                
+00009 0082         CANA      RMB     1                
+00010 0083         CANB      RMB     1                
+00011 0084         MISAT     RMB     1                
+00012 0085         MISBT     RMB     1                
+00013 0086         CANAT     RMB     1                
+00014 0087         CANBT     RMB     1                
+00015 0088         TRIP      RMB     1                
+00016 0089         COUNT1    RMB     1                
+00017 008A         COUNT2    RMB     1                
+00018 008B         COUNT3    RMB     1                
+00019 008C         COUNT4    RMB     1                
+00021         E1AC INCHNP    EQU     $E1AC            
+00022         E1D1 OUTCH     EQU     $E1D1            
+00023         E07E PDATA     EQU     $e07e            
+00024         E0D0 RETURN    EQU     $e0d0            
+00026         0100           ORG     $0100            
+00027 0100 CE 025F BEGIN     LDX     #INTRO           PRINT INSTRUCTIONS
+00028 0103 BD E07E BEGIN1    JSR     PDATA            
+00029 0106 86 03   BEGIN2    LDAA    #3               
+00030 0108 97 80             STAA    MISA             
+00031 010A 97 82             STAA    CANA             
+00032 010C 4F                CLRA                     
+00033 010D 97 81             STAA    MISB             
+00034 010F 97 83             STAA    CANB             
+00035 0111 97 88             STAA    TRIP             
+00037 0113 BD 022A GAME      JSR     P2SP             
+00038 0116 BD 022A           JSR     P2SP             
+00039 0119 7E 01B2           JMP     RIVER            
+00041 011C BD 06C9 CONTIN    JSR     PCRLF            
+00042 011F 7D 0088           TST     TRIP             
+00043 0122 26 04             BNE     RGHTAR           
+00044 0124 86 3C             LDAA    #'<              
+00045 0126 20 02             BRA     F1               
+00047 0128 86 3E   RGHTAR    LDAA    #'>              
+00048 012A BD E1D1 F1        JSR     OUTCH            
+00049 012D BD E1D1           JSR     OUTCH            
+00050 0130 DE 80             LDX     MISA             STORE LAST LINE VALUES
+00051 0132 DF 84             STX     MISAT            
+00052 0134 DE 82             LDX     CANA             
+00053 0136 DF 86             STX     CANAT            
+00054 0138 86 02             LDAA    #2               
+00055 013A 97 8A             STAA    COUNT2           
+00056 013C 97 8B             STAA    COUNT3           
+00057 013E BD E1AC LOOP      JSR     INCHNP           
+00058 0141 81 4D             CMPA    #'M              
+00059 0143 27 23             BEQ     F2               
+00060 0145 81 43             CMPA    #'C              
+00061 0147 27 43             BEQ     F3               
+00062 0149 81 45             CMPA    #'E              
+00063 014B 27 14             BEQ     F4               
+00064 014D CE 060B           LDX     #CR2LF           
+ASM68 6800 Assembler (c) 1988-1995 Evenson Consulting Services        Page 2
+FILE: miscan.asm
+
+00065 0150 81 52             CMPA    #'R              
+00066 0152 27 AF             BEQ     BEGIN1           
+00067 0154 81 49             CMPA    #'I              
+00068 0156 27 A8             BEQ     BEGIN            
+00069 0158 81 58             CMPA    #'X              
+00070 015A 26 33             BNE     *+5              
+00071 015C 7E E0D0           JMP     RETURN           
+00072 015F 20 20             BRA     ERRORR           
+00074 0161 7A 008B F4        DEC     COUNT3           
+00075 0164 26 47             BNE     F5               
+00076 0166 20 19             BRA     ERRORR           
+00078 0168 7D 0088 F2        TST     TRIP             MOVE MISSIONARY
+00079 016B 26 0F             BNE     ODDMIS           
+00080 016D 7D 0081           TST     MISB             
+00081 0170 26 02             BNE     MISBNZ           
+00082 0172 20 0D             BRA     ERRORR           NO MISSIONARY B, ERROR
+00084 0174 7A 0081 MISBNZ    DEC     MISB             MOVE LEFT IF TRIP FLAG 0
+00085 0177 7C 0080           INC     MISA             
+00086 017A 20 31             BRA     F5               
+00088 017C 7D 0080 ODDMIS    TST     MISA             
+00089 017F 26 03             BNE     MISANZ           
+00090 0181 7E 0233 ERRORR    JMP     ERROR            NO MISSIONARY A, ERROR
+00092 0184 7A 0080 MISANZ    DEC     MISA             MOVE RIGHT IF TRIP FLAG NO
+00093 0187 7C 0081           INC     MISB             
+00094 018A 20 21             BRA     F5               
+00096 018C 7D 0088 F3        TST     TRIP             MOVE CANNIBAL
+00097 018F 26 0F             BNE     ODDCAN           
+00098 0191 7D 0083           TST     CANB             
+00099 0194 26 02             BNE     CANBNZ           
+00100 0196 20 E9             BRA     ERRORR           NO CANNIBAL B, ERROR
+00102 0198 7A 0083 CANBNZ    DEC     CANB             MOVE LEFT
+00103 019B 7C 0082           INC     CANA             
+00104 019E 20 0D             BRA     F5               
+00106 01A0 7D 0082 ODDCAN    TST     CANA             
+00107 01A3 26 02             BNE     CANANZ           
+00108 01A5 20 DA             BRA     ERRORR           NO CANNIBAL A, ERROR
+00110 01A7 7A 0082 CANANZ    DEC     CANA             MOVE RIGHT
+00111 01AA 7C 0083           INC     CANB             
+00112 01AD 7A 008A F5        DEC     COUNT2           
+00113 01B0 26 8C             BNE     LOOP             
+00114 01B2 86 0A   RIVER     LDAA    #10              
+00115 01B4 97 89             STAA    COUNT1           
+00116 01B6 86 20             LDAA    #$20             
+00117 01B8 8D 24   SLOOP     BSR     OUTCHR           
+00118 01BA 7A 0089           DEC     COUNT1           
+00119 01BD 26 F9             BNE     SLOOP            
+00120 01BF 96 82             LDAA    CANA             PRNT CANA VALUE
+00121 01C1 8D 6B             BSR     ONC              
+00122 01C3 86 43             LDAA    #'C              
+00123 01C5 8D 61             BSR     OC2S             
+00124 01C7 96 80             LDAA    MISA             PRINT MISA VALUE
+00125 01C9 8D 63             BSR     ONC              
+00126 01CB 86 4D             LDAA    #'M              
+00127 01CD 8D 59             BSR     OC2S             
+00128 01CF 86 10             LDAA    #16              
+00129 01D1 97 89             STAA    COUNT1           
+00130 01D3 7D 0088 F6        TST     TRIP             
+00131 01D6 26 09             BNE     RGHTPT           
+ASM68 6800 Assembler (c) 1988-1995 Evenson Consulting Services        Page 3
+FILE: miscan.asm
+
+00132 01D8 86 3C             LDAA    #'<              
+00133 01DA 8D 02             BSR     OUTCHR           
+00134 01DC 20 07             BRA     F7               
+00136 01DE 7E E1D1 OUTCHR    JMP     OUTCH            
+00138 01E1 86 3E   RGHTPT    LDAA    #'>              
+00139 01E3 8D F9             BSR     OUTCHR           
+00140 01E5 7A 0089 F7        DEC     COUNT1           
+00141 01E8 26 E9             BNE     F6               
+00142 01EA 8D 3E             BSR     P2SP             
+00143 01EC 96 83             LDAA    CANB             PRINT CANB VALUE
+00144 01EE 8D 3E             BSR     ONC              
+00145 01F0 86 43             LDAA    #'C              
+00146 01F2 8D 34             BSR     OC2S             
+00147 01F4 96 81             LDAA    MISB             PRINT MISB VALUE
+00148 01F6 8D 36             BSR     ONC              
+00149 01F8 86 4D             LDAA    #'M              
+00150 01FA 8D E2             BSR     OUTCHR           
+00151 01FC 7D 0080           TST     MISA             MISA AND CANA =  0???
+00152 01FF 26 07             BNE     F9               
+00153 0201 7D 0082           TST     CANA             
+00154 0204 26 02             BNE     F9               
+00155 0206 20 47             BRA     CONGTR           YES WIN
+00157 0208 96 82   F9        LDAA    CANA             IS CANA > MISA?
+00158 020A 91 80             CMPA    MISA             
+00159 020C 2F 07             BLE     F10              
+00160 020E 7D 0080           TST     MISA             MISA NOT 0?
+00161 0211 27 02             BEQ     F10              
+00162 0213 20 31             BRA     BURN             YES LOSE
+00164 0215 96 83   F10       LDAA    CANB             IS CANB > MISB
+00165 0217 91 81             CMPA    MISB             
+00166 0219 2F 07             BLE     F11              
+00167 021B 7D 0081           TST     MISB             MISB NOT 0?
+00168 021E 27 02             BEQ     F11              
+00169 0220 20 24             BRA     BURN             YES LOSE
+00171 0222 73 0088 F11       COM     TRIP             COMPLEMENT TRIP FLAG
+00172 0225 7E 011C           JMP     CONTIN           
+00174               *SUBROUTINES
+00176 0228 8D B4   OC2S      BSR     OUTCHR           
+00177 022A BD 06D0 P2SP      JSR     PSPACE           
+00178               *       JSR PSPACE
+00179 022D 39                RTS                      
+00181 022E 8A 30   ONC       ORAA    #$30             
+00182 0230 8D AC             BSR     OUTCHR           
+00183 0232 39                RTS                      
+00185 0233 86 3F   ERROR     LDAA    #'?              
+00186 0235 8D A7             BSR     OUTCHR           
+00187 0237 86 07             LDAA    #7               BELL
+00188 0239 8D A3             BSR     OUTCHR           
+00189 023B DE 84             LDX     MISAT            RESTORE VALUE TO
+00190 023D DF 80             STX     MISA             PREVIOUS TRIP
+00191 023F DE 86             LDX     CANAT            
+00192 0241 DF 82             STX     CANA             
+00193 0243 7E 011C           JMP     CONTIN           
+00195 0246 CE 0671 BURN      LDX     #LOSE            PRINT LOSE MSG
+00196 0249 BD E07E           JSR     PDATA            
+00197 024C 7E 0106           JMP     BEGIN2           
+00199 024F CE 060F CONGTR    LDX     #WIN             PRINT WIN MSG
+00200 0252 BD E07E           JSR     PDATA            
+ASM68 6800 Assembler (c) 1988-1995 Evenson Consulting Services        Page 4
+FILE: miscan.asm
+
+00201 0255 BD E1AC WAIT      JSR     INCHNP           
+00202 0258 81 49             CMPA    #'I              
+00203 025A 26 F9             BNE     WAIT             
+00204 025C 7E 0100           JMP     BEGIN            
+00206               *MESSAGES
+00208 025F    0D0A INTRO     FCB     $D,$A,$A,$A,$A   
+00209 0264    2020           FCC     "                   MISSIONARIES AND " 
+00210 0288    4341           FCC     "CANNIBALS"      
+00211 0291    0D0A           FCB     $D,$A,$A         
+00212 0294    2020           FCC     "             ORIGINAL PROGRAM BY " 
+00213 02B5    5048           FCC     "PHILIP N. THEURER" 
+00214 02C6    0D0A           FCB     $D,$A            
+00215 02C8    2020           FCC     "            MOTOROLA MICROSYSTEMS " 
+00216 02EA    4E4F           FCC     "NOVEMBER 25, 1976" 
+00217 02FB    0D0A           FCB     $D,$A,$A,$A      
+00218 02FF    2020           FCC     "   THREE MISSIONARIES AND THREE " 
+00219 031F    4341           FCC     "CANNIBALS ARE TRAVELING TOGETHER" 
+00220 033F    0D0A           FCB     $D,$A            
+00221 0341    414E           FCC     "AND COME UPON THE GREAT UGAHNA " 
+00222 0360    5249           FCC     "RIVER WHICH THEY MUST CROSS.  UN-" 
+00223 0381    0D0A           FCB     $D,$A            
+00224 0383    464F           FCC     "FORTUNATELY THEY HAVE ONLY ONE B" 
+00225 03A3    4F41           FCC     "OAT AND IT CAN ONLY HOLD TWO PEOPLE." 
+00226 03C7    0D0A           FCB     $D,$A            
+00227 03C9    544F           FCC     "TO FURTHER COMPLICATE MATTERS," 
+00228 03E7    2054           FCC     " THE CANNIBALS ARE UNCIVILIZED AND" 
+00229 0409    0D0A           FCB     $D,$A            
+00230 040B    5749           FCC     "WILL EAT THE MISSIONARIES IF AT" 
+00231 042A    2041           FCC     " ANY TIME THEY OUTNUMBER THEM." 
+00232 0448    0D0A           FCB     $D,$A            
+00233 044A    2020           FCC     "   YOUR MISSION IS TO MOVE ALL THE " 
+00234 046D    4341           FCC     "CANNIBALS AND MISSIONARIES ACROSS" 
+00235 048E    0D0A           FCB     $D,$A            
+00236 0490    5448           FCC     "THE RIVER WITHOUT HAVING ANY OF " 
+00237 04B0    5448           FCC     "THE MISSIONARIES DEVOURED BY THE" 
+00238 04D0    0D0A           FCB     $D,$A            
+00239 04D2    4341           FCC     "CANNIBALS.  ARROWS WILL SHOW WHICH" 
+00240 04F4    2057           FCC     " WAY THE BOAT IS READY TO SAIL." 
+00241 0513    0D0A           FCB     $D,$A            
+00242 0515    5459           FCC     "TYPE AN 'M' TO PLACE A MISSIONARY" 
+00243 0536    2049           FCC     " IN THE BOAT, A 'C' TO PLACE A" 
+00244 0554    0D0A           FCB     $D,$A            
+00245 0556    4341           FCC     "CANNIBAL IN THE BOAT, OR AN 'E' TO" 
+00246 0578    204C           FCC     " LEAVE AN EMPTY SEAT.  TO RESTART" 
+00247 0599    0D0A           FCB     $D,$A            
+00248 059B    5448           FCC     "THE GAME TYPE AN 'R', OR TO HAVE " 
+00249 05BC    5448           FCC     "THE INSTRUCTIONS REPRINTED TYPE AN 'I'" 
+00250 05E2    0D0A           FCB     $D,$A            
+00251 05E4    544F           FCC     "TO EXIT PROGRAM TYPE AN 'X'" 
+00252 05FF    0D0A           FCB     $D,$A            
+00253 0601    474F           FCC     "GOOD LUCK!"     
+00254               
+00255 060B    0D0A CR2LF     FCB     $D,$A,$A,4       
+00256 060F    0D0A WIN       FCB     $D,$A,$A         
+00257 0612    2020           FCC     "   CONGRATULATIONS SMART ALEC. " 
+00258 0631    2043           FCC     " CANNIBALS ALL OVER THE WORLD WILL" 
+00259 0653    0D0A           FCB     $D,$A            
+00260 0655    5354           FCC     "STARVE BECAUSE OF YOU!!!" 
+ASM68 6800 Assembler (c) 1988-1995 Evenson Consulting Services        Page 5
+FILE: miscan.asm
+
+00261 066D    0D0A           FCB     $D,$A,$A,4       
+00262 0671    0D0A LOSE      FCB     $D,$A,$A         
+00263 0674    2020           FCC     "   I CAN SEE THAT YOU ARE DOING" 
+00264 0693    2059           FCC     " YOUR PART FOR ZERO POPULATION GROWTH." 
+00265 06B9    0D0A           FCB     $D,$A,$A         
+00266 06BC    4255           FCC     "BURP!!!!"       
+00267 06C4    070D           FCB     7,$D,$A,$A,4     
+00269 06C9 CE 060B PCRLF     LDX     #CR2LF           
+00270 06CC BD E07E           JSR     PDATA            
+00271 06CF 39                RTS                      
+00272               
+00273 06D0 86 20   PSPACE    LDAA    #$20             
+00274 06D2 BD E1D1           JSR     OUTCH            
+00275 06D5 39                RTS                      
+00276               
+00277         0000           END                      
+
+No errors
+
+ Total bytes output = 1507

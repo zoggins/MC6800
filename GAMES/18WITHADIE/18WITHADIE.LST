@@ -1,0 +1,467 @@
+ASM68 6800 Assembler (c) 1988-1995 Evenson Consulting Services        Page 1
+FILE: 18withadie.asm      TITLE: STAR
+
+00001               *****************
+00002               * 18 WITH A DIE *
+00003               * R.YOST 790718 *
+00004               * BYTE V05 N01  *
+00005               *****************
+00006               
+00007         E0D0 CONTRL    EQU     $E0D0            RETURN TO MONITOR
+00008         E1AC INEEE     EQU     $E1AC            INPUT CHAR FROM CONSOLE AN
+00009         E07E PDATA     EQU     $E07E            PRINT TEXT STRING @ X ENDE
+00010         E06B OUTHR     EQU     $E06B            PRINT RIGHT HEX CHAR @ X
+00011         E0CA OUT2HS    EQU     $E0CA            PRINT 2 HEX CHARS @ X
+00012               
+00013               * VARIABLES AND TABLES
+00014         0020           ORG     $20              
+00015 0020         MSKTBL    RMB     7                LEGAL RESPONSES MASKS
+00016 0027         WINTBL    RMB     18               TABLE OF WINNING PLAY BIT 
+00017 0039                   RMB     7                SPACE FOR END GAME MARKERS
+00018 0040         MPTPAT    RMB     1                M. TRIAL PLAY PATTERN
+00019 0041         SCOREH    RMB     1                H. AND M. BCD SCORES
+00020 0042         SCOREM    RMB     1                
+00021 0043         TOTAL     RMB     1                BINARY TOTAL OF ALL PLAYS
+00022 0044         TOTBCD    RMB     1                DITTO, BCD
+00023 0045         HPLAY     RMB     1                VALID, LEAGAL, H. PLAY
+00024 0046         LSTPLA    RMB     1                OPPONENT'S PREV. PLAY
+00025 0047         HTURN     RMB     1                H. TIRN FLAG
+00026 0048         SCNFLG    RMB     1                SCAN WITH TABLE FLAG. 1 ME
+00027               *                            BEFORE M'S PLAY
+00028               *                            0 MEANS AFTER M'S PLAY.
+00029 0049         ENDGAM    RMB     1                END GAME FLAG. SET IF TOTA
+00030 004A         LTSTIN    RMB     2                DUMMY INPUT VARIABLE FOR L
+00031               *                      2 BYTES ACCOMODATE X REG.
+00032 004C         WHRF      RMB     6                TABLE STORES WINNING HUMAN
+00033               *                      TO TRIAL M PLAYS.
+00034 0052         MPLAY     RMB     1                TRIAL M PLAY.
+00035 0053         MPLAW     RMB     1                WINNING PLAY DETECTED IN R
+00036               *                      WIN TABLE.
+00037 0054         SSTO      RMB     2                TEMP. STK. PNTR STORAGE
+00038 0056         WTBLRP    RMB     2                WINTABLE ROW POINTER
+00039 0058         RANUM     RMB     2                RANDOM NUMBER SHIFT REGIST
+00040               
+00041               * MAIN PROGRAM
+00042         0100           ORG     $100             
+00043               *       LDS    #$A047        PRESERVE STRT ADDR @ $A048,9
+00044 0100 BD 0192           JSR     INITLZ           
+00045 0103 CE 02D6           LDX     #MES1            PRINT INSTRUCTIONS AND
+00046 0106 BD 018F           JSR     TXTOUT           ASK "READY TO PLAY".
+00047 0109 BD E1AC           JSR     INEEE            GET RESPONSE
+00048 010C 84 DF             ANDA    #$DF             TO UPPER CASE
+00049 010E 81 59             CMPA    #'Y              IF NOT 'Y' THEN
+00050 0110 27 08             BEQ     M2               
+00051 0112 CE 04F9 M1        LDX     #MES5            PRINT "THANKS, GOOD BYE",
+00052 0115 8D 78             BSR     TXTOUT           
+00053 0117 7E E0D0           JMP     CONTRL           AND EXIT TO MIKBUG.
+00054 011A 4F      M2        CLRA                     ELSE, INITIALIZE VARS. FOR
+00055 011B 97 43             STAA    TOTAL            NEW GAME.
+00056 011D 97 44             STAA    TOTBCD           
+00057 011F 97 46             STAA    LSTPLA           
+00058 0121 CE 03E5           LDX     #MES2            PRINT NEW GAME HEADER.
+ASM68 6800 Assembler (c) 1988-1995 Evenson Consulting Services        Page 2
+FILE: 18withadie.asm      TITLE: STAR
+
+00059 0124 8D 69             BSR     TXTOUT           
+00060 0126 CE 0041           LDX     #SCOREH          PRINT SCORES.
+00061 0129 BD E0CA           JSR     OUT2HS           
+00062 012C CE 0042           LDX     #SCOREM          
+00063 012F BD E0CA           JSR     OUT2HS           
+00064 0132 CE 045A           LDX     #MES3            PRINT "YOUR 1ST PLAY?"
+00065 0135 8D 58             BSR     TXTOUT           
+00066 0137 BD 01CB M3        JSR     GTVLHP           GET VALID LEGAL H. PLAY.
+00067 013A 96 45             LDAA    HPLAY            PUT I HPLAY AND LAST PLAY.
+00068 013C 97 46             STAA    LSTPLA           
+00069 013E 86 01             LDAA    #1               
+00070 0140 97 47             STAA    HTURN            SET H. TURN FLAG,
+00071 0142 97 48             STAA    SCNFLG           AND SCAN FLAG, TO DENOTE W
+00072 0144 BD 0201 M4        JSR     AVAZTO           REVISION BEFORE M. PLAY. A
+00073               *                             TO TOTALS. SET END GAME FLG
+00074               *                             TOTAL > 17, AND CALC. SCORE
+00075 0147 7D 0049           TST     ENDGAM           
+00076 014A 27 1C             BEQ     M5               
+00077 014C CE 0041           LDX     #SCOREH          IF GAME OVER, PRINT SCORES
+00078 014F BD E0CA           JSR     OUT2HS           
+00079 0152 CE 0042           LDX     #SCOREM          
+00080 0155 BD E0CA           JSR     OUT2HS           
+00081 0158 CE 04DC           LDX     #MES4            PRINT "NEW GAME?"
+00082 015B 8D 32             BSR     TXTOUT           
+00083 015D BD E1AC           JSR     INEEE            
+00084 0160 84 DF             ANDA    #$DF             
+00085 0162 81 4E             CMPA    #'N              IF RESPONSE = 'N', PRINT T
+00086 0164 27 AC             BEQ     M1               AND EXIT.
+00087 0166 20 B2             BRA     M2               ELSE, SET UP NEW GAME.
+00088 0168 BD 024C M5        JSR     RVSTBW           IF GAME NOT OVER, LOOK AHE
+00089               *                             H RESPONSES TO M TRIAL PLAY
+00090               *                             AND REVERSE WIN TABLE.
+00091 016B 7D 0048           TST     SCNFLG           IF SCAN FLAG CLEAR, THEN
+00092 016E 27 18             BEQ     M6               GET NEXT H. PLAY
+00093 0170 BD 029D           JSR     SELMPL           ELSE, SELECT M. PLAY.
+00094 0173 96 52             LDAA    MPLAY            
+00095 0175 97 46             STAA    LSTPLA           
+00096 0177 4F                CLRA                     CLEAR SCAN FLAG TO REVISE 
+00097               *                             LOOKING AHEAD AFTER M'S PLA
+00098 0178 97 48             STAA    SCNFLG           
+00099 017A 97 47             STAA    HTURN            CLEAR H. TURN FLAG.
+00100 017C CE 0542           LDX     #MES6            ANNOUNSE M'S PLAY,
+00101 017F 8D 0E             BSR     TXTOUT           
+00102 0181 96 52             LDAA    MPLAY            
+00103 0183 BD E06B           JSR     OUTHR            
+00104 0186 20 BC             BRA     M4               AND PROCESS IT.
+00105               
+00106 0188 CE 0554 M6        LDX     #MES7            IF SCAN FLAG WAS RESET, RE
+00107 018B 8D 02             BSR     TXTOUT           NEXT H. PLAY.
+00108 018D 20 A8             BRA     M3               AND GET IT.
+00109 018F 7E E07E TXTOUT    JMP     PDATA            TARGET FOR MIKBUG STRING P
+00110               
+00111               * SUBROUTINE INITIALIZE - INITLZ
+00112               *       ORG    $5D
+00113         0192           ORG     *                
+00114 0192 CE 0020 INITLZ    LDX     #MSKTBL          INITIALIZE MASK TABLE WHIT
+00115 0195 86 3F             LDAA    #$3F             LEGAL RESPONSE PATTERNS
+00116 0197 A7 00             STAA    0,X              IN 6 LEAST SIG. BITS
+ASM68 6800 Assembler (c) 1988-1995 Evenson Consulting Services        Page 3
+FILE: 18withadie.asm      TITLE: STAR
+
+00117 0199 86 1E             LDAA    #$1E             
+00118 019B A7 01             STAA    1,X              
+00119 019D A7 06             STAA    6,X              
+00120 019F 86 2D             LDAA    #$2D             
+00121 01A1 A7 02             STAA    2,X              
+00122 01A3 A7 05             STAA    5,X              
+00123 01A5 86 33             LDAA    #$33             
+00124 01A7 A7 03             STAA    3,X              
+00125 01A9 A7 04             STAA    4,X              
+00126 01AB 4F                CLRA                     CLEAR WIN TABLE BEFORE
+00127 01AC CE 0001           LDX     #1               FIRST GAME.
+00128 01AF A7 26   I1        STAA    WINTBL-1,X       
+00129 01B1 08                INX                      
+00130 01B2 8C 0013           CPX     #$13             
+00131 01B5 26 F8             BNE     I1               
+00132 01B7 86 03             LDAA    #3               STORE DUMMY H WIN PLAY
+00133 01B9 A7 26   I2        STAA    WINTBL-1,X       BITS BEYOND END OF WINTABL
+00134 01BB 08                INX                      SO MACHINE CAN SEE END OF
+00135 01BC 8C 0019           CPX     #$19             GAME COMING.
+00136 01BF 26 F8             BNE     I2               
+00137 01C1 97 59             STAA    RANUM+1          INITIALIZE RANDOM NUMBER G
+00138 01C3 4F                CLRA                     SEED.
+00139 01C4 97 4A             STAA    LTSTIN           CLEAR HIGH BYTE OF L. TEST
+00140 01C6 97 41             STAA    SCOREH           DIMMY VAR. AND SCORES.
+00141 01C8 97 42             STAA    SCOREM           
+00142 01CA 39                RTS                      
+00143               
+00144               * SUBROUTINE GTVLHP - GET VALID LEGAL H. PLAY.
+00145               *       ORG    $1A0
+00146 01CB BD E1AC GTVLHP    JSR     INEEE            GET H. KEYBOARD INPUT.
+00147 01CE 80 30             SUBA    #$30             CONVERT TO HEX
+00148 01D0 2F 04             BLE     G1               OF LESS THAN 1,
+00149 01D2 81 06             CMPA    #6               
+00150 01D4 2F 07             BLE     G2               OR GREATER THAN 6.
+00151 01D6 CE 0494 G1        LDX     #MES8            PRINT "INVALID"
+00152 01D9 8D B4             BSR     TXTOUT           
+00153 01DB 20 EE             BRA     GTVLHP           AND TRY AGAIN.
+00154 01DD 97 4B   G2        STAA    LTSTIN+1         CHECK H. PLAY FOR LEGALITY
+00155 01DF BD 01F0           JSR     LGLTST           ZERO (Z) BIT OF C REG=0 IF
+00156 01E2 26 07             BNE     G3               PLAY IS LEGAL.
+00157 01E4 CE 0477           LDX     #MES9            IF NOT, PRINT "ILLEGAL"
+00158 01E7 8D A6             BSR     TXTOUT           
+00159 01E9 20 E0             BRA     GTVLHP           AND TRY AGAIN.
+00160 01EB 96 4B   G3        LDAA    LTSTIN+1         STORE VALID LEGAL H. PLAY.
+00161 01ED 97 45             STAA    HPLAY            
+00162 01EF 39                RTS                      
+00163               
+00164               * LEGAL TEST S.R., LGLTST
+00165               *       ORG    $1C8
+00166 01F0 96 4B   LGLTST    LDAA    LTSTIN+1         0 AND 7 INPUTS
+00167 01F2 27 0C             BEQ     L1               FROM RAND. NO. GEN. ARE TR
+00168 01F4 81 07             CMPA    #7               ILLEGAL.
+00169 01F6 27 08             BEQ     L1               
+00170 01F8 91 46             CMPA    LSTPLA           IF TEST PLAY = LAST PLAY,
+00171 01FA 27 04             BEQ     L1               
+00172 01FC 9B 46             ADDA    LSTPLA           OR IF SUM = 7, THEN
+00173 01FE 81 07             CMPA    #7               TEST PLAY IS ILLEGAL.
+00174 0200 39      L1        RTS                      'Z' BIT OF COND'N (C) REG.
+ASM68 6800 Assembler (c) 1988-1995 Evenson Consulting Services        Page 4
+FILE: 18withadie.asm      TITLE: STAR
+
+00175               *                             RETURN OF TEST.
+00176               
+00177               * S.R. ADVANCE AND ANALYZE TOTAL - AVAZTO
+00178               *       ORG    $1E0
+00179 0201 7F 0049 AVAZTO    CLR     ENDGAM           INILZ END GAME FLAG
+00180 0204 CE 04B3           LDX     #MESA            PRINT "TOTAL IS "
+00181 0207 8D 86             BSR     TXTOUT           
+00182 0209 96 46             LDAA    LSTPLA           GET LAST PLAY
+00183 020B D6 47             LDAB    HTURN            AND H TURN FLAG
+00184               *                             IN 'A' AND 'B' REGS.
+00185 020D 9B 44             ADDA    TOTBCD           ADD LAST PLAY TO BCD TOTAL
+00186 020F 19                DAA                      
+00187 0210 97 44             STAA    TOTBCD           
+00188 0212 CE 0044           LDX     #TOTBCD          SET 'X' AS PNTR FOR MKBG S
+00189 0215 BD E0CA           JSR     OUT2HS           PRINT TOTAL.
+00190 0218 96 46             LDAA    LSTPLA           NOW, ADD LAST PLAY TO
+00191 021A 9B 43             ADDA    TOTAL            BINARY TOTAL.
+00192 021C 97 43             STAA    TOTAL            
+00193 021E 80 12             SUBA    #18              IF TOTAL < 18, THEN RETURN
+00194 0220 2D 16             BLT     A2               
+00195 0222 7C 0049           INC     ENDGAM           ELSE, SET END GAME FLAG.
+00196 0225 4D                TSTA                     IF TOTAL NOT IS,
+00197 0226 27 1F             BEQ     A4               
+00198 0228 5D                TSTB                     AND IF H'S TURN, THEN
+00199 0229 27 0E             BEQ     A3               
+00200 022B CE 04D0 A1        LDX     #MESB            PRINT "I WIN",
+00201 022E BD 018F           JSR     TXTOUT           
+00202 0231 86 01             LDAA    #1               AND INCREMENT M'S SCORE IN
+00203 0233 9B 42             ADDA    SCOREM           
+00204 0235 19                DAA                      
+00205 0236 97 42             STAA    SCOREM           
+00206 0238 39      A2        RTS                      
+00207               
+00208 0239 CE 04C4 A3        LDX     #MESC            IF TOTAL IS 18, AND IF M'S
+00209 023C BD 018F           JSR     TXTOUT           PRINT "YOU WIN"
+00210 023F 86 01             LDAA    #1               AND INCREMENT H'S SCORE IN
+00211 0241 9B 41             ADDA    SCOREH           
+00212 0243 19                DAA                      
+00213 0244 97 41             STAA    SCOREH           
+00214 0246 39                RTS                      
+00215               
+00216 0247 5D      A4        TSTB                     ELSE, IF TOTAL IS 18
+00217               *                             AND IF M'S TURN, THEN
+00218 0248 27 E1             BEQ     A1               AWARD WIN TO MACHINE.
+00219 024A 20 ED             BRA     A3               ELSE, IF H'S TURN, AWARD
+00220               *                              WIN TO HUMAN
+00221               
+00222               * SUBROUTINE REVERSE WINTABLE - RVSTBW
+00223               *       ORG    $230
+00224 024C 4F      RVSTBW    CLRA                     
+00225 024D 97 53             STAA    MPLAW            RESET WINNING PLAY REG. TO
+00226 024F 97 56             STAA    WTBLRP           CLEAR W. TABLE PTR. HIGH
+00227               *                             BYTE FOR PAGE 0 USE.
+00228 0251 9F 54             STS     SSTO             SAVE STACK POINTER.
+00229 0253 CE 0001           LDX     #1               LOAD TABLE POINTER WITH TR
+00230               *                             PLAY OF 1.
+00231 0256 86 26             LDAA    #WINTBL-1        INLZ W TABLE PNTR LOW BYTE
+00232 0258 9B 43             ADDA    TOTAL            CORRESPOND TO CURRENT TOTA
+ASM68 6800 Assembler (c) 1988-1995 Evenson Consulting Services        Page 5
+FILE: 18withadie.asm      TITLE: STAR
+
+00233 025A 97 57             STAA    WTBLRP+1         
+00234 025C 9E 56             LDS     WTBLRP           SET STK POINTER TO NEXT RO
+00235 025E 32      R1        PULA                     GET W. TABLE ROW (BYTE) IN
+00236               *                            ( THIS IS THE ROW CORRESPONT
+00237               *                            THE CURRENT TOTAL PLUS THE T
+00238               *                            MACHINES PLAY.)
+00239 025F A4 20             ANDA    MSKTBL,X         MASK WITH THE LEGAL RESPON
+00240               *                             TO M'S TRIAL PLAY.
+00241 0261 A7 4B             STAA    WHRF-1,X         STORE RESULT IN TBL. OF WI
+00242               *                             H. RESPONSES TO M TRIAL PLA
+00243 0263 08                INX                      GET NEXT TRIAL M PLAY.
+00244 0264 8C 0007           CPX     #7               IF < 7, REPEAT SCAN FOR LE
+00245 0267 26 F5             BNE     R1               H RESPONSES.
+00246               
+00247               * NOW, ADD WINNING M PLAYS FOUND ABOVE TO THE WIN TABLE
+00248               * IN THE ROW CORRESPONDING TO THE CURRENT TOTAL. LIKE-
+00249               * WIZE, DELETE ANY PREVIOUSLY INCORRECTLY DEFINED WIN-
+00250               * ING PLAYS FROM THE SAME ROW.
+00251               
+00252 0269 86 20             LDAA    #$20             SET 6TH BIT OF TRIAL PLAY 
+00253 026B 97 40             STAA    MPTPAT           
+00254 026D CE 0006           LDX     #6               SELECT M TRIAL PLAY OF 6.
+00255               *                            (BY COUNTING DOWN, GET SMALL
+00256               *                            WINNING PLAY IN MPLAW.)
+00257 0270 9E 56   R2        LDS     WTBLRP           SET STK PTR TO CURRENT
+00258 0272 34                DES                      TOTAL ROE (BYTE) OF W. TAB
+00259 0273 6D 4B             TST     WHRF-1,X         DID PREVIOUS SCAN DETECT A
+00260               *                             LEGAL H RESPONSES TO TRIAL 
+00261 0275 26 13             BNE     R3               IF NOT, TRIAL M PLAY IS A 
+00262 0277 32                PULA                     SO 'OR' THE TRIAL M PLAY B
+00263 0278 9A 40             ORAA    MPTPAT           CURRENT TOTAL ROW OF THE W
+00264 027A 36                PSHA                     
+00265 027B DF 4A             STX     LTSTIN           TEST TRIAL PLAY FOR LEGALI
+00266 027D 9E 54             LDS     SSTO             AFTER RESTORING STACK POIN
+00267 027F BD 01F0           JSR     LGLTST           
+00268 0282 27 10             BEQ     R4               IF LEAGAL, STORE TRIAL PLA
+00269 0284 96 4B             LDAA    LTSTIN+1         MPLAW, OVER ANY PREVIOUS L
+00270 0286 97 53             STAA    MPLAW            
+00271 0288 20 0A             BRA     R4               SELECT NEXT TRIAL PLAY.
+00272               *
+00273 028A 73 0040 R3        COM     MPTPAT           IF LEGAL WINNING H RESPONS
+00274 028D 32                PULA                     PLAY WERE DETECTED IN PREV
+00275 028E 94 40             ANDA    MPTPAT           CLEAR TEH BIT (IN CURRENT 
+00276 0290 36                PSHA                     ROW) CORRESPONDING TO M TR
+00277 0291 73 0040           COM     MPTPAT           
+00278 0294 09      R4        DEX                      SELECT NEXT (LOWER) M. TRI
+00279 0295 74 0040           LSR     MPTPAT           MOVE TRIAL PLAY PATTERN ON
+00280               *                             CORRESPOND TO NEXT M. TRIAL
+00281 0298 26 D6             BNE     R2               IF PATTERN NOT NULL, REPEA
+00282               *                             W. TABLE REVISION FOR NEXT 
+00283 029A 9E 54             LDS     SSTO             RESTORE STACK POINTER.
+00284 029C 39                RTS                      
+00285               
+00286               * SUBROUTINE SELECT M. PLAY - SELMPL
+00287               *       ORG    $290
+00288 029D BD 02B7 SELMPL    JSR     GNRNPL           GET RANDOM NUMBER 0 THRU 7
+00289               *                             FOR GOOF DECISION.
+00290 02A0 27 00             BEQ     SP1              IF = 0, GOOF. (WITH SP1, T
+ASM68 6800 Assembler (c) 1988-1995 Evenson Consulting Services        Page 6
+FILE: 18withadie.asm      TITLE: STAR
+
+00291               *                             TURNED OFF. USE SP2 HERE TO
+00292 02A2 96 53   SP1       LDAA    MPLAW            IF NOT GOOFING, GET WINNIN
+00293 02A4 27 02             BEQ     SP2              IF THERE WAS NONE, GET RAN
+00294 02A6 20 0C             BRA     SP3              AND STORE IN M PLAY REG.
+00295               
+00296 02A8 BD 02B7 SP2       JSR     GNRNPL           GET RANDOM PLAY, 0 THRU 7
+00297 02AB 97 4B             STAA    LTSTIN+1         TEST SELECTED PLAY FOR GEL
+00298 02AD BD 01F0           JSR     LGLTST           
+00299 02B0 27 F6             BEQ     SP2              IF ILLEGAL, TRY ANOTHER.
+00300 02B2 96 4B             LDAA    LTSTIN+1         ELSE, TRANSFER THE SELECTE
+00301 02B4 97 52   SP3       STAA    MPLAY            TO THE M PLAY REG.
+00302 02B6 39                RTS                      
+00303               
+00304               * SUBROUTINE GENERATE RANDOM PLAY - GNRNPL
+00305               *       ORG    $2B0
+00306 02B7 CE 0003 GNRNPL    LDX     #3               COUNT 3 SHIFTS, SO 3 'NEW'
+00307               *                             BE GENERATED.
+00308 02BA C6 09   GR1       LDAB    #9               MASK BIT PATTERN TO IMPLEM
+00309               *                             BIT-3 EXOR BIT-0 = 1?
+00310 02BC D4 59             ANDB    RANUM+1          APPLY MASK TO LOW BYTE OF 
+00311 02BE C1 01             CMPB    #1               TEST TRUE, SO SET CARRY.
+00312 02C0 27 05             BEQ     GR2              
+00313 02C2 C1 08             CMPB    #8               TEST FALSE, SO CLEAR CARRY
+00314 02C4 0C                CLC                      
+00315 02C5 26 01             BNE     GR3              
+00316 02C7 0D      GR2       SEC                      
+00317 02C8 76 0058 GR3       ROR     RANUM            ROTATE CARRY INTO MSB OF 2
+00318 02CB 76 0059           ROR     RANUM+1          
+00319 02CE 09                DEX                      DECREMENT SHIFT COUNTER.
+00320 02CF 26 E9             BNE     GR1              
+00321 02D1 96 59             LDAA    RANUM+1          STORE 3 LSB'S OF R.N. IN '
+00322 02D3 84 07             ANDA    #7               RANDOM NUMBER 0 THRU 7.
+00323 02D5 39                RTS                      
+00324               
+00325               * STRING CONSTANTS
+00326         0D0A CRLF      EQU     $D0A             CARRIAGE RETURN, LINE FEED
+00327         0004 ENDST     EQU     4                STRING END SYMBOL FOR MIKB
+00328         000A LNFD      EQU     $A               LINE FEED
+00329         0A0A LNFDS     EQU     $A0A             TWO LINE FEEDS
+00330               
+00331               * INSTUCTIONS - MES1
+00332               *       ORG    $2D0
+00333 02D6    1B5B MES1      FCB     $1B,$5B,$32,$4A  CLEAR SCREEN
+00334               *       FDB    CHMEOF
+00335               *       FDB    0
+00336               *       FCB    0
+00337 02DA    4849           FCC     "HI! LET'S PLAY '18 WITH A DIE'!" 
+00338 02F9    0D0A           FDB     CRLF             
+00339 02FB    594F           FCC     "YOU START. CHOOSE ANY NUMBER," 
+00340 0318    0D0A           FDB     CRLF             
+00341 031A    3120           FCC     "1 THRU 6. I DO LIKEWISE, BUT WE" 
+00342 0339    0D0A           FDB     CRLF             
+00343 033B    4341           FCC     "CAN'T PLAY THE NUMBER THE OTHER" 
+00344 035A    0D0A           FDB     CRLF             
+00345 035C    4A55           FCC     "JUST PLAYED, NOR ITS DIFFERENCE" 
+00346 037B    0D0A           FDB     CRLF             
+00347 037D    4652           FCC     "FROM 7. TRY TO MAKE THE TOTAL" 
+00348 039A    0D0A           FDB     CRLF             
+ASM68 6800 Assembler (c) 1988-1995 Evenson Consulting Services        Page 7
+FILE: 18withadie.asm      TITLE: STAR
+
+00349 039C    4F46           FCC     "OF ALL YOUR PLAYS HIT 18 ON" 
+00350 03B7    0D0A           FDB     CRLF             
+00351 03B9    594F           FCC     "YOUR PLAY."     
+00352 03C3    0D0A           FDB     CRLF             
+00353 03C5    0A             FCB     LNFD             
+00354 03C6    5245           FCC     "READY TO START? (TYPE Y OR N.)" 
+00355 03E4    04             FCB     ENDST            
+00356               
+00357               * NEW GAME HEADER - MES2
+00358               *       ORG    $3F0
+00359 03E5    1B5B MES2      FCB     $1B,$5B,$32,$4A  
+00360 03E9    2020           FCC     "      EIGHTEEN WITH A DIE" 
+00361 0402    0D0A           FDB     CRLF             
+00362 0404    0A             FCB     LNFD             
+00363 0405    2020           FCC     "                    GAMES WON" 
+00364 0422    0D0A           FDB     CRLF             
+00365 0424    2020           FCC     "                      YOU ME" 
+00366 0440    0D0A           FDB     CRLF             
+00367 0442    544F           FCC     "TOTAL IS 00            " 
+00368 0459    04             FCB     ENDST            
+00369               
+00370               * YOUE FIRST PLAY? MES3
+00371               *       ORG    $465
+00372 045A    0D0A MES3      FDB     CRLF             
+00373 045C    0A             FCB     LNFD             
+00374 045D    2020           FCC     "        YOUR FIRST PLAY? " 
+00375 0476    04             FCB     ENDST            
+00376               
+00377               * ILLEGAL PLAY - MES9
+00378               *       ORG    $482
+00379 0477    0D0A MES9      FDB     CRLF             
+00380 0479    494C           FCC     "ILLEGAL PLAY! TRY ANOTHER." 
+00381 0493    04             FCB     ENDST            
+00382               
+00383               * INVALID PLAY - MED 8
+00384               *       ORG    $4A2
+00385 0494    0D0A MES8      FDB     CRLF             
+00386 0496    494E           FCC     "INVALID PLAY! PLAY 1 THRU 6." 
+00387 04B2    04             FCB     ENDST            
+00388               
+00389               * TOTAL IS - MESA
+00390               *       ORG    $4CE
+00391 04B3    1B5B MESA      FCB     $1B,$5B,$48      CURSOR HOME
+00392 04B6    0A0A           FDB     LNFDS            
+00393 04B8    0A0A           FDB     LNFDS            
+00394 04BA    544F           FCC     "TOTAL IS "      
+00395 04C3    04             FCB     ENDST            
+00396               
+00397               * YOU WIN! - MESC
+00398               *       ORG    $4DD
+00399 04C4    2020 MESC      FCC     "  YOU WIN! "    
+00400 04CF    04             FCB     ENDST            
+00401               
+00402               * I WIN! - MESB
+00403               *       ORG    $4EA
+00404 04D0    2020 MESB      FCC     "  I WIN!   "    
+00405 04DB    04             FCB     ENDST            
+00406               
+ASM68 6800 Assembler (c) 1988-1995 Evenson Consulting Services        Page 8
+FILE: 18withadie.asm      TITLE: STAR
+
+00407               * NEW GAME? - MES4
+00408               *       ORG    $4F6
+00409 04DC    0A   MES4      FCB     LNFD             
+00410 04DD    0D0A           FDB     CRLF             
+00411 04DF    1B5B           FCB     $1B,$5B,$4A      CLEAR TO END OF SCREEN
+00412 04E2    4E45           FCC     "NEW GAME? ('Y' OR 'N')" 
+00413 04F8    04             FCB     ENDST            
+00414               
+00415               * THANKS, ETC. - MES5
+00416               *       ORG    $512
+00417 04F9    0D0A MES5      FDB     CRLF             
+00418 04FB    5448           FCC     "THANKS FOR PLAYING. HOPE YOU" 
+00419 0517    0D0A           FDB     CRLF             
+00420 0519    454E           FCC     "ENJOYED IT AS MUCH AS I." 
+00421 0531    0D0A           FDB     CRLF             
+00422 0533    5345           FCC     "SEE YOU LATER!" 
+00423 0541    04             FCB     ENDST            
+00424               
+00425               * MY PLAY IS - MES6
+00426               *       ORG    $55A
+00427 0542    0A   MES6      FCB     LNFD             
+00428 0543    0D0A           FDB     CRLF             
+00429 0545    1B5B           FCB     $1B,$5B,$4A      CLEAR TO END OF SCREEN
+00430 0548    4D59           FCC     "MY PLAY IS "    
+00431 0553    04             FCB     ENDST            
+00432               
+00433               * YOUR PLAY? - MES7
+00434               *       ORG    $56E
+00435 0554    0A0A MES7      FDB     LNFDS            
+00436 0556    2E20           FCC     ". YOUR PLAY? "  
+00437 0563    04             FCB     ENDST            
+00438               
+00439         0000           END                      
+
+No errors
+
+ Total bytes output = 1182

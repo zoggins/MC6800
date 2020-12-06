@@ -1,0 +1,1345 @@
+ASM68 6800 Assembler (c) 1988-1995 Evenson Consulting Services        Page 1
+FILE: e:\src\repos\mc6800\wumpus\wumpus.asm
+
+00001               ****************************************************
+00002               *       SUPER-WUMPUS
+00003               * BY JACK EMMERICHS 1978
+00004               * MC6800 ASSEMBLY
+00005               ****************************************************
+00006               
+00007         0100           ORG     $0100            
+00008 0100 7E 01A1           JMP     START            
+00009 0103         ARRAY     RMB     5                ROOM SEQUENCE
+00010 0108         ARRAYNO   RMB     2                ARRAY POINTER
+00011 010A         AWAKE     RMB     1                AWAKE SW
+00012         0020 BLANK     EQU     $20              BLANK SPACE
+00013 010B         COUNT     RMB     1                GENERAL COUNTER
+00014         000D CR        EQU     $0D              CARRIAGE RETURN
+00015 010C         CURRENT   RMB     1                CURRENT HUNTER LOCATION
+00016 010D         DAYS      RMB     1                DAYS LEFT
+00017 010E         DELIM     RMB     1                END OF INPUT DELIMITER
+00018 010F         END       RMB     1                GAME OVER SW
+00019         0004 EOT       EQU     4                END OF STRING
+00020         000A LF        EQU     $0A              LINE FEED
+00021 0110         OLDROOM   RMB     1                SAVE ROOM NO
+00022 0111         ROCKS     RMB     1                ROCK COUNTER
+00023 0112         ROOMNO    RMB     1                GENERAL ROOM NO
+00024 0113         ROOMTLY   RMB     1                GENERAL ROOM COUNTER
+00025 0114         SAVX      RMB     2                SAVE IX
+00026 0116         SHOTS     RMB     1                NO OF SHOTS LEFT
+00027 0117         STOP      RMB     1                STOP ARROW SW
+00028 0118         STUF      RMB     4                RANDOM STUPH FOR RAMDOM NU
+00029 011C         SYMBOL    RMB     1                GENERAL SYMBOL HOLDER
+00030 011D         TEST      RMB     1                TEST ROOM FOR SHOOTING SEQ
+00031 011E         WILD      RMB     1                WILD ARROW IND
+00032 011F         WUMPROOM  RMB     1                CURRENT WUMPUS LOCATION
+00033         0120           ORG     *                
+00034               **SKIP
+00035               *
+00036               *
+00037 0120    0205 ROOMS     FCB     2,5,6,0          
+00038 0124    0103           FCB     1,3,7,0          
+00039 0128    0204           FCB     2,4,8,0          
+00040 012C    0305           FCB     3,5,9,0          
+00041 0130    0104           FCB     1,4,10,0         
+00042 0134    010B           FCB     1,11,12,0        
+00043 0138    020C           FCB     2,12,13,0        
+00044 013C    030D           FCB     3,13,14,0        
+00045 0140    040E           FCB     4,14,15,0        
+00046 0144    050B           FCB     5,11,15,0        
+00047 0148    060A           FCB     6,10,17,0        
+00048 014C    0607           FCB     6,7,18,0         
+00049 0150    0708           FCB     7,8,19,0         
+00050 0154    0809           FCB     8,9,20,0         
+00051 0158    090A           FCB     9,10,16,0        
+00052 015C    0F11           FCB     15,17,20,0       
+00053 0160    0B10           FCB     11,16,18,0       
+00054 0164    0C11           FCB     12,17,19,0       
+00055 0168    0D12           FCB     13,18,20,0       
+00056 016C    0E10           FCB     14,16,19,0       
+00057               *
+00058 0170    0101 TRANS     FCB     1,1              
+ASM68 6800 Assembler (c) 1988-1995 Evenson Consulting Services        Page 2
+FILE: e:\src\repos\mc6800\wumpus\wumpus.asm
+
+00059 0172    0202           FCB     2,2              
+00060 0174    0303           FCB     3,3              
+00061 0176    0404           FCB     4,4              
+00062 0178    0505           FCB     5,5              
+00063 017A    0606           FCB     6,6              
+00064 017C    0707           FCB     7,7              
+00065 017E    0808           FCB     8,8              
+00066 0180    0909           FCB     9,9              
+00067 0182    0A0A           FCB     10,10            
+00068 0184    0B0B           FCB     11,11            
+00069 0186    0C0C           FCB     12,12            
+00070 0188    0D0D           FCB     13,13            
+00071 018A    0E0E           FCB     14,14            
+00072 018C    0F0F           FCB     15,15            
+00073 018E    1010           FCB     16,16            
+00074 0190    1111           FCB     17,17            
+00075 0192    1212           FCB     18,18            
+00076 0194    1313           FCB     19,19            
+00077 0196    1414           FCB     20,20            
+00078               *
+00079               *
+00080 0198    21   PROB1     FCB     33               ARROW AMONG BATS WILL HIT 
+00081 0199    21   PROB2     FCB     33               ARROW OVER PIT WILL FALL I
+00082 019A    14   PROB3     FCB     20               ARROW HITTING HUNTER WONT 
+00083 019B    05   PROB4     FCB     05               BAT MIGRATION
+00084 019C    0A             FCB     10               FIND THROWING ROCK
+00085 019D    05             FCB     05               RATS EAT SUPPLIES
+00086 019E    05             FCB     05               ROCK SLIDE
+00087 019F    08             FCB     08               FIND MORE SUPPLIES
+00088 01A0    21   PROB8     FCB     33               THROW ROCK WILL KILL WUMPU
+00089               *
+00090               *
+00091               *
+00092               *       ORG    $0200
+00093 01A1 7E 0BD0 START     JMP     MAIN             
+00094               
+00095               **SKIP
+00096               *
+00097               *
+00098 01A4    0D0A CRLF      FCB     CR,LF,0,EOT      
+00099 01A8    0D0A TX01      FCB     CR,LF,LF,0       
+00100 01AC    4355           FCC     /CURRENT ROOM IS:/ 
+00101 01BC    04             FCB     EOT              
+00102 01BD    0D0A TX02      FCB     CR,LF,0,0        
+00103 01C1    5455           FCC     /TUNNELS LEAD TO:/ 
+00104 01D1    04             FCB     EOT              
+00105 01D2    0D0A TX03      FCB     CR,LF,LF,0       
+00106 01D6    4D4F           FCC     /MOVE OR SHOOT? / 
+00107 01E5    04             FCB     EOT              
+00108 01E6    2057 TX04      FCC     / WHERE? /       
+00109 01EE    04             FCB     EOT              
+00110 01EF    0D0A TX05      FCB     CR,LF,0,0        
+00111 01F3    4920           FCC     /I HEAR WINGS/   
+00112 01FF    04             FCB     EOT              
+00113 0200    0D0A TX06      FCB     CR,LF,0,0        
+00114 0204    4920           FCC     /I FEEL A DRAFT/ 
+00115 0212    04             FCB     EOT              
+00116 0213    0D0A TX07      FCB     CR,LF,0,0        
+ASM68 6800 Assembler (c) 1988-1995 Evenson Consulting Services        Page 3
+FILE: e:\src\repos\mc6800\wumpus\wumpus.asm
+
+00117 0217    4920           FCC     /I SMELL A WUMPUS!/ 
+00118 0228    04             FCB     EOT              
+00119               **SKIP
+00120 0229    0D0A TX08      FCB     CR,LF,0,0        
+00121 022D    594F           FCC     /YOU HAVE RUN OUT OF SUPPLIES AND WILL S TA
+00122 0289    04             FCB     EOT              
+00123 028A    0D0A TX09      FCB     CR,LF,0,0        
+00124 028E    5959           FCC     /YYYIIIIEEEEEE.... YOU FELL INTO A PIT/ 
+00125 02B3    04             FCB     EOT              
+00126 02B4    0D0A TX10      FCB     CR,LF,0,0        
+00127 02B8    4141           FCC     /AARRRRGGGGHHH.... YOU HAVE SHOT YOURSEL F/
+00128 0314    04             FCB     EOT              
+00129               **SKIP
+00130 0315    0D0A TX11      FCB     CR,LF,0,0        
+00131 0319    4320           FCC     /C H O M P  CRUNCH MUNCH GULP!/ 
+00132 0336    0D0A           FCB     CR,LF,0,0        
+00133 033A    5448           FCC     /THE WUMPUS GOT YOU!/ 
+00134 034D    04             FCB     EOT              
+00135 034E    0D0A TX12      FCB     CR,LF,0,0        
+00136 0352    594F           FCC     /YOU LOOSE (HEE HEE)/ 
+00137 0365    04             FCB     EOT              
+00138 0366    0D0A TX13      FCB     CR,LF,0,0        
+00139 036A    4220           FCC     /B O N K ! /     
+00140 0374    04             FCB     EOT              
+00141 0375    0D0A TX14      FCB     CR,LF,0,0        
+00142 0379    474F           FCC     /GOOD FOR YOU! - YOU GOT HIM/ 
+00143 0394    04             FCB     EOT              
+00144 0395    2057 TX15      FCC     / WITH A ROCK!/  
+00145 03A2    04             FCB     EOT              
+00146               **SKIP
+00147 03A3    0D0A TX16      FCB     CR,LF,0,0        
+00148 03A7    5355           FCC     /SUPPLIES WILL LAST / 
+00149 03BA    04             FCB     EOT              
+00150 03BB    2044 TX17      FCC     / DAYS/          
+00151 03C0    04             FCB     EOT              
+00152 03C1    0D0A TX18      FCB     CR,LF,0,0        
+00153 03C5    4241           FCC     /BAT MIGRATION - HIDE AND WAIT/ 
+00154 03E2    0D0A           FCB     CR,LF,0,0        
+00155 03E6    2020           FCC     /  ONE COLONY OF BATS HAS MOVED/ 
+00156 0404    04             FCB     EOT              
+00157 0405    0D0A TX19      FCB     CR,LF,0,0        
+00158 0409    4E49           FCC     /NICE GOING, YOU SHOT YOURSELF/ 
+00159 0426    0D0A           FCB     CR,LF,0,0        
+00160 042A    2020           FCC     /  AND HAVE USED MEDICAL SUPPLIES/ 
+00161 044A    04             FCB     EOT              
+00162 044B    0D0A TX20      FCB     CR,LF,0,0        
+00163 044F    5748           FCC     /WHOOOPS! BATS RELOCATE YOU/ 
+00164 0469    0D0A           FCB     CR,LF,0,0        
+00165 046D    2020           FCC     /  YOU LOST SOME SUPPLIES/ 
+00166 0485    04             FCB     EOT              
+00167               **SKIP
+00168 0486    0D0A TX21      FCB     CR,LF,0,0        
+00169 048A    5448           FCC     /THUD! YOU ONLY DAZED HIM/ 
+00170 04A2    04             FCB     EOT              
+00171 04A3    0D0A TX22      FCB     CR,LF,0,0        
+00172 04A7    4D49           FCC     /MISSED/         
+00173 04AD    04             FCB     EOT              
+00174 04AE    0D0A TX23      FCB     CR,LF,0,0        
+ASM68 6800 Assembler (c) 1988-1995 Evenson Consulting Services        Page 4
+FILE: e:\src\repos\mc6800\wumpus\wumpus.asm
+
+00175 04B2    4C4F           FCC     /LOOK, YOU FOUND / 
+00176 04C2    04             FCB     EOT              
+00177 04C3    4120 TX24      FCC     /A THROWING ROCK/ 
+00178 04D2    04             FCB     EOT              
+00179 04D3    5355 TX25      FCC     /SUPPLIES/       
+00180 04DB    0D0A           FCB     CR,LF,0,0        
+00181 04DF    2020           FCC     /  FROM ANOTHER (EATEN) HUNTER/ 
+00182 04FC    04             FCB     EOT              
+00183               **SKIP
+00184 04FD    0D0A TX26      FCB     CR,LF,0,0        
+00185 0501    5241           FCC     /RATS EAT HALF YOUR SUPPLIES/ 
+00186 051C    04             FCB     EOT              
+00187 051D    0D0A TX27      FCB     CR,LF,0,0        
+00188 0521    524F           FCC     /ROCK SLIDE! A TUNNEL IS CLOSED/ 
+00189 053F    04             FCB     EOT              
+00190 0540    5741 TX28      FCC     /WATCH IT!/      
+00191 0549    04             FCB     EOT              
+00192 054A    202D TX29      FCC     / - THE WUMPUS IS AWAKE/ 
+00193 0560    04             FCB     EOT              
+00194 0561    0D0A TX30      FCB     CR,LF,0,0        
+00195 0565    5749           FCC     /WILD SHOT - /   
+00196 0571    04             FCB     EOT              
+00197 0572    0D0A TX31      FCB     CR,LF,0,0        
+00198 0576    4249           FCC     /BIG DEAL, YOU SHOT A BAT/ 
+00199 058E    04             FCB     EOT              
+00200               **SKIP
+00201 058F    0D0A TX32      FCB     CR,LF,0,0        
+00202 0593    4120           FCC     /A DOWNDRAFT HAS SUCKED THE ARROW INTO A PI
+00203 05EF    04             FCB     EOT              
+00204 05F0    0D0A TX33      FCB     CR,LF,0,0        
+00205 05F4    594F           FCC     /YOU JUST STEPPED ON HIS FLIPPER!/ 
+00206 0614    04             FCB     EOT              
+00207 0615    0D0A TX34      FCB     CR,LF,LF,0       
+00208 0619    444F           FCC     /DO YOU WANT TO PLAY AGAIN? / 
+00209 0634    04             FCB     EOT              
+00210 0635    0D0A TX35      FCB     CR,LF,0,0        
+00211 0639    444F           FCC     /DO YOU WANT TO SEE A CAVE MAP? / 
+00212 0658    04             FCB     EOT              
+00213               **SKIP
+00214 0659    0D0A TX36      FCB     CR,LF,0,0        
+00215 065D    5745           FCC     /WELCOME TO THE WUMPUS CAVES,/ 
+00216 0679    0D0A           FCB     CR,LF,0,0        
+00217 067D    444F           FCC     /DO YOU WISH INSTRUCTIONS? / 
+00218 0697    04             FCB     EOT              
+00219 0698    0A   WHAT      FCB     LF               
+00220 0699    2057           FCC     / WHAT? /        
+00221 06A0    04             FCB     EOT              
+00222 06A1    0D0A TX37      FCB     CR,LF,0,0        
+00223 06A5    5448           FCC     /THANK YOU, CAME AGAIN SOMETIME./ 
+00224 06C4    04             FCB     EOT              
+00225               **SKIP
+00226 06C5    0D0A TX38      FCB     CR,LF,0,0        
+00227 06C9    5348           FCC     /SHOOT WHAT?/    
+00228 06D4    0D0A           FCB     CR,LF,0,0        
+00229 06D8    594F           FCC     /YOU HAVE NO ARROWS OR ROCKS/ 
+00230 06F3    04             FCB     EOT              
+00231 06F4    202D TX39      FCC     / - YOU CAN'T GET THERE FROM HERE/ 
+00232 0714    04             FCB     EOT              
+ASM68 6800 Assembler (c) 1988-1995 Evenson Consulting Services        Page 5
+FILE: e:\src\repos\mc6800\wumpus\wumpus.asm
+
+00233 0715    0D0A TX40      FCB     CR,LF,LF,0       
+00234 0719    524F           FCC     /ROOM    TUNNELS      ITEM/ 
+00235 0732    0A04           FCB     LF,EOT           
+00236               **SKIP
+00237 0734    0D0A TX99      FCB     CR,LF,0,0        
+00238 0738    5448           FCC     /THIS CAVE HAS 20 INTERCONNECTED ROOMS/ 
+00239 075D    0D0A           FCB     CR,LF,0,0        
+00240 0761    5448           FCC     /THE WUMPUS IS ASLEEP IN ONE AND MUST BE KI
+00241 07BD    0D0A           FCB     CR,LF,0,0        
+00242 07C1    4946           FCC     /IF HE (?) FINDS YOU HE WILL EAT YOU/ 
+00243 07E4    0D0A           FCB     CR,LF,0,0        
+00244               **SKIP
+00245 07E8    4946           FCC     /IF YOU WAKE HIM UP HE MAY MOVE/ 
+00246 0806    0D0A           FCB     CR,LF,0,0        
+00247 080A    4C4F           FCC     /LOOK OUT FOR BATS AND PITS/ 
+00248 0824    0D0A           FCB     CR,LF,0,0        
+00249 0828    5741           FCC     /WARNINGS ARE FOR HAZARDS 1 ROOM AWAY/ 
+00250 084C    0D0A           FCB     CR,LF,0,0        
+00251 0850    594F           FCC     /YOU HAVE 5 ARROWS AND A LIMITED STORE O F 
+00252 08AC    0D0A           FCB     CR,LF,0,0        
+00253               **SKIP
+00254 08B0    4541           FCC     /EACH SHOT MAY GO THROUGH 1 TO 3 CONNECT ED
+00255 090C    0D0A           FCB     CR,LF,0,0        
+00256 0910    594F           FCC     /YOU MAY MAKE 1 MOVE OR SHOT EACH DAY/ 
+00257 0934    0D0A           FCB     CR,LF,0,0        
+00258 0938    5748           FCC     /WHEN YOU ARE OUT OF ARROWS LOOK FOR ROC KS
+00259 0994    0D0A           FCB     CR,LF,0,0        
+00260               **SKIP
+00261 0998    2020           FCC     /  WHICH CAN BE THROWN INTO ONLY 1 ROOM/ 
+00262 09BE    0D0A           FCB     CR,LF,0,0        
+00263 09C2    2020           FCC     /  AND MAY KILL THE WUMPUS/ 
+00264 09DB    0D0A           FCB     CR,LF,0,0        
+00265 09DF    2020           FCC     /         GOOD LUCK/ 
+00266 09F1    0D0A           FCB     CR,LF,LF,EOT     
+00267               **SKIP
+00268               *
+00269               *
+00270 09F5 FF 0114 PSHX      STX     SAVX             SAVE IX
+00271 09F8 30                TSX                      POINT IX
+00272 09F9 09                DEX                      
+00273 09FA 09                DEX                      
+00274 09FB AE 02             LDS     2,X              MOVE RTS ADDR
+00275 09FD AF 00             STS     ,X               
+00276 09FF BE 0114           LDS     SAVX             INSERT IX
+00277 0A02 AF 02             STS     2,X              RESTORE STACK
+00278 0A04 35                TXS                      
+00279 0A05 EE 02             LDX     2,X              RETORE IX
+00280 0A07 39                RTS                      
+00281               *
+00282               *
+00283               *
+00284 0A08 30      PULX      TSX                      POINT IX
+00285 0A09 09                DEX                      
+00286 0A0A 09                DEX                      
+00287 0A0B AE 04             LDS     4,X              REMOVE IX VALUE
+00288 0A0D AF 00             STS     ,X               
+00289 0A0F AE 02             LDS     2,X              MOVE UP RTS ADDR
+00290 0A11 AF 04             STS     4,X              RESTORE STACK
+ASM68 6800 Assembler (c) 1988-1995 Evenson Consulting Services        Page 6
+FILE: e:\src\repos\mc6800\wumpus\wumpus.asm
+
+00291 0A13 35                TXS                      
+00292 0A14 31                INS                      
+00293 0A15 31                INS                      
+00294 0A16 31                INS                      
+00295 0A17 31                INS                      
+00296 0A18 EE 00             LDX     ,X               LOAD IX
+00297 0A1A 39                RTS                      
+00298               **SKIP
+00299               *
+00300               *
+00301 0A1B BD 09F5 ROOMIN    JSR     PSHX             SAVE IX
+00302 0A1E C6 03             LDAB    #3               
+00303 0A20 F7 010B           STAB    COUNT            
+00304 0A23 7F 0112           CLR     ROOMNO           
+00305 0A26 BD 1175 IN1       JSR     CHARIN           GET CHARACTER
+00306 0A29 81 20             CMPA    #BLANK           IF BLANK THEN
+00307 0A2B 26 09             BNE     IN2              
+00308 0A2D F6 010B           LDAB    COUNT            
+00309 0A30 C1 03             CMPB    #3               IF COUNT = 3 (LEADING BLAN
+00310 0A32 27 F2             BEQ     IN1              KEEP GOING
+00311 0A34 20 28             BRA     IN3              ELSE DONE
+00312 0A36 81 0D   IN2       CMPA    #CR              IF CR THEN
+00313 0A38 27 24             BEQ     IN3              DONE
+00314 0A3A 81 2C             CMPA    #$2C             IF COMA THEN
+00315 0A3C 27 20             BEQ     IN3              DONE
+00316 0A3E 81 30             CMPA    #'0              IF < 0 THEN
+00317 0A40 2D 3A             BLT     IN5              ERROR
+00318 0A42 81 39             CMPA    #'9              IF > 9 THEN
+00319 0A44 22 36             BHI     IN5              ERROR
+00320 0A46 7A 010B           DEC     COUNT            IF THIRD DIGIT THEN
+00321 0A49 27 31             BEQ     IN5              ERROR
+00322 0A4B 84 0F             ANDA    #$0F             STRIP OFF HIGH BITS
+00323 0A4D 36                PSHA                     
+00324 0A4E B6 0112           LDAA    ROOMNO           MULTIPLY ROOMNO
+00325 0A51 16                TAB                      BY 10
+00326 0A52 48                ASLA                     
+00327 0A53 48                ASLA                     
+00328 0A54 48                ASLA                     
+00329 0A55 1B                ABA                      
+00330 0A56 1B                ABA                      
+00331 0A57 33                PULB                     
+00332 0A58 1B                ABA                      ADD NEW DIGIT
+00333 0A59 B7 0112           STAA    ROOMNO           
+00334 0A5C 20 C8             BRA     IN1              GET NEXT CHAR
+00335               **SKIP
+00336               *
+00337               * ROOMIN CONTINUED
+00338               *
+00339 0A5E B7 010E IN3       STAA    DELIM            SAVE DELIMITER
+00340 0A61 B6 0112           LDAA    ROOMNO           
+00341 0A64 27 12             BEQ     IN45             
+00342 0A66 CE 0170           LDX     #TRANS           LOOK UP
+00343 0A69 A1 01   IN31      CMPA    1,X              TRANSLATION
+00344 0A6B 27 09             BEQ     IN4              
+00345 0A6D 08                INX                      
+00346 0A6E 08                INX                      
+00347 0A6F 8C 0198           CPX     #TRANS+40        IF FOUND
+00348 0A72 26 F5             BNE     IN31             DONE
+ASM68 6800 Assembler (c) 1988-1995 Evenson Consulting Services        Page 7
+FILE: e:\src\repos\mc6800\wumpus\wumpus.asm
+
+00349 0A74 20 06             BRA     IN5              ELSE ERROR
+00350 0A76 A6 00   IN4       LDAA    ,X               
+00351 0A78 BD 0A08 IN45      JSR     PULX             RESTORE IX
+00352 0A7B 39                RTS                      
+00353 0A7C CE 01A4 IN5       LDX     #CRLF            
+00354 0A7F BD 117B           JSR     STROUT           
+00355 0A82 CE 01E6           LDX     #TX04            WRITE ERROR
+00356 0A85 BD 117B           JSR     STROUT           
+00357 0A88 20 94             BRA     ROOMIN+3         TRY AGAIN
+00358               **SKIP
+00359               *
+00360               *
+00361 0A8A 4D      ROOMOUT   TSTA                     
+00362 0A8B 2A 0A             BPL     OUT0             
+00363 0A8D BD 1181           JSR     BLKOUT           IF BLOCKED TUNNEL THEN
+00364 0A90 BD 1181           JSR     BLKOUT           WTRITE SPACES
+00365 0A93 BD 1181           JSR     BLKOUT           
+00366 0A96 39                RTS                      
+00367 0A97 BD 09F5 OUT0      JSR     PSHX             SAVE IX
+00368 0A9A BD 1181           JSR     BLKOUT           WRITE BLANK
+00369 0A9D CE 0170           LDX     #TRANS           IF A = 1
+00370 0AA0 4A                DECA                     
+00371 0AA1 27 05             BEQ     OUT5             GOTO END
+00372 0AA3 08      OUT1      INX                      LOOP THROUGH
+00373 0AA4 08                INX                      TABLE
+00374 0AA5 4A                DECA                     
+00375 0AA6 26 FB             BNE     OUT1             
+00376 0AA8 A6 01   OUT5      LDAA    1,X              TRANSLATE ROOMNO
+00377 0AAA 81 09             CMPA    #9               
+00378 0AAC 22 03             BHI     OUT7             
+00379 0AAE BD 1181           JSR     BLKOUT           
+00380 0AB1 BD 0AD1 OUT7      JSR     DECOUT           WRITE ROOM
+00381 0AB4 BD 0A08           JSR     PULX             RESTORE IX
+00382 0AB7 39                RTS                      
+00383               *
+00384               *
+00385               *
+00386 0AB8 BD 09F5 DAYSLEFT  JSR     PSHX             SAVE IX
+00387 0ABB CE 03A3           LDX     #TX16            MSG1
+00388 0ABE BD 117B           JSR     STROUT           
+00389 0AC1 B6 010D           LDAA    DAYS             
+00390 0AC4 BD 0AD1           JSR     DECOUT           DAYS OUT
+00391 0AC7 CE 03BB           LDX     #TX17            MSG2
+00392 0ACA BD 117B           JSR     STROUT           
+00393 0ACD BD 0A08           JSR     PULX             
+00394 0AD0 39                RTS                      
+00395               *
+00396               *
+00397               *
+00398 0AD1 7F 010B DECOUT    CLR     COUNT            
+00399 0AD4 7C 010B DEC1      INC     COUNT            LOAD COUNT
+00400 0AD7 80 0A             SUBA    #10              WITH TENS DIGIT
+00401 0AD9 2A F9             BPL     DEC1             
+00402 0ADB 8B 0A             ADDA    #10              
+00403 0ADD 7A 010B           DEC     COUNT            
+00404 0AE0 36                PSHA                     SAVE UNITS DIGIT
+00405 0AE1 B6 010B           LDAA    COUNT            IF COUNT
+00406 0AE4 27 05             BEQ     DEC2             NOT = 0
+ASM68 6800 Assembler (c) 1988-1995 Evenson Consulting Services        Page 8
+FILE: e:\src\repos\mc6800\wumpus\wumpus.asm
+
+00407 0AE6 8A 30             ORAA    #$30             MAKE ASCII
+00408 0AE8 BD 1178           JSR     CHAROUT          AND PRINT
+00409 0AEB 32      DEC2      PULA                     LOAD UNITS
+00410 0AEC 8A 30             ORAA    #$30             MAKE ASCII
+00411 0AEE BD 1178           JSR     CHAROUT          
+00412 0AF1 39                RTS                      
+00413               **SKIP
+00414               *
+00415               *
+00416 0AF2 37      RAND      PSHB                     RANDOM	NUMBER GENERATOR - 
+00417 0AF3 B6 0119           LDAA    STUF+1           COMPUTE (STUF * 2 * * 9) M
+00418 0AF6 0C                CLC                      
+00419 0AF7 49                ROLA                     
+00420 0AF8 0C                CLC                      
+00421 0AF9 49                ROLA                     
+00422 0AFA BB 0118           ADDA    STUF             ADD STUFF TO RESULT
+00423 0AFD F6 0119           LDAB    STUF+1           
+00424 0B00 0C                CLC                      MULTIPLY BY 2 ** 2
+00425 0B01 59                ROLB                     
+00426 0B02 49                ROLA                     
+00427 0B03 0C                CLC                      
+00428 0B04 59                ROLB                     
+00429 0B05 49                ROLA                     
+00430 0B06 0C                CLC                      
+00431 0B07 FB 0119           ADDB    STUF+1           ADD STUFF TO RESULT
+00432 0B0A B9 0118           ADCA    STUF             
+00433 0B0D 0C                CLC                      
+00434 0B0E CB 19             ADDB    #$19             ADD HEXADECIMAL 3619 TO TH
+00435 0B10 8B 36             ADDA    #$36             
+00436 0B12 B7 0118           STAA    STUF             STORE RESULT IN STUF
+00437 0B15 F7 0119           STAB    STUF+1           
+00438 0B18 33                PULB                     RESTORE B
+00439 0B19 39                RTS                      
+00440               *       RMB    5
+00441               *       EQU    *
+00442               **SKIP
+00443               *
+00444               *
+00445 0B1A B7 0110 RANDMOVE  STAA    OLDROOM          SAVE CURRENT ROOM
+00446 0B1D 86 32             LDAA    #50              SET LOOP COUNTER
+00447 0B1F B7 010B           STAA    COUNT            TO 50
+00448 0B22 FF 0114           STX     SAVX             SAVE CURRENT IX
+00449 0B25 FE 0114 RMV1      LDX     SAVX             LOOP
+00450 0B28 7A 010B           DEC     COUNT            PICK FIRST, SECOND,
+00451 0B2B BD 0AF2           JSR     RAND             OR THIRD ROOM
+00452 0B2E 81 55             CMPA    #85              
+00453 0B30 23 06             BLS     RMV5             
+00454 0B32 08                INX                      
+00455 0B33 81 AA             CMPA    #170             
+00456 0B35 23 01             BLS     RMV5             
+00457 0B37 08                INX                      
+00458 0B38 7D 010B RMV5      TST     COUNT            IF 50 TRIES,
+00459 0B3B 27 10             BEQ     RMV7             DONT MOVE
+00460 0B3D A6 00             LDAA    ,X               IF BLOCKED
+00461 0B3F 2B E4             BMI     RMV1             GO BACK TO LOOP
+00462 0B41 BD 0B64           JSR     PNTROOM          POINT IX TO ROOM
+00463 0B44 6D 03             TST     3,X              IF ROOM EMPTY,
+00464 0B46 27 08             BEQ     RMV9             GO TO END
+ASM68 6800 Assembler (c) 1988-1995 Evenson Consulting Services        Page 9
+FILE: e:\src\repos\mc6800\wumpus\wumpus.asm
+
+00465 0B48 5D                TSTB                     ELSE IF WUMPUS MOVING
+00466 0B49 26 DA             BNE     RMV1             GO BACK TO LOOP
+00467 0B4B 20 03             BRA     RMV9             
+00468 0B4D B6 0110 RMV7      LDAA    OLDROOM          
+00469 0B50 FE 0114 RMV9      LDX     SAVX             
+00470 0B53 39                RTS                      RETURN
+00471               *
+00472               *
+00473               *
+00474 0B54 BD 0AF2 RANDROOM  JSR     RAND             GET ROOM
+00475 0B57 84 1F             ANDA    #$1F             MAKE <= 32
+00476 0B59 81 14             CMPA    #20              IF > 20 THEN
+00477 0B5B 22 F7             BHI     RANDROOM         DO IT AGAIN
+00478 0B5D 4D                TSTA                     IF = 0 THEN
+00479 0B5E 27 F4             BEQ     RANDROOM         
+00480 0B60 BD 0B64           JSR     PNTROOM          POINT INDEX
+00481 0B63 39                RTS                      RETURN
+00482               **SKIP
+00483               *
+00484               *
+00485 0B64 36      PNTROOM   PSHA                     SAVE A
+00486 0B65 4A                DECA                     A = 4(A-1) + 1
+00487 0B66 48                ASLA                     
+00488 0B67 48                ASLA                     
+00489 0B68 4C                INCA                     
+00490 0B69 CE 0120           LDX     #ROOMS           POINT INDEX
+00491 0B6C 4A      PNT1      DECA                     LOOP A = 1 TIMES
+00492 0B6D 27 03             BEQ     PNT2             
+00493 0B6F 08                INX                      
+00494 0B70 20 FA             BRA     PNT1             
+00495 0B72 32      PNT2      PULA                     RESTORE A
+00496 0B73 39                RTS                      RETURN
+00497               *
+00498               *
+00499               *
+00500 0B74 36      PNTRANS   PSHA                     SAVE A
+00501 0B75 4A                DECA                     A = 2(A-1) + 1
+00502 0B76 48                ASLA                     
+00503 0B77 4C                INCA                     
+00504 0B78 CE 0170           LDX     #TRANS           POINT INDEX
+00505 0B7B 4A      PNT3      DECA                     LOOP A = 1 TIMES
+00506 0B7C 27 03             BEQ     PNT4             
+00507 0B7E 08                INX                      
+00508 0B7F 20 FA             BRA     PNT3             
+00509 0B81 32      PNT4      PULA                     RESTORE A
+00510 0B82 39                RTS                      RETURN
+00511               *
+00512               *
+00513               *
+00514 0B83 BD 1175 PROMPTIN  JSR     CHARIN           GET ANSW
+00515 0B86 36                PSHA                     PUSH IT
+00516 0B87 81 0D             CMPA    #CR              IF A = CR THEN
+00517 0B89 27 07             BEQ     PROMPT9          GO TO END
+00518 0B8B BD 1175 PROMPT5   JSR     CHARIN           LOOP UNTIL CR
+00519 0B8E 81 0D             CMPA    #CR              
+00520 0B90 26 F9             BNE     PROMPT5          
+00521 0B92 32      PROMPT9   PULA                     RESTORE ANSWER
+00522 0B93 39                RTS                      RETURN
+ASM68 6800 Assembler (c) 1988-1995 Evenson Consulting Services        Page 10
+FILE: e:\src\repos\mc6800\wumpus\wumpus.asm
+
+00523               *SKIP
+00524               *
+00525               *
+00526 0B94 BD 0AF2 PROBLITY  JSR     RAND             GET RAND NUMBER
+00527 0B97 84 7F             ANDA    #$7F             MAKE <= 128
+00528 0B99 81 64             CMPA    #100             IT > 100 THEN
+00529 0B9B 22 F7             BHI     PROBLITY         DO IT AGAIN
+00530 0B9D A1 00             CMPA    ,X               IF RAND <= PROB
+00531 0B9F 23 03             BLS     PRB1             SET A
+00532 0BA1 4F                CLRA                     ELSE CLEAR A
+00533 0BA2 20 02             BRA     PRB5             
+00534 0BA4 86 01   PRB1      LDAA    #1               
+00535 0BA6 08      PRB5      INX                      INCREMENT IX
+00536 0BA7 39                RTS                      RETURN
+00537               *
+00538               *
+00539               *
+00540 0BA8 BD 0B64 CONECTED  JSR     PNTROOM          ANSWER IS IN B
+00541 0BAB E1 00             CMPB    ,X               TEXT 3 CONNECTIONS
+00542 0BAD 27 0A             BEQ     CON5             
+00543 0BAF E1 01             CMPB    1,X              
+00544 0BB1 27 06             BEQ     CON5             
+00545 0BB3 E1 02             CMPB    2,X              
+00546 0BB5 27 02             BEQ     CON5             
+00547 0BB7 5F                CLRB                     B = 0 IF NOT CONNECTED
+00548 0BB8 39                RTS                      
+00549 0BB9 C6 01   CON5      LDAB    #1               ELSE B = 1
+00550 0BBB 39                RTS                      
+00551               *
+00552               *
+00553               *
+00554 0BBC CE 0375 WON       LDX     #TX14            
+00555 0BBF BD 117B           JSR     STROUT           
+00556 0BC2 7C 010F           INC     END              
+00557 0BC5 39                RTS                      
+00558               *
+00559               *
+00560               *
+00561 0BC6 CE 034E LOST      LDX     #TX12            
+00562 0BC9 BD 117B           JSR     STROUT           
+00563 0BCC 7C 010F           INC     END              
+00564 0BCF 39                RTS                      
+00565               **SKIP
+00566               *
+00567               *
+00568 0BD0 8E 0FFF MAIN      LDS     #$0FFF           SET STACK				!!!!!!!!
+00569 0BD3 CE 0659 MAN1      LDX     #TX36            ASK FOR INSTRUCTIONS
+00570 0BD6 BD 117B           JSR     STROUT           
+00571 0BD9 BD 0B83           JSR     PROMPTIN         
+00572 0BDC 84 DF             ANDA    #$DF             CONVERT TO UPPER CASE
+00573 0BDE 81 59             CMPA    #'Y              
+00574 0BE0 27 0C             BEQ     TEACH            SHOW THEM
+00575 0BE2 81 4E             CMPA    #'N              
+00576 0BE4 27 0E             BEQ     STARTGAM         OR NOT
+00577 0BE6 CE 0698           LDX     #WHAT            
+00578 0BE9 BD 117B           JSR     STROUT           
+00579 0BEC 20 E5             BRA     MAN1             
+00580 0BEE CE 0734 TEACH     LDX     #TX99            
+ASM68 6800 Assembler (c) 1988-1995 Evenson Consulting Services        Page 11
+FILE: e:\src\repos\mc6800\wumpus\wumpus.asm
+
+00581 0BF1 BD 117B           JSR     STROUT           
+00582 0BF4 BD 0C42 STARTGAM  JSR     GENCAVES         INIT CAVES
+00583 0BF7 BD 0CFB           JSR     PLAY             
+00584 0BFA CE 0635 MAN2      LDX     #TX35            ASK FOR MAP OF CAVE
+00585 0BFD BD 117B           JSR     STROUT           
+00586 0C00 BD 0B83           JSR     PROMPTIN         
+00587 0C03 84 DF             ANDA    #$DF             CONVERT TO UPPER CASE
+00588 0C05 81 59             CMPA    #'Y              
+00589 0C07 27 0C             BEQ     DSPLAY           SHOW IT
+00590 0C09 81 4E             CMPA    #'N              
+00591 0C0B 27 0B             BEQ     NXTGAME          OR NOT
+00592 0C0D CE 0698           LDX     #WHAT            
+00593 0C10 BD 117B           JSR     STROUT           
+00594 0C13 20 E5             BRA     MAN2             
+00595 0C15 BD 1042 DSPLAY    JSR     DISPLAY          
+00596 0C18 CE 0615 NXTGAME   LDX     #TX34            ASK FOR ANOTHER GAME
+00597 0C1B BD 117B           JSR     STROUT           
+00598 0C1E BD 0B83           JSR     PROMPTIN         
+00599 0C21 84 DF             ANDA    #$DF             CONVERT TO UPPER CASE
+00600 0C23 81 59             CMPA    #'Y              
+00601 0C25 27 CD             BEQ     STARTGAM         PLAY IT
+00602 0C27 81 4E             CMPA    #'N              
+00603 0C29 27 08             BEQ     FINAL            OR NOT
+00604 0C2B CE 0698           LDX     #WHAT            
+00605 0C2E BD 117B           JSR     STROUT           
+00606 0C31 20 E5             BRA     NXTGAME          
+00607 0C33 CE 06A1 FINAL     LDX     #TX37            
+00608 0C36 BD 117B           JSR     STROUT           
+00609 0C39 CE 01A4           LDX     #CRLF            
+00610 0C3C BD 117B           JSR     STROUT           
+00611 0C3F 7E 1189           JMP     EXIT             !!!!!!!!
+00612               **SKIP
+00613               *
+00614               *
+00615 0C42 BD 0CBA GENCAVES  JSR     CLEAR            CLEAR OLD ITEMS
+00616 0C45 86 01             LDAA    #1               SET UP 1 WUMPUS
+00617 0C47 B7 010B           STAA    COUNT            
+00618 0C4A C6 57             LDAB    #'W              
+00619 0C4C F7 011C           STAB    SYMBOL           
+00620 0C4F BD 0CDF           JSR     GENITEM          
+00621 0C52 C6 50             LDAB    #'P              SET UP 1 TO 2 PITS
+00622 0C54 F7 011C           STAB    SYMBOL           
+00623 0C57 BD 0AF2           JSR     RAND             
+00624 0C5A 84 01             ANDA    #1               
+00625 0C5C 4C                INCA                     
+00626 0C5D B7 010B           STAA    COUNT            
+00627 0C60 BD 0CDF           JSR     GENITEM          
+00628 0C63 C6 42             LDAB    #'B              SET UP 1 TO 4 BAT COLONIES
+00629 0C65 F7 011C           STAB    SYMBOL           
+00630 0C68 BD 0AF2           JSR     RAND             
+00631 0C6B 84 03             ANDA    #3               
+00632 0C6D 4C                INCA                     
+00633 0C6E B7 010B           STAA    COUNT            
+00634 0C71 BD 0CDF           JSR     GENITEM          
+00635 0C74 BD 0B54 GEN1      JSR     RANDROOM         SET CURRENT ROOM
+00636 0C77 6D 03             TST     3,X              
+00637 0C79 26 F9             BNE     GEN1             
+00638 0C7B B7 010C           STAA    CURRENT          
+ASM68 6800 Assembler (c) 1988-1995 Evenson Consulting Services        Page 12
+FILE: e:\src\repos\mc6800\wumpus\wumpus.asm
+
+00639 0C7E CE 0170           LDX     #TRANS           IF TRANSLATION TABLE
+00640 0C81 6D 01             TST     1,X              IS NOT FILLED IN,
+00641 0C83 26 1D             BNE     GEN6             
+00642 0C85 C6 14             LDAB    #20              
+00643 0C87 37      GEN2      PSHB                     
+00644 0C88 BD 0B54           JSR     RANDROOM         LOAD 20 ITEMS INTO
+00645 0C8B BD 0B74 GEN3      JSR     PNTRANS          TRANSLATION TABLE
+00646 0C8E 6D 01             TST     1,X              
+00647 0C90 27 0A             BEQ     GEN5             
+00648 0C92 8B 07             ADDA    #7               
+00649 0C94 81 14             CMPA    #20              
+00650 0C96 23 F3             BLS     GEN3             
+00651 0C98 80 14             SUBA    #20              
+00652 0C9A 20 EF             BRA     GEN3             
+00653 0C9C 33      GEN5      PULB                     
+00654 0C9D E7 01             STAB    1,X              
+00655 0C9F 5A                DECB                     
+00656 0CA0 26 E5             BNE     GEN2             
+00657 0CA2 7F 010A GEN6      CLR     AWAKE            PUT WUMPUS TO SLEEP
+00658 0CA5 BD 0B54           JSR     RANDROOM         
+00659 0CA8 47                ASRA                     GEN10 TO 20 DAYS
+00660 0CA9 8B 0A             ADDA    #10              
+00661 0CAB B7 010D           STAA    DAYS             
+00662 0CAE 86 05             LDAA    #5               SET UP 5 SHOTS
+00663 0CB0 B7 0116           STAA    SHOTS            
+00664 0CB3 7F 0111           CLR     ROCKS            AND NO ROCKS
+00665 0CB6 7F 010F           CLR     END              START NEW GAME
+00666 0CB9 39                RTS                      RETURN
+00667               **SKIP
+00668               *
+00669               *
+00670 0CBA CE 0120 CLEAR     LDX     #ROOMS           CLEAR ROOM LOOP
+00671 0CBD 86 03   CLR1      LDAA    #3               
+00672 0CBF 6D 00   CLR2      TST     ,X               
+00673 0CC1 2A 02             BPL     CLR3             
+00674 0CC3 63 00             COM     ,X               CLEAR BLOCKED TUNNELS
+00675 0CC5 08      CLR3      INX                      
+00676 0CC6 4A                DECA                     
+00677 0CC7 26 F6             BNE     CLR2             
+00678 0CC9 6F 00             CLR     ,X               
+00679 0CCB 08                INX                      
+00680 0CCC 8C 0170           CPX     #ROOMS+80        
+00681 0CCF 26 EC             BNE     CLR1             
+00682               *
+00683               *
+00684               *
+00685 0CD1 01                NOP                      REPLACE THIS WITH RTS (39)
+00686               *                       RESHUFFELING OF ROOM NUMBERS BETWE
+00687               *
+00688               *
+00689 0CD2 CE 0170           LDX     #TRANS           CLEAR TRANSLATION TABLE
+00690 0CD5 6F 01   CLR4      CLR     1,X              
+00691 0CD7 08                INX                      
+00692 0CD8 08                INX                      
+00693 0CD9 8C 0198           CPX     #TRANS+40        
+00694 0CDC 26 F7             BNE     CLR4             
+00695 0CDE 39                RTS                      
+00696               *
+ASM68 6800 Assembler (c) 1988-1995 Evenson Consulting Services        Page 13
+FILE: e:\src\repos\mc6800\wumpus\wumpus.asm
+
+00697               *
+00698               *
+00699 0CDF F6 010B GENITEM   LDAB    COUNT            LOOP FOR # OF ITEMS
+00700 0CE2 37      GEN7      PSHB                     
+00701 0CE3 BD 0B54           JSR     RANDROOM         
+00702 0CE6 6D 03             TST     3,X              FIND EMPTY ROOM
+00703 0CE8 26 F9             BNE     GEN7+1           
+00704 0CEA F6 011C           LDAB    SYMBOL           LOAD WITH ITEM
+00705 0CED E7 03             STAB    3,X              
+00706 0CEF C1 57             CMPB    #'W              IF ITEM IS WUMPUS THEN
+00707 0CF1 26 03             BNE     GEN8             
+00708 0CF3 B7 011F           STAA    WUMPROOM         
+00709 0CF6 33      GEN8      PULB                     ELSE DONT
+00710 0CF7 5A                DECB                     CYCLE THROUGH LOOP
+00711 0CF8 26 E8             BNE     GEN7             
+00712 0CFA 39                RTS                      
+00713               **SKIP
+00714               *
+00715               *
+00716 0CFB 7A 010D PLAY      DEC     DAYS             DECREASE DAYS
+00717 0CFE 7D 010A           TST     AWAKE            
+00718 0D01 23 03             BLS     GAME1            
+00719 0D03 BD 0D43           JSR     MOVE_W           MOVE WUMPUS
+00720 0D06 BD 0D64 GAME1     JSR     REPORT           REPORT
+00721 0D09 7D 010F           TST     END              IF END
+00722 0D0C 23 01             BLS     GAME3            
+00723 0D0E 39                RTS                      RETURN
+00724 0D0F CE 01D2 GAME3     LDX     #TX03            PROMPT FOR SHOOT OR MOVE
+00725 0D12 BD 117B           JSR     STROUT           
+00726 0D15 BD 0B83           JSR     PROMPTIN         
+00727 0D18 84 DF             ANDA    #$DF             CONVERT TO UPPER CASE
+00728 0D1A 81 53             CMPA    #'S              
+00729 0D1C 27 0C             BEQ     GAME4            
+00730 0D1E 81 4D             CMPA    #'M              
+00731 0D20 27 0D             BEQ     GAME5            
+00732 0D22 CE 0698           LDX     #WHAT            
+00733 0D25 BD 117B           JSR     STROUT           
+00734 0D28 20 E5             BRA     GAME3            
+00735 0D2A BD 0E7A GAME4     JSR     SHOOT            SHOOT
+00736 0D2D 20 03             BRA     GAME6            
+00737 0D2F BD 101D GAME5     JSR     MOVE             MOVE
+00738 0D32 7D 010F GAME6     TST     END              
+00739 0D35 23 01             BLS     GAME8            
+00740 0D37 39                RTS                      
+00741 0D38 CE 01A4 GAME8     LDX     #CRLF            SKIP A LINE
+00742 0D3B BD 117B           JSR     STROUT           
+00743 0D3E BD 108F           JSR     HAPNINGS         RANDOM ITEMS
+00744 0D41 20 B8             BRA     PLAY             
+00745               *
+00746               *
+00747               *
+00748 0D43 CE 019A MOVE_W    LDX     #PROB3           ONE TIME IN FIVE,
+00749 0D46 BD 0B94           JSR     PROBLITY         DO NOT MOVE WUMPUS
+00750 0D49 4D                TSTA                     
+00751 0D4A 26 17             BNE     MOVE1            
+00752 0D4C B6 011F           LDAA    WUMPROOM         MOVE TO RANDOM ROOM
+00753 0D4F BD 0B64           JSR     PNTROOM          
+00754 0D52 C6 01             LDAB    #1               
+ASM68 6800 Assembler (c) 1988-1995 Evenson Consulting Services        Page 14
+FILE: e:\src\repos\mc6800\wumpus\wumpus.asm
+
+00755 0D54 BD 0B1A           JSR     RANDMOVE         
+00756 0D57 B7 011F           STAA    WUMPROOM         
+00757 0D5A 6F 03             CLR     3,X              CLEAR CURRENT WUMMPUS INDI
+00758 0D5C BD 0B64           JSR     PNTROOM          
+00759 0D5F C6 57             LDAB    #'W              
+00760 0D61 A7 03             STAA    3,X              SET NEW WUMPUS INDICATOR
+00761 0D63 39      MOVE1     RTS                      
+00762               **SKIP
+00763               *
+00764               *
+00765 0D64 7D 010D REPORT    TST     DAYS             IF DAYS = 0 THEN
+00766 0D67 2A 0A             BPL     RPT0             
+00767 0D69 CE 0229           LDX     #TX08            STARVED TO DEATH
+00768 0D6C BD 117B           JSR     STROUT           
+00769 0D6F BD 0BC6           JSR     LOST             
+00770 0D72 39                RTS                      
+00771 0D73 B6 010C RPT0      LDAA    CURRENT          
+00772 0D76 BD 0B64           JSR     PNTROOM          
+00773 0D79 E6 03             LDAB    3,X              
+00774 0D7B C1 42             CMPB    #'B              STEPPED INTO A
+00775 0D7D 26 05             BNE     RPT1             BAT CAVE
+00776 0D7F BD 0E19           JSR     BATS             
+00777 0D82 20 E0             BRA     REPORT           START AGAIN
+00778 0D84 C1 57   RPT1      CMPB    #'W              BUMBED INTO WUMPUS
+00779 0D86 26 09             BNE     RPT2             
+00780 0D88 BD 0E40           JSR     BUMP_W           
+00781 0D8B 7D 010F           TST     END              IF ASLEEP		!!!!!!!!
+00782 0D8E 23 01             BLS     RPT2             CONTINUE
+00783 0D90 39                RTS                      ELSE END
+00784 0D91 C1 50   RPT2      CMPB    #'P              STEPPED INTO A PIT
+00785 0D93 26 04             BNE     RPT3             
+00786 0D95 BD 0E36           JSR     PITS             
+00787 0D98 39                RTS                      
+00788               **SKIP
+00789               *
+00790               *  REPORT CONTINUED
+00791               *
+00792 0D99 A6 00   RPT3      LDAA    ,X               
+00793 0D9B BD 0DEC           JSR     RPTROOM          REPORT SURROUNDING ROOMS
+00794 0D9E A6 01             LDAA    1,X              
+00795 0DA0 BD 0DEC           JSR     RPTROOM          
+00796 0DA3 A6 02             LDAA    2,X              
+00797 0DA5 BD 0DEC           JSR     RPTROOM          
+00798 0DA8 CE 01A8           LDX     #TX01            REPORT CURRENT ROOM
+00799 0DAB BD 117B           JSR     STROUT           
+00800 0DAE B6 010C           LDAA    CURRENT          
+00801 0DB1 BD 0A8A           JSR     ROOMOUT          
+00802 0DB4 CE 01BD           LDX     #TX02            REPORT CONNECTING TUNNELS
+00803 0DB7 BD 117B           JSR     STROUT           
+00804 0DBA B6 010C           LDAA    CURRENT          
+00805 0DBD BD 0B64           JSR     PNTROOM          
+00806 0DC0 BD 0AF2           JSR     RAND             JUMBLE REPORTING
+00807 0DC3 84 07             ANDA    #$07             OF TUNNELS
+00808 0DC5 B7 010B           STAA    COUNT            
+00809 0DC8 A6 02   RPT4      LDAA    2,X              
+00810 0DCA E6 01             LDAB    1,X              
+00811 0DCC E7 02             STAB    2,X              
+00812 0DCE E6 00             LDAB    ,X               
+ASM68 6800 Assembler (c) 1988-1995 Evenson Consulting Services        Page 15
+FILE: e:\src\repos\mc6800\wumpus\wumpus.asm
+
+00813 0DD0 E7 01             STAB    1,X              
+00814 0DD2 A7 00             STAA    ,X               
+00815 0DD4 7A 010B           DEC     COUNT            
+00816 0DD7 26 EF             BNE     RPT4             
+00817 0DD9 A6 00             LDAA    ,X               REPORT CONECTING
+00818 0DDB BD 0A8A           JSR     ROOMOUT          ROOMS
+00819 0DDE A6 01             LDAA    1,X              
+00820 0DE0 BD 0A8A           JSR     ROOMOUT          
+00821 0DE3 A6 02             LDAA    2,X              
+00822 0DE5 BD 0A8A           JSR     ROOMOUT          
+00823 0DE8 BD 0AB8           JSR     DAYSLEFT         REPORT DAYS LEFT
+00824 0DEB 39                RTS                      RETURN
+00825               **SKIP
+00826               *
+00827               *
+00828 0DEC BD 09F5 RPTROOM   JSR     PSHX             SAVE IX
+00829 0DEF 4D                TSTA                     
+00830 0DF0 2B 23             BMI     RRM9             
+00831 0DF2 BD 0B64           JSR     PNTROOM          
+00832 0DF5 A6 03             LDAA    3,X              
+00833 0DF7 81 50             CMPA    #'P              REPORT
+00834 0DF9 26 06             BNE     RRM1             
+00835 0DFB CE 0200           LDX     #TX06            I FEEL A DRAFT
+00836 0DFE BD 117B           JSR     STROUT           
+00837 0E01 81 42   RRM1      CMPA    #'B              
+00838 0E03 26 06             BNE     RRM2             
+00839 0E05 CE 01EF           LDX     #TX05            I HEAR WINGS
+00840 0E08 BD 117B           JSR     STROUT           
+00841 0E0B 81 57   RRM2      CMPA    #'W              
+00842 0E0D 26 06             BNE     RRM9             
+00843 0E0F CE 0213           LDX     #TX07            I SMELL WUMPUS
+00844 0E12 BD 117B           JSR     STROUT           
+00845 0E15 BD 0A08 RRM9      JSR     PULX             RESTORE IX
+00846 0E18 39                RTS                      RETURN
+00847               **SKIP
+00848               *
+00849               *
+00850 0E19 BD 09F5 BATS      JSR     PSHX             SAVE IX
+00851 0E1C CE 044B           LDX     #TX20            WHOOPS
+00852 0E1F BD 117B           JSR     STROUT           
+00853 0E22 BD 0B54           JSR     RANDROOM         PICK A ROOM
+00854 0E25 B7 010C           STAA    CURRENT          MOVE TO IT
+00855 0E28 F6 010D           LDAB    DAYS             
+00856 0E2B 17                TBA                      
+00857 0E2C 57                ASRB                     
+00858 0E2D 57                ASRB                     
+00859 0E2E 10                SBA                      
+00860 0E2F B7 010D           STAA    DAYS             
+00861 0E32 BD 0A08           JSR     PULX             RESTORE IX
+00862 0E35 39                RTS                      
+00863               **SKIP
+00864               *
+00865               *
+00866 0E36 CE 028A PITS      LDX     #TX09            REPORT PIT
+00867 0E39 BD 117B           JSR     STROUT           
+00868 0E3C BD 0BC6           JSR     LOST             
+00869 0E3F 39                RTS                      
+00870               *
+ASM68 6800 Assembler (c) 1988-1995 Evenson Consulting Services        Page 16
+FILE: e:\src\repos\mc6800\wumpus\wumpus.asm
+
+00871               *
+00872               *
+00873 0E40 BD 09F5 BUMP_W    JSR     PSHX             
+00874 0E43 7D 010A           TST     AWAKE            IF NOT AWAKE
+00875 0E46 22 25             BHI     BMP5             
+00876 0E48 CE 01A4           LDX     #CRLF            
+00877 0E4B BD 117B           JSR     STROUT           
+00878 0E4E CE 0540           LDX     #TX28            WATCH IT
+00879 0E51 BD 117B           JSR     STROUT           
+00880 0E54 CE 05F0           LDX     #TX33            PRINT WARNING
+00881 0E57 BD 117B           JSR     STROUT           
+00882 0E5A CE 01A4           LDX     #CRLF            
+00883 0E5D BD 117B           JSR     STROUT           
+00884 0E60 CE 054A           LDX     #TX29            IS AWAKE
+00885 0E63 BD 117B           JSR     STROUT           
+00886 0E66 7C 010A           INC     AWAKE            WAKE HIM UP
+00887 0E69 BD 0A08           JSR     PULX             
+00888 0E6C 39                RTS                      
+00889 0E6D CE 0315 BMP5      LDX     #TX11            ELSE PRINP CHOMP
+00890 0E70 BD 117B           JSR     STROUT           
+00891 0E73 BD 0BC6           JSR     LOST             
+00892 0E76 BD 0A08           JSR     PULX             
+00893 0E79 39                RTS                      
+00894               **SKIP
+00895               *
+00896               *
+00897 0E7A 7D 0116 SHOOT     TST     SHOTS            IF NO SHOTS
+00898 0E7D 26 04             BNE     S10              
+00899 0E7F BD 0F58           JSR     THROW            CALL THROW
+00900 0E82 39                RTS                      
+00901 0E83 7F 011E S10       CLR     WILD             CLEAR INDICATORS
+00902 0E86 7F 0117           CLR     STOP             
+00903 0E89 7A 0116           DEC     SHOTS            
+00904 0E8C CE 01A4           LDX     #CRLF            
+00905 0E8F BD 117B           JSR     STROUT           
+00906 0E92 CE 01E6           LDX     #TX04            WHERE TO?
+00907 0E95 BD 117B           JSR     STROUT           
+00908               *       LDX    #CRLF
+00909               *       JSR    STROUT
+00910 0E98 CE 0103           LDX     #ARRAY           
+00911 0E9B FF 0108           STX     ARRAYNO          
+00912 0E9E B6 010C           LDAA    CURRENT          
+00913 0EA1 B7 011D           STAA    TEST             
+00914 0EA4 C6 01             LDAB    #1               
+00915 0EA6 F7 0113 S11       STAB    ROOMTLY          
+00916 0EA9 BD 0A1B           JSR     ROOMIN           LOAD UP TO 3 ROOMS
+00917 0EAC 4D                TSTA                     
+00918 0EAD 27 21             BEQ     S13              END ROOMS WHEN NO ROOM INP
+00919 0EAF A7 00             STAA    ,X               
+00920 0EB1 08                INX                      
+00921 0EB2 7C 0113           INC     ROOMTLY          !!!!!!!!
+00922 0EB5 B6 010E           LDAA    DELIM            IF DELIMITER IS A CARRIAGE
+00923 0EB8 81 0D             CMPA    #CR              GO TO END OF ROOM LIST
+00924 0EBA 27 14             BEQ     S13              
+00925 0EBC F6 0113           LDAB    ROOMTLY          
+00926 0EBF C1 04             CMPB    #4               
+00927 0EC1 26 E3             BNE     S11              
+00928 0EC3 BD 0A1B S12       JSR     ROOMIN           IGNORE MORE ROOMS
+ASM68 6800 Assembler (c) 1988-1995 Evenson Consulting Services        Page 17
+FILE: e:\src\repos\mc6800\wumpus\wumpus.asm
+
+00929 0EC6 4D                TSTA                     
+00930 0EC7 27 07             BEQ     S13              
+00931 0EC9 B6 010E           LDAA    DELIM            IF DELIMITER IS CARRIAGE R
+00932 0ECC 81 0D             CMPA    #CR              GO TO END OF ROOM LIST
+00933 0ECE 26 F3             BNE     S12              
+00934 0ED0 7D 010A S13       TST     AWAKE            IF WUMPUS IS ASLEEP THEN
+00935 0ED3 22 15             BHI     S20              
+00936 0ED5 CE 01A4           LDX     #CRLF            REPORT HIM AWAKE
+00937 0ED8 BD 117B           JSR     STROUT           
+00938 0EDB CE 0540           LDX     #TX28            
+00939 0EDE BD 117B           JSR     STROUT           
+00940 0EE1 CE 054A           LDX     #TX29            
+00941 0EE4 BD 117B           JSR     STROUT           
+00942 0EE7 7C 010A           INC     AWAKE            AND WAKE HIM UP
+00943               **SKIP
+00944               *
+00945               *  SHOOT CONTINUED
+00946               *
+00947 0EEA 7A 0113 S20       DEC     ROOMTLY          LOOP FOR NUMBER OF ROOMS
+00948 0EED 26 01             BNE     S21              
+00949 0EEF 39                RTS                      
+00950 0EF0 7D 011E S21       TST     WILD             IF SHOT IS ALREADY WILD TH
+00951 0EF3 22 22             BHI     S22              GO TO RANDOM SHOT
+00952 0EF5 FE 0108           LDX     ARRAYNO          GET NEXT ROOM
+00953 0EF8 7C 0109           INC     ARRAYNO+1        **NOTE:ARRAY MUST NOT CROS
+00954 0EFB E6 00             LDAB    ,X               
+00955 0EFD 37                PSHB                     
+00956 0EFE B6 011D           LDAA    TEST             IF NEXT ROOM IS CONNECTED 
+00957 0F01 BD 0BA8           JSR     CONECTED         
+00958 0F04 5D                TSTB                     
+00959 0F05 22 17             BHI     S25              CONTINUE
+00960 0F07 CE 0561           LDX     #TX30            ELSE PRIND WILD SHOT
+00961 0F0A BD 117B           JSR     STROUT           FOR FIRST ROOM WILD
+00962 0F0D CE 0540           LDX     #TX28            (WATCH IT)
+00963 0F10 BD 117B           JSR     STROUT           
+00964 0F13 7C 011E           INC     WILD             
+00965 0F16 31                INS                      IGNORE PUSHED ROOM
+00966 0F17 B6 011D S22       LDAA    TEST             MAKE RANDOM MOVE
+00967 0F1A BD 0B1A           JSR     RANDMOVE         
+00968 0F1D 36                PSHA                     
+00969 0F1E 32      S25       PULA                     
+00970 0F1F B7 011D           STAA    TEST             LOOK AT ROOM SHOT INTO
+00971 0F22 BD 0B64           JSR     PNTROOM          
+00972 0F25 A6 03             LDAA    3,X              
+00973 0F27 81 57             CMPA    #'W              
+00974 0F29 26 07             BNE     S31              
+00975 0F2B BD 0BBC           JSR     WON              IF SHOT WUMPUS THEN
+00976 0F2E 7C 010F           INC     END              GAME WON
+00977 0F31 39                RTS                      
+00978 0F32 81 42   S31       CMPA    #'B              
+00979 0F34 26 09             BNE     S32              
+00980 0F36 BD 0FC6           JSR     STBAT            IF SHOT BATS
+00981 0F39 7D 0117           TST     STOP             THEN CALL STBAT
+00982 0F3C 23 01             BLS     S32              
+00983 0F3E 39                RTS                      
+00984 0F3F 81 50   S32       CMPA    #'P              
+00985 0F41 26 09             BNE     S33              
+00986 0F43 BD 0FD9           JSR     STPIT            IF SHOT PIT
+ASM68 6800 Assembler (c) 1988-1995 Evenson Consulting Services        Page 18
+FILE: e:\src\repos\mc6800\wumpus\wumpus.asm
+
+00987 0F46 7D 0117           TST     STOP             THEN CALL STPIT
+00988 0F49 23 01             BLS     S33              
+00989 0F4B 39                RTS                      
+00990 0F4C B6 011D S33       LDAA    TEST             
+00991 0F4F B1 010C           CMPA    CURRENT          IF SHOT SELF
+00992 0F52 26 96             BNE     S20              THEN CALL STSELF
+00993 0F54 BD 0FEC           JSR     STSELF           
+00994 0F57 39                RTS                      
+00995               **SKIP
+00996               *
+00997               *
+00998 0F58 7D 0111 THROW     TST     ROCKS            
+00999 0F5B 26 07             BNE     THR1             
+01000 0F5D CE 06C5           LDX     #TX38            NOTHING TO SHOW
+01001 0F60 BD 117B           JSR     STROUT           
+01002 0F63 39                RTS                      
+01003 0F64 7A 0111 THR1      DEC     ROCKS            USE ROCK
+01004 0F67 CE 01E6 THR0      LDX     #TX04            WHERE?
+01005 0F6A BD 117B           JSR     STROUT           
+01006 0F6D BD 0A1B           JSR     ROOMIN           
+01007 0F70 CE 01A4           LDX     #CRLF            
+01008 0F73 BD 117B           JSR     STROUT           
+01009 0F76 4D                TSTA                     
+01010 0F77 27 EE             BEQ     THR0             ENTER ONE ROOM ONLY
+01011 0F79 F6 010C           LDAB    CURRENT          SEE IF CONNECTED ROOM
+01012 0F7C BD 0BA8           JSR     CONECTED         
+01013 0F7F 5D                TSTB                     
+01014 0F80 22 0D             BHI     THR2             IF SO CONTINUE
+01015 0F82 CE 04A3           LDX     #TX22            ELSE PRINT MISSED
+01016 0F85 BD 117B           JSR     STROUT           
+01017 0F88 CE 06F4           LDX     #TX39            NOT CONNECTED
+01018 0F8B BD 117B           JSR     STROUT           
+01019 0F8E 39                RTS                      
+01020 0F8F BD 0B64 THR2      JSR     PNTROOM          
+01021 0F92 E6 03             LDAB    3,X              
+01022 0F94 C1 57             CMPB    #'W              IF HIT WUMPUS
+01023 0F96 27 0E             BEQ     THR5             GO TO HIT WUMPUS (5)
+01024 0F98 C1 42             CMPB    #'B              IF HIT BATS
+01025 0F9A 26 03             BNE     THR3             
+01026 0F9C BD 10C0           JSR     MIGRATN          CAUSE MIGRATION
+01027 0F9F CE 04A3 THR3      LDX     #TX22            MISSED
+01028 0FA2 BD 117B           JSR     STROUT           
+01029 0FA5 39                RTS                      
+01030 0FA6 CE 01A0 THR5      LDX     #PROB8           HIT WUMPUS WITH A ROCK
+01031 0FA9 BD 0B94           JSR     PROBLITY         
+01032 0FAC 4D                TSTA                     
+01033 0FAD 23 10             BLS     THR6             
+01034 0FAF CE 0366           LDX     #TX13            BONK! YOU WIN
+01035 0FB2 BD 117B           JSR     STROUT           
+01036 0FB5 BD 0BBC           JSR     WON              
+01037 0FB8 CE 0395           LDX     #TX15            WITH A ROCK
+01038 0FBB BD 117B           JSR     STROUT           
+01039 0FBE 39                RTS                      
+01040 0FBF CE 0486 THR6      LDX     #TX21            THUD TRY AGAIN
+01041 0FC2 BD 117B           JSR     STROUT           
+01042 0FC5 39                RTS                      
+01043               **SKIP*
+01044               *
+ASM68 6800 Assembler (c) 1988-1995 Evenson Consulting Services        Page 19
+FILE: e:\src\repos\mc6800\wumpus\wumpus.asm
+
+01045               *
+01046 0FC6 CE 0198 STBAT     LDX     #PROB1           
+01047 0FC9 BD 0B94           JSR     PROBLITY         IF PROBABLE TO
+01048 0FCC 4D                TSTA                     SHOT BAT, DO IT
+01049 0FCD 23 09             BLS     STB9             
+01050 0FCF 7C 0117           INC     STOP             
+01051 0FD2 CE 0572           LDX     #TX31            SHOT BAT
+01052 0FD5 BD 117B           JSR     STROUT           
+01053 0FD8 39      STB9      RTS                      
+01054               *
+01055               *
+01056               *
+01057 0FD9 CE 0199 STPIT     LDX     #PROB2           
+01058 0FDC BD 0B94           JSR     PROBLITY         IF PROBABLE TO
+01059 0FDF 4D                TSTA                     DO IT
+01060 0FE0 23 09             BLS     STP9             
+01061 0FE2 7C 0117           INC     STOP             
+01062 0FE5 CE 058F           LDX     #TX32            LOST ARROW IN PIT
+01063 0FE8 BD 117B           JSR     STROUT           
+01064 0FEB 39      STP9      RTS                      
+01065               *
+01066               *
+01067               *
+01068 0FEC CE 019A STSELF    LDX     #PROB3           
+01069 0FEF BD 0B94           JSR     PROBLITY         IF PROBABLE TO INJURE ONLY
+01070 0FF2 4D                TSTA                     DO IT
+01071 0FF3 23 1E             BLS     STS7             
+01072 0FF5 CE 0405           LDX     #TX19            SHOT LEG
+01073 0FF8 BD 117B           JSR     STROUT           
+01074 0FFB B6 010D           LDAA    DAYS             
+01075 0FFE 81 05             CMPA    #5               IF LESS THAN 5 DAYS LEFT
+01076 1000 22 08             BHI     STS3             
+01077 1002 7C 010D           INC     DAYS             REDUCE BY HALF
+01078 1005 74 010D           LSR     DAYS             
+01079 1008 20 05             BRA     STS5             
+01080 100A 86 05   STS3      LDAA    #5               ELSE REDUCE TO 5
+01081 100C B7 010D           STAA    DAYS             
+01082 100F BD 0AB8 STS5      JSR     DAYSLEFT         REPORT DAYS LEFT
+01083 1012 39                RTS                      
+01084 1013 CE 02B4 STS7      LDX     #TX10            OTHERWISE SHOT SELF
+01085 1016 BD 117B           JSR     STROUT           
+01086 1019 BD 0BC6           JSR     LOST             
+01087 101C 39                RTS                      
+01088               **SKIP
+01089               *
+01090               *
+01091 101D CE 01A4 MOVE      LDX     #CRLF            
+01092 1020 BD 117B           JSR     STROUT           
+01093 1023 CE 01E6           LDX     #TX04            WHERE TO
+01094 1026 BD 117B           JSR     STROUT           
+01095 1029 BD 0A1B           JSR     ROOMIN           
+01096 102C CE 01A4           LDX     #CRLF            
+01097 102F BD 117B           JSR     STROUT           
+01098 1032 4D                TSTA                     
+01099 1033 27 E8             BEQ     MOVE             
+01100 1035 F6 010C           LDAB    CURRENT          IF NOT CONNECTED
+01101 1038 BD 0BA8           JSR     CONECTED         
+01102 103B 5D                TSTB                     
+ASM68 6800 Assembler (c) 1988-1995 Evenson Consulting Services        Page 20
+FILE: e:\src\repos\mc6800\wumpus\wumpus.asm
+
+01103 103C 23 DF             BLS     MOVE             TRY AGAIN
+01104 103E B7 010C           STAA    CURRENT          SET NEW CURRENT ROOM
+01105 1041 39                RTS                      
+01106               *
+01107               *
+01108               *
+01109 1042 CE 0715 DISPLAY   LDX     #TX40            PRINT HEADING
+01110 1045 BD 117B           JSR     STROUT           
+01111 1048 86 01             LDAA    #1               LOAD COUNTER
+01112 104A CE 0120           LDX     #ROOMS           
+01113 104D BD 09F5 DSP1      JSR     PSHX             
+01114 1050 CE 01A4           LDX     #CRLF            AND GO TO NEW LINE
+01115 1053 BD 117B           JSR     STROUT           
+01116 1056 BD 0A08           JSR     PULX             
+01117 1059 36                PSHA                     
+01118 105A BD 0A8A           JSR     ROOMOUT          PRINT ROOM
+01119 105D BD 1181           JSR     BLKOUT           AND BLANK
+01120 1060 BD 1181           JSR     BLKOUT           CHARACTERS
+01121 1063 BD 1181           JSR     BLKOUT           
+01122 1066 BD 1181           JSR     BLKOUT           
+01123 1069 86 03             LDAA    #3               
+01124 106B B7 0113           STAA    ROOMTLY          
+01125 106E A6 00   DSP2      LDAA    ,X               PRINT 3 CONNECTIONS
+01126 1070 BD 0A8A           JSR     ROOMOUT          
+01127 1073 BD 1181           JSR     BLKOUT           WITH BLANKS AS SEPARATOR
+01128 1076 08                INX                      
+01129 1077 7A 0113           DEC     ROOMTLY          
+01130 107A 26 F2             BNE     DSP2             
+01131 107C BD 1181           JSR     BLKOUT           AND BLANK
+01132 107F BD 1181           JSR     BLKOUT           
+01133 1082 A6 00             LDAA    ,X               
+01134 1084 BD 1178           JSR     CHAROUT          PRINT ROOM CONTENTS
+01135 1087 08                INX                      
+01136 1088 32                PULA                     
+01137 1089 4C                INCA                     LOOP THROUGH
+01138 108A 81 15             CMPA    #21              20 ROOMS
+01139 108C 26 BF             BNE     DSP1             
+01140 108E 39                RTS                      
+01141               **SKIP
+01142               *
+01143               *
+01144 108F CE 019B HAPNINGS  LDX     #PROB4           POINT TO PROBABILITIES
+01145 1092 BD 0B94           JSR     PROBLITY         
+01146 1095 4D                TSTA                     TEST FOR BAT MIGRATION
+01147 1096 23 03             BLS     HAP1             
+01148 1098 BD 10C0           JSR     MIGRATN          
+01149 109B BD 0B94 HAP1      JSR     PROBLITY         
+01150 109E 4D                TSTA                     TEST FOR FIND A ROCK
+01151 109F 23 03             BLS     HAP3             
+01152 10A1 BD 10FA           JSR     ROCKX            
+01153 10A4 BD 0B94 HAP3      JSR     PROBLITY         
+01154 10A7 4D                TSTA                     TEST FOR RATS EATING FOOD
+01155 10A8 23 03             BLS     HAP5             
+01156 10AA BD 1116           JSR     RATS             
+01157 10AD BD 0B94 HAP5      JSR     PROBLITY         
+01158 10B0 4D                TSTA                     TEST FOR ROCK SLIDE
+01159 10B1 23 03             BLS     HAP7             
+01160 10B3 BD 1129           JSR     SLIDE            
+ASM68 6800 Assembler (c) 1988-1995 Evenson Consulting Services        Page 21
+FILE: e:\src\repos\mc6800\wumpus\wumpus.asm
+
+01161 10B6 BD 0B94 HAP7      JSR     PROBLITY         
+01162 10B9 4D                TSTA                     TEST FOR EXTRA SUPPLIES
+01163 10BA 23 03             BLS     HAP9             
+01164 10BC BD 1154           JSR     EXTRA            
+01165 10BF 39      HAP9      RTS                      RETURN
+01166               **SKIP
+01167               *
+01168               *
+01169 10C0 BD 09F5 MIGRATN   JSR     PSHX             SAVE IX
+01170 10C3 BD 0AF2           JSR     RAND             
+01171 10C6 84 03             ANDA    #$03             1 TO 4
+01172 10C8 4C                INCA                     
+01173 10C9 16                TAB                      
+01174 10CA B6 010D           LDAA    DAYS             
+01175 10CD 10                SBA                      
+01176 10CE B7 010D           STAA    DAYS             
+01177 10D1 CE 0120           LDX     #ROOMS           
+01178 10D4 A6 03   MIG1      LDAA    3,X              FIND SOME BATS
+01179 10D6 81 42             CMPA    #'B              
+01180 10D8 27 06             BEQ     MIG2             
+01181 10DA 08                INX                      
+01182 10DB 08                INX                      
+01183 10DC 08                INX                      
+01184 10DD 08                INX                      
+01185 10DE 20 F4             BRA     MIG1             
+01186 10E0 BD 09F5 MIG2      JSR     PSHX             SAVE BAT LOCATION
+01187 10E3 86 01             LDAA    #1               
+01188 10E5 B7 010B           STAA    COUNT            
+01189 10E8 BD 0CDF           JSR     GENITEM          LOAD NEW BATS RANDOMLY
+01190 10EB BD 0A08           JSR     PULX             RESTORE OLD BAT LOCATION
+01191 10EE 6F 03             CLR     3,X              CLEAR OLD BATS
+01192 10F0 CE 03C1           LDX     #TX18            REPORT BATS
+01193 10F3 BD 117B           JSR     STROUT           
+01194 10F6 BD 0A08           JSR     PULX             RESTORE IX
+01195 10F9 39                RTS                      
+01196               *
+01197               *
+01198               *
+01199 10FA 7D 0116 ROCKX     TST     SHOTS            IF ARROWS LEFT
+01200 10FD 27 01             BEQ     ROK1             
+01201 10FF 39                RTS                      RETURN
+01202 1100 BD 09F5 ROK1      JSR     PSHX             SAVE IX
+01203 1103 7C 0111           INC     ROCKS            ADD ROCKS TO PILE
+01204 1106 CE 04AE           LDX     #TX23            REPORT FIND
+01205 1109 BD 117B           JSR     STROUT           
+01206 110C CE 04C3           LDX     #TX24            
+01207 110F BD 117B           JSR     STROUT           
+01208 1112 BD 0A08           JSR     PULX             RESTORE IX
+01209 1115 39                RTS                      
+01210               **SKIP
+01211               *
+01212               *
+01213 1116 BD 09F5 RATS      JSR     PSHX             SAVE IX
+01214 1119 7C 010D           INC     DAYS             
+01215 111C 77 010D           ASR     DAYS             REDUCE DAYS BY HALF
+01216 111F CE 04FD           LDX     #TX26            REPORT RATS
+01217 1122 BD 117B           JSR     STROUT           
+01218 1125 BD 0A08           JSR     PULX             RESTORE IX
+ASM68 6800 Assembler (c) 1988-1995 Evenson Consulting Services        Page 22
+FILE: e:\src\repos\mc6800\wumpus\wumpus.asm
+
+01219 1128 39                RTS                      
+01220               *
+01221               *
+01222               *
+01223 1129 BD 09F5 SLIDE     JSR     PSHX             SAVE IX
+01224 112C BD 0B54 SLD1      JSR     RANDROOM         GET A TUNNEL
+01225 112F B7 0110           STAA    OLDROOM          
+01226 1132 A6 01             LDAA    1,X              
+01227 1134 2B F6             BMI     SLD1             IGNORE IF ALREADY CLOSED
+01228 1136 63 01             COM     1,X              CLOSE HALF TUNNEL
+01229 1138 BD 0B64           JSR     PNTROOM          POINT TO OTHER HALF
+01230 113B B6 0110           LDAA    OLDROOM          
+01231 113E A1 00             CMPA    ,X               
+01232 1140 27 06             BEQ     SLD5             FIND RIGHT TUNNEL BACK
+01233 1142 08                INX                      
+01234 1143 A1 00             CMPA    ,X               
+01235 1145 27 01             BEQ     SLD5             
+01236 1147 08                INX                      
+01237 1148 63 00   SLD5      COM     ,X               CLOSE OTHER HALF
+01238 114A CE 051D           LDX     #TX27            REPORT SLIDE
+01239 114D BD 117B           JSR     STROUT           
+01240 1150 BD 0A08           JSR     PULX             RESTORE IX
+01241 1153 39                RTS                      
+01242               **SKIP
+01243               *
+01244               *
+01245 1154 BD 09F5 EXTRA     JSR     PSHX             SAVE IX
+01246 1157 BD 0AF2           JSR     RAND             INCREASE DAYS BY
+01247 115A 84 03             ANDA    #$03             1 TO 4
+01248 115C 4C                INCA                     
+01249 115D 16                TAB                      
+01250 115E B6 010D           LDAA    DAYS             
+01251 1161 1B                ABA                      
+01252 1162 B7 010D           STAA    DAYS             
+01253 1165 CE 04AE           LDX     #TX23            REPORT FIND
+01254 1168 BD 117B           JSR     STROUT           
+01255 116B CE 04D3           LDX     #TX25            
+01256 116E BD 117B           JSR     STROUT           
+01257 1171 BD 0A08           JSR     PULX             RESTORE IX
+01258 1174 39                RTS                      
+01259               *
+01260               *
+01261               * EXTERNAL REFERENCES
+01262               *
+01263 1175 7E E1AC CHARIN    JMP     $E1AC            MONITOR: INCHAR
+01264 1178 7E E1D1 CHAROUT   JMP     $E1D1            MONITOR: OUTCHAR
+01265 117B 36      STROUT    PSHA                     
+01266 117C BD E07E           JSR     $E07E            MOINTOR: PDATA
+01267 117F 32                PULA                     
+01268 1180 39                RTS                      
+01269 1181 36      BLKOUT    PSHA                     
+01270 1182 86 20             LDAA    #$20             
+01271 1184 BD 1178           JSR     CHAROUT          
+01272 1187 32                PULA                     
+01273 1188 39                RTS                      
+01274 1189 7E E0D0 EXIT      JMP     $E0D0            MONITOR: RETURN
+01275         0000           END                      
+
+No errors
+
+ Total bytes output = 4236
