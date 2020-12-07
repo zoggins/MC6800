@@ -3,7 +3,7 @@ Microsoft Visual Studio Solution File, Format Version 12.00
 # Visual Studio Version 16
 VisualStudioVersion = 16.0.30204.135
 MinimumVisualStudioVersion = 10.0.40219.1
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Score68B.Net", "Score68B.Net\Score68B.Net.csproj", "{7040C76F-D428-47A6-BDCD-D9261540890A}"
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "Score68B.Net", "NEWTECH\SCORE68B.NET\Score68B.Net.csproj", "{13A03C0C-9A4D-406F-8358-28A11CDF4657}"
 EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
@@ -11,10 +11,10 @@ Global
 		Release|Any CPU = Release|Any CPU
 	EndGlobalSection
 	GlobalSection(ProjectConfigurationPlatforms) = postSolution
-		{7040C76F-D428-47A6-BDCD-D9261540890A}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
-		{7040C76F-D428-47A6-BDCD-D9261540890A}.Debug|Any CPU.Build.0 = Debug|Any CPU
-		{7040C76F-D428-47A6-BDCD-D9261540890A}.Release|Any CPU.ActiveCfg = Release|Any CPU
-		{7040C76F-D428-47A6-BDCD-D9261540890A}.Release|Any CPU.Build.0 = Release|Any CPU
+		{13A03C0C-9A4D-406F-8358-28A11CDF4657}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{13A03C0C-9A4D-406F-8358-28A11CDF4657}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{13A03C0C-9A4D-406F-8358-28A11CDF4657}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{13A03C0C-9A4D-406F-8358-28A11CDF4657}.Release|Any CPU.Build.0 = Release|Any CPU
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE
