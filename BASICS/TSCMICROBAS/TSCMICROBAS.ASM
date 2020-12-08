@@ -7,6 +7,8 @@
 * BOX 2574
 * W. LAFAYETTE INDIANA 47906
 *
+* Modified to run on Corsham Tech 6800 by
+* Christopher "Zoggins" Mallery
 *
 
 * EQUATES

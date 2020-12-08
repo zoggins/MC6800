@@ -10,6 +10,10 @@
 *RAN IS ALSO PRESENT
 *THE SP AND XSTACK WILL HAVE TO
 *BE MOVED IF THIS IS NOT THE CASE
+*
+* Modified to run on Corsham Tech 6800 by
+* Christopher "Zoggins" Mallery
+*
 
         ORG $20   
 INDEX1  FDB $0000
@@ -186,21 +190,40 @@ IEXIT   LDA A #$1E
         BSR CRLF
         RTS
 
-* OUTCH   BSR BREAK                     ### THIS IS HARDCODED 
-OUTCH     JMP OUTEEE                    ### FOR AN MP-C BOARD
-OUTEEE  EQU $E1D1
+OUTCH   JSR BREAK       **** CJM: Calling my break function. JSR instead of BSR.
+        JMP OUTEEE      **** JSR is 3 instead of 2 bytes
+OUTEEE  EQU $E1D1       **** To keep memory locations the same padding with NOP
 
 INCH    JMP INEEE
 
-BREAK   JMP BREAK1
-BREAK1  PSH A
-        LDA A PIAD
-PIAD    EQU $8004
-        BMI BREAK2
-        JMP READY
-
-BREAK2  PUL A
-        RTS
+****************************************
+**** Original BREAK function for
+**** SWTPC 6800 w/ MP-C board at $8004
+****
+*BREAK   JMP BREAK1
+*BREAK1  PSH A
+*        LDA A PIAD
+*PIAD    EQU $8004
+*        BMI BREAK2
+*        JMP READY
+*
+*BREAK2  PUL A
+*        RTS
+***************************************
+        NOP
+        NOP
+        NOP
+        NOP
+        NOP
+        NOP
+        NOP
+        NOP
+        NOP
+        NOP
+        NOP
+        NOP
+        NOP
+***************************************
 
 INEEE   EQU $E1AC
 OUTPUT  EQU *
@@ -351,7 +374,7 @@ RAND1   ADC B 1,X
         JMP   TSTV9
 
 TSTV    JSR   SKIPSP
-        JSR   BREAK
+        JSR   BREAK 
         JSR   TSTLTR
         BCC   TSTV1
         RTS
@@ -702,7 +725,7 @@ NXTLIN  LDX  BASPNT
 NXTL12  LDA A 0,X
         INX
         CMP A #$1E
-        BNE  NXTLIN
+        BNE  NXTL12 
         STX BASLIN
         RTS
 
@@ -1139,7 +1162,7 @@ PRINT1  LDA A 0,X
 PRINT2  JSR  OUTCH
         JSR ENLINE
         BRA PRINT1
-PRINT4  CMP B #$1E
+PRINT4  CMP A #$1E
         BNE PRINT6
         DEX
         LDA A 0,X
@@ -1424,7 +1447,7 @@ FOR8    BNE FOR2
         STA A 0,X
         INX
         LDA B BASLIN+1
-        STA A 0,X
+        STA B 0,X
         INX
         STX FORPNT
         JMP BASIC
@@ -1552,6 +1575,26 @@ MAYEQ   TST B
 MYNTEQ  TST B
         BNE OKCMPR
         BRA NOCMPR
+
+***************************************
+**** Replacement BREAK function for
+**** Corsham Tech 6800 w/ MP-S at $8004
+****
+ACIACS      EQU     $8004
+ACIADA      EQU     $8005
+
+BREAK       JMP     BREAK1
+BREAK1      PSH A
+            LDA A   ACIACS
+            ASR A               # WILL SET CARRY IF HAS DATA
+            BCC     BREAK2
+            LDA A   ACIADA
+            CMPA    #$03
+            BNE     BREAK2
+            JMP     READY
+BREAK2      PUL A
+            RTS
+****************************************
 
 END     EQU *
         ORG $A048
