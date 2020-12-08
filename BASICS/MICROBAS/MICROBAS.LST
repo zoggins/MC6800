@@ -24,9 +24,9 @@ FILE: e:\src\repos\mc6800\basics\microbas\microbas.asm      TITLE: MICRO
 00021 0024    0000 INDEX3    FDB     $0000            
 00022 0026    0000 INDEX4    FDB     $0000            
 00023 0028    0000 SAVESP    FDB     $0000            
-00024 002A    0CBA NEXTBA    FDB     END              
-00025 002C    0CBA WORKBA    FDB     END              
-00026 002E    0CBA SOURCE    FDB     END              
+00024 002A    0CB7 NEXTBA    FDB     END              
+00025 002C    0CB7 WORKBA    FDB     END              
+00026 002E    0CB7 SOURCE    FDB     END              
 00027 0030    0000 PACKLN    FDB     $0000            
 00028 0032    0000 HIGHLN    FDB     $0000            
 00029 0034    0000 BASPNT    FDB     $0000            
@@ -160,7 +160,7 @@ FILE: e:\src\repos\mc6800\basics\microbas\microbas.asm      TITLE: MICRO
 00153 0243 8D 4D             BSR     OUTCH            
 00154 0245 CE 00B0 KEYBD0    LDX     #BUFFER          
 00155 0248 C6 0A             LDA B   #10              
-00156 024A 8D 4C   KEYBD1    BSR     INCH             
+00156 024A 8D 4B   KEYBD1    BSR     INCH             
 00157 024C 81 00             CMP A   #$00             
 00158 024E 26 06             BNE     KEYB11           
 00159 0250 5A                DEC B                    
@@ -200,1491 +200,1475 @@ FILE: e:\src\repos\mc6800\basics\microbas\microbas.asm      TITLE: MICRO
 00190 028F 8D 25             BSR     CRLF             
 00191 0291 39                RTS                      
 00192               
-00193 0292 BD 0CA4 OUTCH     JSR     BREAK            **** CJM: Calling my break
-00195 0295 7E E1D1           JMP     OUTEEE           **** JSR is 3 instead of 2
-00196         E1D1 OUTEEE    EQU     $E1D1            **** To keep memory locati
-00197               
+00193 0292 8D 06   OUTCH     BSR     BREAK            
+00194 0294 7E E1D1           JMP     OUTEEE           
+00195         E1D1 OUTEEE    EQU     $E1D1            
+00196               
+00197 0297 7E E1AC INCH      JMP     INEEE            
 00198               
-00199 0298 7E E1AC INCH      JMP     INEEE            
-00200               
+00199               
+00200 029A 7E 0CA4 BREAK     JMP     CBREAK1          #CJM: Calling my BREAK fun
 00201               ****************************************
 00202               **** Original BREAK function for
 00203               **** SWTPC 6800 w/ MP-C board at $8004
 00204               ****
-00205               *BREAK   JMP BREAK1
-00206               *BREAK1  PSH A
-00207               *        LDA A PIAD
-00208               *PIAD    EQU $8004
-00209               *        BMI BREAK2
-00210               *        JMP READY
-00211               *
-00212               *BREAK2  PUL A
-00213               *        RTS
-00214               ***************************************
-00215 029B 01                NOP                      
-00216 029C 01                NOP                      
-00217 029D 01                NOP                      
-00218 029E 01                NOP                      
-00219 029F 01                NOP                      
-00220 02A0 01                NOP                      
-00221 02A1 01                NOP                      
-00222 02A2 01                NOP                      
-00223 02A3 01                NOP                      
-00224 02A4 01                NOP                      
-00225 02A5 01                NOP                      
-00226 02A6 01                NOP                      
-00227 02A7 01                NOP                      
-00228               ***************************************
-00229               
-00230         E1AC INEEE     EQU     $E1AC            
-00231         02A8 OUTPUT    EQU     *                
-00232 02A8 8D 05             BSR     OUTNCR           
-00233 02AA 20 0A             BRA     CRLF             
-00234               
-00235 02AC 8D E4   OUTPU2    BSR     OUTCH            
+00205 029D 36      BREAK1    PSH A                    
+00206 029E B6 8004           LDA A   PIAD             
+00207         8004 PIAD      EQU     $8004            
+00208 02A1 2B 03             BMI     BREAK2           
+00209 02A3 7E 0662           JMP     READY            
+00210               
+00211 02A6 32      BREAK2    PUL A                    
+00212 02A7 39                RTS                      
+00213               ***************************************
+00214               
+00215         E1AC INEEE     EQU     $E1AC            
+00216         02A8 OUTPUT    EQU     *                
+00217 02A8 8D 05             BSR     OUTNCR           
+00218 02AA 20 0A             BRA     CRLF             
+00219               
+00220 02AC 8D E4   OUTPU2    BSR     OUTCH            
+00221 02AE 08      OUTPU3    INX                      
+00222 02AF A6 00   OUTNCR    LDA A   0,X              
+00223 02B1 81 1E             CMP A   #$1E             
+00224 02B3 26 F7             BNE     OUTPU2           
+00225 02B5 39                RTS                      
+00226               
+00227 02B6 8D 12   CRLF      BSR     PUSHX            
+00228 02B8 CE 02C0           LDX     #CRLFST          
+00229 02BB 8D F2             BSR     OUTNCR           
+00230 02BD 8D 20             BSR     PULLX            
+00231 02BF 39                RTS                      
+00232               
+00233 02C0    00   CRLFST    FCB     $00              
+00234 02C1    0D             FCB     $0D              
 ASM68 6800 Assembler (c) 1988-1995 Evenson Consulting Services        Page 5
 FILE: e:\src\repos\mc6800\basics\microbas\microbas.asm      TITLE: MICRO
 
-00236 02AE 08      OUTPU3    INX                      
-00237 02AF A6 00   OUTNCR    LDA A   0,X              
-00238 02B1 81 1E             CMP A   #$1E             
-00239 02B3 26 F7             BNE     OUTPU2           
-00240 02B5 39                RTS                      
-00241               
-00242 02B6 8D 12   CRLF      BSR     PUSHX            
-00243 02B8 CE 02C0           LDX     #CRLFST          
-00244 02BB 8D F2             BSR     OUTNCR           
-00245 02BD 8D 20             BSR     PULLX            
-00246 02BF 39                RTS                      
-00247               
-00248 02C0    00   CRLFST    FCB     $00              
-00249 02C1    0D             FCB     $0D              
-00250 02C2    0A             FCB     $0A              
-00251 02C3    15             FCB     $15              
-00252 02C4    1E   CREND     FCB     $1E              
-00253 02C5    FFFF           FCB     $FF,$FF          
-00254 02C7    FFFF           FCB     $FF,$FF          
-00255 02C9    1E             FCB     $1E              
-00256 02CA DF 38   PUSHX     STX     PUSHTX           
-00257 02CC DE 3A             LDX     XSTACK           
-00258 02CE 09                DEX                      
-00259 02CF 09                DEX                      
-00260 02D0 DF 3A             STX     XSTACK           
-00261 02D2 36                PSH A                    
-00262 02D3 96 38             LDA A   PUSHTX           
-00263 02D5 A7 00             STA A   0,X              
-00264 02D7 96 39             LDA A   PUSHTX+1         
-00265 02D9 A7 01             STA A   1,X              
-00266 02DB 32                PUL A                    
-00267 02DC DE 38             LDX     PUSHTX           
-00268 02DE 39                RTS                      
-00269               
-00270 02DF DE 3A   PULLX     LDX     XSTACK           
-00271 02E1 EE 00             LDX     0,X              
-00272 02E3 7C 003B           INC     XSTACK+1         
-00273 02E6 7C 003B           INC     XSTACK+1         
-00274 02E9 39                RTS                      
-00275               
-00276 02EA 36      STORE     PSH A                    
-00277 02EB 37                PSH B                    
-00278 02EC 8D DC             BSR     PUSHX            
-00279 02EE BD 0470           JSR     PULLAE           
-00280 02F1 DE 51             LDX     AESTK            
-00281 02F3 08                INX                      
-00282 02F4 08                INX                      
-00283 02F5 DF 51             STX     AESTK            
-00284 02F7 09                DEX                      
-00285 02F8 EE 00             LDX     0,X              
-00286 02FA A7 00             STA A   0,X              
-00287 02FC E7 01             STA B   1,X              
-00288 02FE 8D DF             BSR     PULLX            
-00289 0300 33                PUL B                    
-00290 0301 32                PUL A                    
-00291 0302 39                RTS                      
-00292               
-00293 0303 8D C5   IND       BSR     PUSHX            
+00235 02C2    0A             FCB     $0A              
+00236 02C3    15             FCB     $15              
+00237 02C4    1E   CREND     FCB     $1E              
+00238 02C5    FFFF           FCB     $FF,$FF          
+00239 02C7    FFFF           FCB     $FF,$FF          
+00240 02C9    1E             FCB     $1E              
+00241 02CA DF 38   PUSHX     STX     PUSHTX           
+00242 02CC DE 3A             LDX     XSTACK           
+00243 02CE 09                DEX                      
+00244 02CF 09                DEX                      
+00245 02D0 DF 3A             STX     XSTACK           
+00246 02D2 36                PSH A                    
+00247 02D3 96 38             LDA A   PUSHTX           
+00248 02D5 A7 00             STA A   0,X              
+00249 02D7 96 39             LDA A   PUSHTX+1         
+00250 02D9 A7 01             STA A   1,X              
+00251 02DB 32                PUL A                    
+00252 02DC DE 38             LDX     PUSHTX           
+00253 02DE 39                RTS                      
+00254               
+00255 02DF DE 3A   PULLX     LDX     XSTACK           
+00256 02E1 EE 00             LDX     0,X              
+00257 02E3 7C 003B           INC     XSTACK+1         
+00258 02E6 7C 003B           INC     XSTACK+1         
+00259 02E9 39                RTS                      
+00260               
+00261 02EA 36      STORE     PSH A                    
+00262 02EB 37                PSH B                    
+00263 02EC 8D DC             BSR     PUSHX            
+00264 02EE BD 0470           JSR     PULLAE           
+00265 02F1 DE 51             LDX     AESTK            
+00266 02F3 08                INX                      
+00267 02F4 08                INX                      
+00268 02F5 DF 51             STX     AESTK            
+00269 02F7 09                DEX                      
+00270 02F8 EE 00             LDX     0,X              
+00271 02FA A7 00             STA A   0,X              
+00272 02FC E7 01             STA B   1,X              
+00273 02FE 8D DF             BSR     PULLX            
+00274 0300 33                PUL B                    
+00275 0301 32                PUL A                    
+00276 0302 39                RTS                      
+00277               
+00278 0303 8D C5   IND       BSR     PUSHX            
+00279 0305 36                PSH A                    
+00280 0306 37                PSH B                    
+00281 0307 DE 51             LDX     AESTK            
+00282 0309 08                INX                      
+00283 030A 08                INX                      
+00284 030B DF 51             STX     AESTK            
+00285 030D 09                DEX                      
+00286 030E EE 00             LDX     0,X              
+00287 0310 A6 00             LDA A   0,X              
+00288 0312 E6 01             LDA B   1,X              
+00289 0314 BD 0465           JSR     PUSHAE           
+00290 0317 33                PUL B                    
+00291 0318 32                PUL A                    
+00292 0319 8D C4             BSR     PULLX            
 ASM68 6800 Assembler (c) 1988-1995 Evenson Consulting Services        Page 6
 FILE: e:\src\repos\mc6800\basics\microbas\microbas.asm      TITLE: MICRO
 
-00294 0305 36                PSH A                    
-00295 0306 37                PSH B                    
-00296 0307 DE 51             LDX     AESTK            
-00297 0309 08                INX                      
-00298 030A 08                INX                      
-00299 030B DF 51             STX     AESTK            
-00300 030D 09                DEX                      
-00301 030E EE 00             LDX     0,X              
-00302 0310 A6 00             LDA A   0,X              
-00303 0312 E6 01             LDA B   1,X              
-00304 0314 BD 0465           JSR     PUSHAE           
-00305 0317 33                PUL B                    
-00306 0318 32                PUL A                    
-00307 0319 8D C4             BSR     PULLX            
-00308 031B 39                RTS                      
-00309               
-00310 031C DE 2A   LIST      LDX     NEXTBA           
-00311 031E DF 2C             STX     WORKBA           
-00312 0320 DE 2E             LDX     SOURCE           
-00313 0322 20 02             BRA     LIST1            
-00314 0324 DE 24   LIST0     LDX     INDEX3           
-00315 0326 9C 2C   LIST1     CPX     WORKBA           
-00316 0328 27 05             BEQ     LEXIT            
-00317 032A 8D 04             BSR     OUTLIN           
-00318 032C 08                INX                      
-00319 032D 20 F7             BRA     LIST1            
-00320 032F 39      LEXIT     RTS                      
-00321               
-00322 0330 A6 00   OUTLIN    LDA A   0,X              
-00323 0332 7F 0042           CLR     PRCNT            
-00324 0335 08                INX                      
-00325 0336 E6 00             LDA B   0,X              
-00326 0338 08                INX                      
-00327 0339 7F 004C           CLR     TSIGN            
-00328 033C BD 09FD           JSR     PRN0             
-00329 033F 8D 22             BSR     PRINSP           
-00330 0341 A6 00   OUTLI1    LDA A   0,X              
-00331 0343 08                INX                      
-00332 0344 8D 84             BSR     PUSHX            
-00333 0346 CE 0152           LDX     #COMMAN          
-00334 0349 DF 4A             STX     KEYWD            
-00335 034B 97 4B             STA A   KEYWD+1          
-00336 034D DE 4A             LDX     KEYWD            
-00337 034F 09                DEX                      
-00338 0350 09      OUTLI2    DEX                      
-00339 0351 A6 00             LDA A   0,X              
-00340 0353 81 1E             CMP A   #$1E             
-00341 0355 26 F9             BNE     OUTLI2           
-00342 0357 08                INX                      
-00343 0358 08                INX                      
-00344 0359 08                INX                      
-00345 035A BD 02AF           JSR     OUTNCR           
-00346 035D BD 02DF           JSR     PULLX            
-00347 0360 7E 02A8           JMP     OUTPUT           
-00348               
-00349 0363 36      PRINSP    PSH A                    
-00350 0364 86 20             LDA A   #$20             
-00351 0366 BD 0292           JSR     OUTCH            
+00293 031B 39                RTS                      
+00294               
+00295 031C DE 2A   LIST      LDX     NEXTBA           
+00296 031E DF 2C             STX     WORKBA           
+00297 0320 DE 2E             LDX     SOURCE           
+00298 0322 20 02             BRA     LIST1            
+00299 0324 DE 24   LIST0     LDX     INDEX3           
+00300 0326 9C 2C   LIST1     CPX     WORKBA           
+00301 0328 27 05             BEQ     LEXIT            
+00302 032A 8D 04             BSR     OUTLIN           
+00303 032C 08                INX                      
+00304 032D 20 F7             BRA     LIST1            
+00305 032F 39      LEXIT     RTS                      
+00306               
+00307 0330 A6 00   OUTLIN    LDA A   0,X              
+00308 0332 7F 0042           CLR     PRCNT            
+00309 0335 08                INX                      
+00310 0336 E6 00             LDA B   0,X              
+00311 0338 08                INX                      
+00312 0339 7F 004C           CLR     TSIGN            
+00313 033C BD 09FD           JSR     PRN0             
+00314 033F 8D 22             BSR     PRINSP           
+00315 0341 A6 00   OUTLI1    LDA A   0,X              
+00316 0343 08                INX                      
+00317 0344 8D 84             BSR     PUSHX            
+00318 0346 CE 0152           LDX     #COMMAN          
+00319 0349 DF 4A             STX     KEYWD            
+00320 034B 97 4B             STA A   KEYWD+1          
+00321 034D DE 4A             LDX     KEYWD            
+00322 034F 09                DEX                      
+00323 0350 09      OUTLI2    DEX                      
+00324 0351 A6 00             LDA A   0,X              
+00325 0353 81 1E             CMP A   #$1E             
+00326 0355 26 F9             BNE     OUTLI2           
+00327 0357 08                INX                      
+00328 0358 08                INX                      
+00329 0359 08                INX                      
+00330 035A BD 02AF           JSR     OUTNCR           
+00331 035D BD 02DF           JSR     PULLX            
+00332 0360 7E 02A8           JMP     OUTPUT           
+00333               
+00334 0363 36      PRINSP    PSH A                    
+00335 0364 86 20             LDA A   #$20             
+00336 0366 BD 0292           JSR     OUTCH            
+00337 0369 32                PUL A                    
+00338 036A 39                RTS                      
+00339               
+00340 036B 08      RANDOM    INX                      
+00341 036C 08                INX                      
+00342 036D A6 00             LDA A   0,X              
+00343 036F 81 44             CMP A   #'D              
+00344 0371 26 65             BNE     TSTVER           
+00345 0373 BD 02CA           JSR     PUSHX            
+00346 0376 96 3C             LDA A   RNDVAL           
+00347 0378 D6 3D             LDA B   RNDVAL+1         
+00348 037A CE 0000           LDX     #0000            
+00349 037D E9 01   RAND1     ADC B   1,X              
+00350 037F A9 00             ADC A   0,X              
 ASM68 6800 Assembler (c) 1988-1995 Evenson Consulting Services        Page 7
 FILE: e:\src\repos\mc6800\basics\microbas\microbas.asm      TITLE: MICRO
 
-00352 0369 32                PUL A                    
-00353 036A 39                RTS                      
-00354               
-00355 036B 08      RANDOM    INX                      
-00356 036C 08                INX                      
-00357 036D A6 00             LDA A   0,X              
-00358 036F 81 44             CMP A   #'D              
-00359 0371 26 65             BNE     TSTVER           
-00360 0373 BD 02CA           JSR     PUSHX            
-00361 0376 96 3C             LDA A   RNDVAL           
-00362 0378 D6 3D             LDA B   RNDVAL+1         
-00363 037A CE 0000           LDX     #0000            
-00364 037D E9 01   RAND1     ADC B   1,X              
-00365 037F A9 00             ADC A   0,X              
-00366 0381 08                INX                      
-00367 0382 08                INX                      
-00368 0383 8C 003C           CPX     #RNDVAL          
-00369 0386 26 F5             BNE     RAND1            
-00370 0388 84 7F             AND A   #$7F             
-00371 038A 97 3C             STA A   RNDVAL           
-00372 038C D7 3D             STA B   RNDVAL+1         
-00373 038E DF 20             STX     INDEX1           
-00374 0390 96 20             LDA A   INDEX1           
-00375 0392 D6 21             LDA B   INDEX1+1         
-00376 0394 7E 0446           JMP     TSTV9            
-00377               
-00378 0397 BD 05E7 TSTV      JSR     SKIPSP           
-00379 039A BD 0CA4           JSR     BREAK            
-00380 039D BD 044F           JSR     TSTLTR           
-00381 03A0 24 01             BCC     TSTV1            
-00382 03A2 39                RTS                      
-00383               
-00384 03A3 81 52   TSTV1     CMP A   #'R              
-00385 03A5 26 06             BNE     TSTV2            
-00386 03A7 E6 01             LDA B   1,X              
-00387 03A9 C1 4E             CMP B   #'N              
-00388 03AB 27 BE             BEQ     RANDOM           
-00389 03AD BD 02CA TSTV2     JSR     PUSHX            
-00390 03B0 80 40             SUB A   #$40             
-00391 03B2 97 56             STA A   VARPNT+1         
-00392 03B4 48                ASL A                    
-00393 03B5 9B 56             ADD A   VARPNT+1         
-00394 03B7 97 56             STA A   VARPNT+1         
-00395 03B9 DE 55             LDX     VARPNT           
-00396 03BB 96 55             LDA A   VARPNT           
-00397 03BD D6 56             LDA B   VARPNT+1         
-00398 03BF 6D 02             TST     2,X              
-00399 03C1 26 03             BNE     TSTV20           
-00400 03C3 7E 0446           JMP     TSTV9            
-00401               
-00402 03C6 EE 00   TSTV20    LDX     0,X              
-00403 03C8 DF 3E             STX     DIMPNT           
-00404 03CA 08                INX                      
-00405 03CB 08                INX                      
-00406 03CC DF 40             STX     DIMCAL           
-00407 03CE BD 02DF           JSR     PULLX            
-00408 03D1 BD 05ED           JSR     INXSKP           
-00409 03D4 81 28             CMP A   #'(              
+00351 0381 08                INX                      
+00352 0382 08                INX                      
+00353 0383 8C 003C           CPX     #RNDVAL          
+00354 0386 26 F5             BNE     RAND1            
+00355 0388 84 7F             AND A   #$7F             
+00356 038A 97 3C             STA A   RNDVAL           
+00357 038C D7 3D             STA B   RNDVAL+1         
+00358 038E DF 20             STX     INDEX1           
+00359 0390 96 20             LDA A   INDEX1           
+00360 0392 D6 21             LDA B   INDEX1+1         
+00361 0394 7E 0446           JMP     TSTV9            
+00362               
+00363 0397 BD 05E7 TSTV      JSR     SKIPSP           
+00364 039A BD 029A           JSR     BREAK            
+00365 039D BD 044F           JSR     TSTLTR           
+00366 03A0 24 01             BCC     TSTV1            
+00367 03A2 39                RTS                      
+00368               
+00369 03A3 81 52   TSTV1     CMP A   #'R              
+00370 03A5 26 06             BNE     TSTV2            
+00371 03A7 E6 01             LDA B   1,X              
+00372 03A9 C1 4E             CMP B   #'N              
+00373 03AB 27 BE             BEQ     RANDOM           
+00374 03AD BD 02CA TSTV2     JSR     PUSHX            
+00375 03B0 80 40             SUB A   #$40             
+00376 03B2 97 56             STA A   VARPNT+1         
+00377 03B4 48                ASL A                    
+00378 03B5 9B 56             ADD A   VARPNT+1         
+00379 03B7 97 56             STA A   VARPNT+1         
+00380 03B9 DE 55             LDX     VARPNT           
+00381 03BB 96 55             LDA A   VARPNT           
+00382 03BD D6 56             LDA B   VARPNT+1         
+00383 03BF 6D 02             TST     2,X              
+00384 03C1 26 03             BNE     TSTV20           
+00385 03C3 7E 0446           JMP     TSTV9            
+00386               
+00387 03C6 EE 00   TSTV20    LDX     0,X              
+00388 03C8 DF 3E             STX     DIMPNT           
+00389 03CA 08                INX                      
+00390 03CB 08                INX                      
+00391 03CC DF 40             STX     DIMCAL           
+00392 03CE BD 02DF           JSR     PULLX            
+00393 03D1 BD 05ED           JSR     INXSKP           
+00394 03D4 81 28             CMP A   #'(              
+00395 03D6 27 03             BEQ     TSTV22           
+00396 03D8 7E 08D4 TSTVER    JMP     DBLLTR           
+00397 03DB 08      TSTV22    INX                      
+00398 03DC BD 04BF           JSR     EXPR             
+00399 03DF BD 02CA           JSR     PUSHX            
+00400 03E2 BD 0470           JSR     PULLAE           
+00401 03E5 4D                TST A                    
+00402 03E6 27 03             BEQ     TSTV3            
+00403 03E8 7E 0AD7 SUBER1    JMP     SUBERR           
+00404               
+00405 03EB DE 3E   TSTV3     LDX     DIMPNT           
+00406 03ED 5D                TST B                    
+00407 03EE 27 F8             BEQ     SUBER1           
+00408 03F0 E1 00             CMP B   0,X              
 ASM68 6800 Assembler (c) 1988-1995 Evenson Consulting Services        Page 8
 FILE: e:\src\repos\mc6800\basics\microbas\microbas.asm      TITLE: MICRO
 
-00410 03D6 27 03             BEQ     TSTV22           
-00411 03D8 7E 08D4 TSTVER    JMP     DBLLTR           
-00412 03DB 08      TSTV22    INX                      
-00413 03DC BD 04BF           JSR     EXPR             
-00414 03DF BD 02CA           JSR     PUSHX            
-00415 03E2 BD 0470           JSR     PULLAE           
-00416 03E5 4D                TST A                    
-00417 03E6 27 03             BEQ     TSTV3            
-00418 03E8 7E 0AD7 SUBER1    JMP     SUBERR           
-00419               
-00420 03EB DE 3E   TSTV3     LDX     DIMPNT           
-00421 03ED 5D                TST B                    
-00422 03EE 27 F8             BEQ     SUBER1           
-00423 03F0 E1 00             CMP B   0,X              
-00424 03F2 22 F4             BHI     SUBER1           
-00425 03F4 A6 01             LDA A   1,X              
-00426 03F6 97 4F             STA A   ANUMB            
-00427 03F8 27 30             BEQ     TST666           
-00428 03FA DE 40             LDX     DIMCAL           
-00429 03FC 5A      TSTV4     DEC B                    
-00430 03FD 27 09             BEQ     TSTV6            
-00431 03FF 96 4F             LDA A   ANUMB            
-00432 0401 08      TSTV5     INX                      
-00433 0402 08                INX                      
-00434 0403 4A                DEC A                    
-00435 0404 26 FB             BNE     TSTV5            
-00436 0406 20 F4             BRA     TSTV4            
-00437               
-00438 0408 DF 40   TSTV6     STX     DIMCAL           
-00439 040A BD 02DF           JSR     PULLX            
-00440 040D BD 05E7           JSR     SKIPSP           
-00441 0410 81 2C             CMP A   #',              
-00442 0412 26 C4             BNE     TSTVER           
-00443 0414 08                INX                      
-00444 0415 BD 04BF           JSR     EXPR             
-00445 0418 BD 02CA           JSR     PUSHX            
-00446 041B BD 0470           JSR     PULLAE           
-00447 041E 4D                TST A                    
-00448 041F 26 C7             BNE     SUBER1           
-00449 0421 DE 3E             LDX     DIMPNT           
-00450 0423 5D                TST B                    
-00451 0424 27 C2             BEQ     SUBER1           
-00452 0426 E1 01             CMP B   1,X              
-00453 0428 22 BE             BHI     SUBER1           
-00454 042A DE 40   TST666    LDX     DIMCAL           
-00455 042C 08      TSTV7     INX                      
-00456 042D 08                INX                      
-00457 042E 5A                DEC B                    
-00458 042F 26 FB             BNE     TSTV7            
-00459 0431 09                DEX                      
-00460 0432 09                DEX                      
-00461 0433 DF 40             STX     DIMCAL           
-00462 0435 BD 02DF           JSR     PULLX            
-00463 0438 BD 05E7           JSR     SKIPSP           
-00464 043B 81 29   TSTV8     CMP A   #')              
-00465 043D 26 99             BNE     TSTVER           
-00466 043F BD 02CA           JSR     PUSHX            
-00467 0442 96 40             LDA A   DIMCAL           
+00409 03F2 22 F4             BHI     SUBER1           
+00410 03F4 A6 01             LDA A   1,X              
+00411 03F6 97 4F             STA A   ANUMB            
+00412 03F8 27 30             BEQ     TST666           
+00413 03FA DE 40             LDX     DIMCAL           
+00414 03FC 5A      TSTV4     DEC B                    
+00415 03FD 27 09             BEQ     TSTV6            
+00416 03FF 96 4F             LDA A   ANUMB            
+00417 0401 08      TSTV5     INX                      
+00418 0402 08                INX                      
+00419 0403 4A                DEC A                    
+00420 0404 26 FB             BNE     TSTV5            
+00421 0406 20 F4             BRA     TSTV4            
+00422               
+00423 0408 DF 40   TSTV6     STX     DIMCAL           
+00424 040A BD 02DF           JSR     PULLX            
+00425 040D BD 05E7           JSR     SKIPSP           
+00426 0410 81 2C             CMP A   #',              
+00427 0412 26 C4             BNE     TSTVER           
+00428 0414 08                INX                      
+00429 0415 BD 04BF           JSR     EXPR             
+00430 0418 BD 02CA           JSR     PUSHX            
+00431 041B BD 0470           JSR     PULLAE           
+00432 041E 4D                TST A                    
+00433 041F 26 C7             BNE     SUBER1           
+00434 0421 DE 3E             LDX     DIMPNT           
+00435 0423 5D                TST B                    
+00436 0424 27 C2             BEQ     SUBER1           
+00437 0426 E1 01             CMP B   1,X              
+00438 0428 22 BE             BHI     SUBER1           
+00439 042A DE 40   TST666    LDX     DIMCAL           
+00440 042C 08      TSTV7     INX                      
+00441 042D 08                INX                      
+00442 042E 5A                DEC B                    
+00443 042F 26 FB             BNE     TSTV7            
+00444 0431 09                DEX                      
+00445 0432 09                DEX                      
+00446 0433 DF 40             STX     DIMCAL           
+00447 0435 BD 02DF           JSR     PULLX            
+00448 0438 BD 05E7           JSR     SKIPSP           
+00449 043B 81 29   TSTV8     CMP A   #')              
+00450 043D 26 99             BNE     TSTVER           
+00451 043F BD 02CA           JSR     PUSHX            
+00452 0442 96 40             LDA A   DIMCAL           
+00453 0444 D6 41             LDA B   DIMCAL+1         
+00454 0446 BD 02DF TSTV9     JSR     PULLX            
+00455 0449 08                INX                      
+00456 044A BD 0465           JSR     PUSHAE           
+00457 044D 0C                CLC                      
+00458 044E 39                RTS                      
+00459               
+00460 044F 81 41   TSTLTR    CMP A   #$41             
+00461 0451 2B 0C             BMI     NONO             
+00462 0453 81 5A             CMP A   #$5A             
+00463 0455 2F 0A             BLE     YESNO            
+00464 0457 81 30   TESTNO    CMP A   #$30             
+00465 0459 2B 04             BMI     NONO             
+00466 045B 81 39             CMP A   #$39             
 ASM68 6800 Assembler (c) 1988-1995 Evenson Consulting Services        Page 9
 FILE: e:\src\repos\mc6800\basics\microbas\microbas.asm      TITLE: MICRO
 
-00468 0444 D6 41             LDA B   DIMCAL+1         
-00469 0446 BD 02DF TSTV9     JSR     PULLX            
-00470 0449 08                INX                      
-00471 044A BD 0465           JSR     PUSHAE           
-00472 044D 0C                CLC                      
-00473 044E 39                RTS                      
-00474               
-00475 044F 81 41   TSTLTR    CMP A   #$41             
-00476 0451 2B 0C             BMI     NONO             
-00477 0453 81 5A             CMP A   #$5A             
-00478 0455 2F 0A             BLE     YESNO            
-00479 0457 81 30   TESTNO    CMP A   #$30             
-00480 0459 2B 04             BMI     NONO             
-00481 045B 81 39             CMP A   #$39             
-00482 045D 2F 02             BLE     YESNO            
-00483 045F 0D      NONO      SEC                      
-00484 0460 39                RTS                      
-00485 0461 0C      YESNO     CLC                      
-00486 0462 39                RTS                      
-00487               
-00488 0463 8D 0B   PULPSH    BSR     PULLAE           
-00489 0465 9F 28   PUSHAE    STS     SAVESP           
-00490 0467 9E 51             LDS     AESTK            
-00491 0469 37                PSH B                    
-00492 046A 36                PSH A                    
-00493 046B 9F 51             STS     AESTK            
-00494 046D 9E 28             LDS     SAVESP           
-00495 046F 39                RTS                      
-00496               
-00497 0470 9F 28   PULLAE    STS     SAVESP           
-00498 0472 9E 51             LDS     AESTK            
-00499 0474 32                PUL A                    
-00500 0475 33                PUL B                    
-00501 0476 9F 51             STS     AESTK            
-00502 0478 9E 28             LDS     SAVESP           
-00503 047A 39                RTS                      
-00504               
-00505 047B BD 05E7 FACT      JSR     SKIPSP           
-00506 047E BD 0397           JSR     TSTV             
-00507 0481 25 04             BCS     FACT0            
-00508 0483 BD 0303           JSR     IND              
-00509 0486 39                RTS                      
-00510               
-00511 0487 BD 08D9 FACT0     JSR     TSTN             
-00512 048A 25 01             BCS     FACT1            
-00513 048C 39                RTS                      
-00514               
-00515 048D 81 28   FACT1     CMP A   #'(              
-00516 048F 26 0C             BNE     FACT2            
-00517 0491 08                INX                      
-00518 0492 8D 2B             BSR     EXPR             
-00519 0494 BD 05E7           JSR     SKIPSP           
-00520 0497 81 29             CMP A   #')              
-00521 0499 26 02             BNE     FACT2            
-00522 049B 08                INX                      
-00523 049C 39                RTS                      
-00524               
-00525 049D C6 0D   FACT2     LDA B   #13              
+00467 045D 2F 02             BLE     YESNO            
+00468 045F 0D      NONO      SEC                      
+00469 0460 39                RTS                      
+00470 0461 0C      YESNO     CLC                      
+00471 0462 39                RTS                      
+00472               
+00473 0463 8D 0B   PULPSH    BSR     PULLAE           
+00474 0465 9F 28   PUSHAE    STS     SAVESP           
+00475 0467 9E 51             LDS     AESTK            
+00476 0469 37                PSH B                    
+00477 046A 36                PSH A                    
+00478 046B 9F 51             STS     AESTK            
+00479 046D 9E 28             LDS     SAVESP           
+00480 046F 39                RTS                      
+00481               
+00482 0470 9F 28   PULLAE    STS     SAVESP           
+00483 0472 9E 51             LDS     AESTK            
+00484 0474 32                PUL A                    
+00485 0475 33                PUL B                    
+00486 0476 9F 51             STS     AESTK            
+00487 0478 9E 28             LDS     SAVESP           
+00488 047A 39                RTS                      
+00489               
+00490 047B BD 05E7 FACT      JSR     SKIPSP           
+00491 047E BD 0397           JSR     TSTV             
+00492 0481 25 04             BCS     FACT0            
+00493 0483 BD 0303           JSR     IND              
+00494 0486 39                RTS                      
+00495               
+00496 0487 BD 08D9 FACT0     JSR     TSTN             
+00497 048A 25 01             BCS     FACT1            
+00498 048C 39                RTS                      
+00499               
+00500 048D 81 28   FACT1     CMP A   #'(              
+00501 048F 26 0C             BNE     FACT2            
+00502 0491 08                INX                      
+00503 0492 8D 2B             BSR     EXPR             
+00504 0494 BD 05E7           JSR     SKIPSP           
+00505 0497 81 29             CMP A   #')              
+00506 0499 26 02             BNE     FACT2            
+00507 049B 08                INX                      
+00508 049C 39                RTS                      
+00509               
+00510 049D C6 0D   FACT2     LDA B   #13              
+00511 049F 7E 0694           JMP     ERROR            
+00512               
+00513 04A2 8D D7   TERM      BSR     FACT             
+00514 04A4 BD 05E7 TERM0     JSR     SKIPSP           
+00515 04A7 81 2A             CMP A   #'*              
+00516 04A9 26 07             BNE     TERM1            
+00517 04AB 08                INX                      
+00518 04AC 8D CD             BSR     FACT             
+00519 04AE 8D 41             BSR     MPY              
+00520 04B0 20 F2             BRA     TERM0            
+00521               
+00522 04B2 81 2F   TERM1     CMP A   #'/              
+00523 04B4 26 08             BNE     TERM2            
+00524 04B6 08                INX                      
 ASM68 6800 Assembler (c) 1988-1995 Evenson Consulting Services        Page 10
 FILE: e:\src\repos\mc6800\basics\microbas\microbas.asm      TITLE: MICRO
 
-00526 049F 7E 0694           JMP     ERROR            
-00527               
-00528 04A2 8D D7   TERM      BSR     FACT             
-00529 04A4 BD 05E7 TERM0     JSR     SKIPSP           
-00530 04A7 81 2A             CMP A   #'*              
-00531 04A9 26 07             BNE     TERM1            
-00532 04AB 08                INX                      
-00533 04AC 8D CD             BSR     FACT             
-00534 04AE 8D 41             BSR     MPY              
-00535 04B0 20 F2             BRA     TERM0            
-00536               
-00537 04B2 81 2F   TERM1     CMP A   #'/              
-00538 04B4 26 08             BNE     TERM2            
-00539 04B6 08                INX                      
-00540 04B7 8D C2             BSR     FACT             
-00541 04B9 BD 0544           JSR     DIV              
-00542 04BC 20 E6             BRA     TERM0            
-00543               
-00544 04BE 39      TERM2     RTS                      
-00545               
-00546 04BF BD 05E7 EXPR      JSR     SKIPSP           
-00547 04C2 81 2D             CMP A   #'-              
-00548 04C4 26 08             BNE     EXPR0            
-00549 04C6 08                INX                      
-00550 04C7 8D D9             BSR     TERM             
-00551 04C9 BD 058F           JSR     NEG              
-00552 04CC 20 07             BRA     EXPR1            
-00553 04CE 81 2B   EXPR0     CMP A   #'+              
-00554 04D0 26 01             BNE     EXPR00           
-00555 04D2 08                INX                      
-00556 04D3 8D CD   EXPR00    BSR     TERM             
-00557 04D5 BD 05E7 EXPR1     JSR     SKIPSP           
-00558 04D8 81 2B             CMP A   #'+              
-00559 04DA 26 08             BNE     EXPR2            
-00560 04DC 08                INX                      
-00561 04DD 8D C3             BSR     TERM             
-00562 04DF BD 05A5           JSR     ADD              
-00563 04E2 20 F1             BRA     EXPR1            
-00564 04E4 81 2D   EXPR2     CMP A   #'-              
-00565 04E6 26 08             BNE     EXPR3            
-00566 04E8 08                INX                      
-00567 04E9 8D B7             BSR     TERM             
-00568 04EB BD 05A3           JSR     SUB              
-00569 04EE 20 E5             BRA     EXPR1            
-00570 04F0 39      EXPR3     RTS                      
-00571               
-00572 04F1 8D 32   MPY       BSR     MDSIGN           
-00573 04F3 86 0F             LDA A   #15              
-00574 04F5 A7 00             STA A   0,X              
-00575 04F7 5F                CLR B                    
-00576 04F8 4F                CLR A                    
-00577 04F9 64 03   MPY4      LSR     3,X              
-00578 04FB 66 04             ROR     4,X              
-00579 04FD 24 0B             BCC     MPY5             
-00580 04FF EB 02             ADD B   2,X              
-00581 0501 A9 01             ADC A   1,X              
-00582 0503 24 05             BCC     MPY5             
-00583 0505 86 02   MPYERR    LDA A   #2               
+00525 04B7 8D C2             BSR     FACT             
+00526 04B9 BD 0544           JSR     DIV              
+00527 04BC 20 E6             BRA     TERM0            
+00528               
+00529 04BE 39      TERM2     RTS                      
+00530               
+00531 04BF BD 05E7 EXPR      JSR     SKIPSP           
+00532 04C2 81 2D             CMP A   #'-              
+00533 04C4 26 08             BNE     EXPR0            
+00534 04C6 08                INX                      
+00535 04C7 8D D9             BSR     TERM             
+00536 04C9 BD 058F           JSR     NEG              
+00537 04CC 20 07             BRA     EXPR1            
+00538 04CE 81 2B   EXPR0     CMP A   #'+              
+00539 04D0 26 01             BNE     EXPR00           
+00540 04D2 08                INX                      
+00541 04D3 8D CD   EXPR00    BSR     TERM             
+00542 04D5 BD 05E7 EXPR1     JSR     SKIPSP           
+00543 04D8 81 2B             CMP A   #'+              
+00544 04DA 26 08             BNE     EXPR2            
+00545 04DC 08                INX                      
+00546 04DD 8D C3             BSR     TERM             
+00547 04DF BD 05A5           JSR     ADD              
+00548 04E2 20 F1             BRA     EXPR1            
+00549 04E4 81 2D   EXPR2     CMP A   #'-              
+00550 04E6 26 08             BNE     EXPR3            
+00551 04E8 08                INX                      
+00552 04E9 8D B7             BSR     TERM             
+00553 04EB BD 05A3           JSR     SUB              
+00554 04EE 20 E5             BRA     EXPR1            
+00555 04F0 39      EXPR3     RTS                      
+00556               
+00557 04F1 8D 32   MPY       BSR     MDSIGN           
+00558 04F3 86 0F             LDA A   #15              
+00559 04F5 A7 00             STA A   0,X              
+00560 04F7 5F                CLR B                    
+00561 04F8 4F                CLR A                    
+00562 04F9 64 03   MPY4      LSR     3,X              
+00563 04FB 66 04             ROR     4,X              
+00564 04FD 24 0B             BCC     MPY5             
+00565 04FF EB 02             ADD B   2,X              
+00566 0501 A9 01             ADC A   1,X              
+00567 0503 24 05             BCC     MPY5             
+00568 0505 86 02   MPYERR    LDA A   #2               
+00569 0507 7E 0694           JMP     ERROR            
+00570 050A 68 02   MPY5      ASL     2,X              
+00571 050C 69 01             ROL     1,X              
+00572 050E 6A 00             DEC     0,X              
+00573 0510 26 E7             BNE     MPY4             
+00574 0512 4D                TST A                    
+00575 0513 2B F0             BMI     MPYERR           
+00576 0515 7D 004C           TST     TSIGN            
+00577 0518 2A 03             BPL     MPY6             
+00578 051A BD 059C           JSR     NEGAB            
+00579 051D E7 04   MPY6      STA B   4,X              
+00580 051F A7 03             STA A   3,X              
+00581 0521 BD 02DF           JSR     PULLX            
+00582 0524 39                RTS                      
 ASM68 6800 Assembler (c) 1988-1995 Evenson Consulting Services        Page 11
 FILE: e:\src\repos\mc6800\basics\microbas\microbas.asm      TITLE: MICRO
 
-00584 0507 7E 0694           JMP     ERROR            
-00585 050A 68 02   MPY5      ASL     2,X              
-00586 050C 69 01             ROL     1,X              
-00587 050E 6A 00             DEC     0,X              
-00588 0510 26 E7             BNE     MPY4             
-00589 0512 4D                TST A                    
-00590 0513 2B F0             BMI     MPYERR           
-00591 0515 7D 004C           TST     TSIGN            
-00592 0518 2A 03             BPL     MPY6             
-00593 051A BD 059C           JSR     NEGAB            
-00594 051D E7 04   MPY6      STA B   4,X              
-00595 051F A7 03             STA A   3,X              
-00596 0521 BD 02DF           JSR     PULLX            
-00597 0524 39                RTS                      
-00598               
-00599 0525 BD 02CA MDSIGN    JSR     PUSHX            
-00600 0528 4F                CLR A                    
-00601 0529 DE 51             LDX     AESTK            
-00602 052B 6D 01             TST     1,X              
-00603 052D 2A 04             BPL     MDS2             
-00604 052F 8D 5E             BSR     NEG              
-00605 0531 86 80             LDA A   #$80             
-00606 0533 08      MDS2      INX                      
-00607 0534 08                INX                      
-00608 0535 DF 51             STX     AESTK            
-00609 0537 6D 01             TST     1,X              
-00610 0539 2A 04             BPL     MDS3             
-00611 053B 8D 52             BSR     NEG              
-00612 053D 8B 80             ADD A   #$80             
-00613 053F 97 4C   MDS3      STA A   TSIGN            
-00614 0541 09                DEX                      
-00615 0542 09                DEX                      
-00616 0543 39                RTS                      
-00617               
-00618 0544 8D DF   DIV       BSR     MDSIGN           
-00619 0546 6D 01             TST     1,X              
-00620 0548 26 09             BNE     DIV33            
-00621 054A 6D 02             TST     2,X              
-00622 054C 26 05             BNE     DIV33            
-00623 054E C6 08             LDA B   #8               
-00624 0550 7E 0694           JMP     ERROR            
-00625 0553 86 01   DIV33     LDA A   #1               
-00626 0555 4C      DIV4      INC A                    
-00627 0556 68 02             ASL     2,X              
-00628 0558 69 01             ROL     1,X              
-00629 055A 2B 04             BMI     DIV5             
-00630 055C 81 11             CMP A   #17              
-00631 055E 26 F5             BNE     DIV4             
-00632 0560 A7 00   DIV5      STA A   0,X              
-00633 0562 A6 03             LDA A   3,X              
-00634 0564 E6 04             LDA B   4,X              
-00635 0566 6F 03             CLR     3,X              
-00636 0568 6F 04             CLR     4,X              
-00637 056A E0 02   DIV163    SUB B   2,X              
-00638 056C A2 01             SBC A   1,X              
-00639 056E 24 07             BCC     DIV165           
-00640 0570 EB 02             ADD B   2,X              
-00641 0572 A9 01             ADC A   1,X              
+00583               
+00584 0525 BD 02CA MDSIGN    JSR     PUSHX            
+00585 0528 4F                CLR A                    
+00586 0529 DE 51             LDX     AESTK            
+00587 052B 6D 01             TST     1,X              
+00588 052D 2A 04             BPL     MDS2             
+00589 052F 8D 5E             BSR     NEG              
+00590 0531 86 80             LDA A   #$80             
+00591 0533 08      MDS2      INX                      
+00592 0534 08                INX                      
+00593 0535 DF 51             STX     AESTK            
+00594 0537 6D 01             TST     1,X              
+00595 0539 2A 04             BPL     MDS3             
+00596 053B 8D 52             BSR     NEG              
+00597 053D 8B 80             ADD A   #$80             
+00598 053F 97 4C   MDS3      STA A   TSIGN            
+00599 0541 09                DEX                      
+00600 0542 09                DEX                      
+00601 0543 39                RTS                      
+00602               
+00603 0544 8D DF   DIV       BSR     MDSIGN           
+00604 0546 6D 01             TST     1,X              
+00605 0548 26 09             BNE     DIV33            
+00606 054A 6D 02             TST     2,X              
+00607 054C 26 05             BNE     DIV33            
+00608 054E C6 08             LDA B   #8               
+00609 0550 7E 0694           JMP     ERROR            
+00610 0553 86 01   DIV33     LDA A   #1               
+00611 0555 4C      DIV4      INC A                    
+00612 0556 68 02             ASL     2,X              
+00613 0558 69 01             ROL     1,X              
+00614 055A 2B 04             BMI     DIV5             
+00615 055C 81 11             CMP A   #17              
+00616 055E 26 F5             BNE     DIV4             
+00617 0560 A7 00   DIV5      STA A   0,X              
+00618 0562 A6 03             LDA A   3,X              
+00619 0564 E6 04             LDA B   4,X              
+00620 0566 6F 03             CLR     3,X              
+00621 0568 6F 04             CLR     4,X              
+00622 056A E0 02   DIV163    SUB B   2,X              
+00623 056C A2 01             SBC A   1,X              
+00624 056E 24 07             BCC     DIV165           
+00625 0570 EB 02             ADD B   2,X              
+00626 0572 A9 01             ADC A   1,X              
+00627 0574 0C                CLC                      
+00628 0575 20 01             BRA     DIV167           
+00629 0577 0D      DIV165    SEC                      
+00630 0578 69 04   DIV167    ROL     4,X              
+00631 057A 69 03             ROL     3,X              
+00632 057C 64 01             LSR     1,X              
+00633 057E 66 02             ROR     2,X              
+00634 0580 6A 00             DEC     0,X              
+00635 0582 26 E6             BNE     DIV163           
+00636 0584 7D 004C           TST     TSIGN            
+00637 0587 2A 02             BPL     DIV169           
+00638 0589 8D 04             BSR     NEG              
+00639 058B BD 02DF DIV169    JSR     PULLX            
+00640 058E 39                RTS                      
 ASM68 6800 Assembler (c) 1988-1995 Evenson Consulting Services        Page 12
 FILE: e:\src\repos\mc6800\basics\microbas\microbas.asm      TITLE: MICRO
 
-00642 0574 0C                CLC                      
-00643 0575 20 01             BRA     DIV167           
-00644 0577 0D      DIV165    SEC                      
-00645 0578 69 04   DIV167    ROL     4,X              
-00646 057A 69 03             ROL     3,X              
-00647 057C 64 01             LSR     1,X              
-00648 057E 66 02             ROR     2,X              
-00649 0580 6A 00             DEC     0,X              
-00650 0582 26 E6             BNE     DIV163           
-00651 0584 7D 004C           TST     TSIGN            
-00652 0587 2A 02             BPL     DIV169           
-00653 0589 8D 04             BSR     NEG              
-00654 058B BD 02DF DIV169    JSR     PULLX            
-00655 058E 39                RTS                      
+00641               
+00642 058F 36      NEG       PSH A                    
+00643 0590 37                PSH B                    
+00644 0591 BD 0470           JSR     PULLAE           
+00645 0594 8D 06             BSR     NEGAB            
+00646 0596 BD 0465           JSR     PUSHAE           
+00647 0599 33                PUL B                    
+00648 059A 32                PUL A                    
+00649 059B 39                RTS                      
+00650               
+00651 059C 43      NEGAB     COM A                    
+00652 059D 53                COM B                    
+00653 059E CB 01             ADD B   #1               
+00654 05A0 89 00             ADC A   #0               
+00655 05A2 39                RTS                      
 00656               
-00657 058F 36      NEG       PSH A                    
-00658 0590 37                PSH B                    
-00659 0591 BD 0470           JSR     PULLAE           
-00660 0594 8D 06             BSR     NEGAB            
-00661 0596 BD 0465           JSR     PUSHAE           
-00662 0599 33                PUL B                    
-00663 059A 32                PUL A                    
-00664 059B 39                RTS                      
-00665               
-00666 059C 43      NEGAB     COM A                    
-00667 059D 53                COM B                    
-00668 059E CB 01             ADD B   #1               
-00669 05A0 89 00             ADC A   #0               
-00670 05A2 39                RTS                      
-00671               
-00672 05A3 8D EA   SUB       BSR     NEG              
-00673 05A5 BD 0470 ADD       JSR     PULLAE           
-00674 05A8 D7 50   ADD1      STA B   BNUMB            
-00675 05AA 97 4F             STA A   ANUMB            
-00676 05AC BD 0470           JSR     PULLAE           
-00677 05AF DB 50             ADD B   BNUMB            
-00678 05B1 99 4F             ADC A   ANUMB            
-00679 05B3 BD 0465           JSR     PUSHAE           
-00680 05B6 0C                CLC                      
-00681 05B7 39                RTS                      
-00682               
-00683 05B8 96 32   FINDNO    LDA A   HIGHLN           
-00684 05BA D6 33             LDA B   HIGHLN+1         
-00685 05BC D0 31             SUB B   PACKLN+1         
-00686 05BE 92 30             SBC A   PACKLN           
-00687 05C0 25 1C             BCS     HIBALL           
-00688 05C2 DE 2E   FINDN1    LDX     SOURCE           
-00689 05C4 BD 0463 FIND0     JSR     PULPSH           
-00690 05C7 E0 01             SUB B   1,X              
-00691 05C9 A2 00             SBC A   0,X              
-00692 05CB 25 13             BCS     FIND3            
-00693 05CD 26 03             BNE     FIND1            
-00694 05CF 5D                TST B                    
-00695 05D0 27 0F             BEQ     FIND4            
-00696 05D2 08      FIND1     INX                      
-00697 05D3 8D 18   FIND2     BSR     INXSKP           
-00698 05D5 81 1E             CMP A   #$1E             
-00699 05D7 26 FA             BNE     FIND2            
+00657 05A3 8D EA   SUB       BSR     NEG              
+00658 05A5 BD 0470 ADD       JSR     PULLAE           
+00659 05A8 D7 50   ADD1      STA B   BNUMB            
+00660 05AA 97 4F             STA A   ANUMB            
+00661 05AC BD 0470           JSR     PULLAE           
+00662 05AF DB 50             ADD B   BNUMB            
+00663 05B1 99 4F             ADC A   ANUMB            
+00664 05B3 BD 0465           JSR     PUSHAE           
+00665 05B6 0C                CLC                      
+00666 05B7 39                RTS                      
+00667               
+00668 05B8 96 32   FINDNO    LDA A   HIGHLN           
+00669 05BA D6 33             LDA B   HIGHLN+1         
+00670 05BC D0 31             SUB B   PACKLN+1         
+00671 05BE 92 30             SBC A   PACKLN           
+00672 05C0 25 1C             BCS     HIBALL           
+00673 05C2 DE 2E   FINDN1    LDX     SOURCE           
+00674 05C4 BD 0463 FIND0     JSR     PULPSH           
+00675 05C7 E0 01             SUB B   1,X              
+00676 05C9 A2 00             SBC A   0,X              
+00677 05CB 25 13             BCS     FIND3            
+00678 05CD 26 03             BNE     FIND1            
+00679 05CF 5D                TST B                    
+00680 05D0 27 0F             BEQ     FIND4            
+00681 05D2 08      FIND1     INX                      
+00682 05D3 8D 18   FIND2     BSR     INXSKP           
+00683 05D5 81 1E             CMP A   #$1E             
+00684 05D7 26 FA             BNE     FIND2            
+00685 05D9 08                INX                      
+00686 05DA 9C 2A             CPX     NEXTBA           
+00687 05DC 26 E6             BNE     FIND0            
+00688 05DE DE 2A   HIBALL    LDX     NEXTBA           
+00689 05E0 0D      FIND3     SEC                      
+00690 05E1 DF 2C   FIND4     STX     WORKBA           
+00691 05E3 BD 0470           JSR     PULLAE           
+00692 05E6 39                RTS                      
+00693               
+00694 05E7 A6 00   SKIPSP    LDA A   0,X              
+00695 05E9 81 20             CMP A   #$20             
+00696 05EB 26 03             BNE     SKIPEX           
+00697 05ED 08      INXSKP    INX                      
+00698 05EE 20 F7             BRA     SKIPSP           
 ASM68 6800 Assembler (c) 1988-1995 Evenson Consulting Services        Page 13
 FILE: e:\src\repos\mc6800\basics\microbas\microbas.asm      TITLE: MICRO
 
-00700 05D9 08                INX                      
-00701 05DA 9C 2A             CPX     NEXTBA           
-00702 05DC 26 E6             BNE     FIND0            
-00703 05DE DE 2A   HIBALL    LDX     NEXTBA           
-00704 05E0 0D      FIND3     SEC                      
-00705 05E1 DF 2C   FIND4     STX     WORKBA           
-00706 05E3 BD 0470           JSR     PULLAE           
-00707 05E6 39                RTS                      
-00708               
-00709 05E7 A6 00   SKIPSP    LDA A   0,X              
-00710 05E9 81 20             CMP A   #$20             
-00711 05EB 26 03             BNE     SKIPEX           
-00712 05ED 08      INXSKP    INX                      
-00713 05EE 20 F7             BRA     SKIPSP           
-00714 05F0 39      SKIPEX    RTS                      
-00715               
-00716 05F1 BD 08F4 LINENO    JSR     INTSTN           
-00717 05F4 24 05             BCC     LINE1            
-00718 05F6 C6 07             LDA B   #7               
-00719 05F8 7E 0694           JMP     ERROR            
-00720 05FB BD 0463 LINE1     JSR     PULPSH           
-00721 05FE 97 30             STA A   PACKLN           
-00722 0600 D7 31             STA B   PACKLN+1         
-00723 0602 DF AC             STX     BUFNXT           
-00724 0604 39                RTS                      
-00725               
-00726 0605 DE 34   NXTLIN    LDX     BASPNT           
-00727 0607 A6 00   NXTL12    LDA A   0,X              
-00728 0609 08                INX                      
-00729 060A 81 1E             CMP A   #$1E             
-00730 060C 26 F9             BNE     NXTL12           
-00731 060E DF 36             STX     BASLIN           
-00732 0610 39                RTS                      
-00733               
-00734 0611 8D D4   CCODE     BSR     SKIPSP           
-00735 0613 DF 26             STX     INDEX4           
-00736 0615 9F 28             STS     SAVESP           
-00737 0617 CE 0151           LDX     #COMMAN-1        
-00738 061A 9E 26   LOOP3     LDS     INDEX4           
-00739 061C 34                DES                      
-00740 061D 08      LOOP4     INX                      
-00741 061E 32                PUL A                    
-00742 061F E6 00             LDA B   0,X              
-00743 0621 C1 1E             CMP B   #$1E             
-00744 0623 27 13             BEQ     LOOP7            
-00745 0625 11                CBA                      
-00746 0626 27 F5             BEQ     LOOP4            
-00747 0628 08      LOOP5     INX                      
-00748 0629 8C 01DC           CPX     #COMEND          
-00749 062C 27 12             BEQ     CCEXIT           
-00750 062E E6 00             LDA B   0,X              
-00751 0630 C1 1E             CMP B   #$1E             
-00752 0632 26 F4             BNE     LOOP5            
-00753 0634 08      LOOP6     INX                      
-00754 0635 08                INX                      
-00755 0636 20 E2             BRA     LOOP3            
-00756 0638 08      LOOP7     INX                      
-00757 0639 9F AC             STS     BUFNXT           
+00699 05F0 39      SKIPEX    RTS                      
+00700               
+00701 05F1 BD 08F4 LINENO    JSR     INTSTN           
+00702 05F4 24 05             BCC     LINE1            
+00703 05F6 C6 07             LDA B   #7               
+00704 05F8 7E 0694           JMP     ERROR            
+00705 05FB BD 0463 LINE1     JSR     PULPSH           
+00706 05FE 97 30             STA A   PACKLN           
+00707 0600 D7 31             STA B   PACKLN+1         
+00708 0602 DF AC             STX     BUFNXT           
+00709 0604 39                RTS                      
+00710               
+00711 0605 DE 34   NXTLIN    LDX     BASPNT           
+00712 0607 A6 00   NXTL12    LDA A   0,X              
+00713 0609 08                INX                      
+00714 060A 81 1E             CMP A   #$1E             
+00715 060C 26 F9             BNE     NXTL12           
+00716 060E DF 36             STX     BASLIN           
+00717 0610 39                RTS                      
+00718               
+00719 0611 8D D4   CCODE     BSR     SKIPSP           
+00720 0613 DF 26             STX     INDEX4           
+00721 0615 9F 28             STS     SAVESP           
+00722 0617 CE 0151           LDX     #COMMAN-1        
+00723 061A 9E 26   LOOP3     LDS     INDEX4           
+00724 061C 34                DES                      
+00725 061D 08      LOOP4     INX                      
+00726 061E 32                PUL A                    
+00727 061F E6 00             LDA B   0,X              
+00728 0621 C1 1E             CMP B   #$1E             
+00729 0623 27 13             BEQ     LOOP7            
+00730 0625 11                CBA                      
+00731 0626 27 F5             BEQ     LOOP4            
+00732 0628 08      LOOP5     INX                      
+00733 0629 8C 01DC           CPX     #COMEND          
+00734 062C 27 12             BEQ     CCEXIT           
+00735 062E E6 00             LDA B   0,X              
+00736 0630 C1 1E             CMP B   #$1E             
+00737 0632 26 F4             BNE     LOOP5            
+00738 0634 08      LOOP6     INX                      
+00739 0635 08                INX                      
+00740 0636 20 E2             BRA     LOOP3            
+00741 0638 08      LOOP7     INX                      
+00742 0639 9F AC             STS     BUFNXT           
+00743 063B 9F 34             STS     BASPNT           
+00744 063D 9E 28   LOOP8     LDS     SAVESP           
+00745 063F 39                RTS                      
+00746               
+00747 0640 9E 28   CCEXIT    LDS     SAVESP           
+00748 0642 CE 01DD           LDX     #IMPLET          
+00749 0645 39                RTS                      
+00750               
+00751 0646 DE 2E   START     LDX     SOURCE           
+00752 0648 DF 2A             STX     NEXTBA           
+00753 064A DF 2C             STX     WORKBA           
+00754 064C DF 48             STX     ARRTAB           
+00755 064E 09                DEX                      
+00756 064F 4F                CLR A                    
 ASM68 6800 Assembler (c) 1988-1995 Evenson Consulting Services        Page 14
 FILE: e:\src\repos\mc6800\basics\microbas\microbas.asm      TITLE: MICRO
 
-00758 063B 9F 34             STS     BASPNT           
-00759 063D 9E 28   LOOP8     LDS     SAVESP           
-00760 063F 39                RTS                      
-00761               
-00762 0640 9E 28   CCEXIT    LDS     SAVESP           
-00763 0642 CE 01DD           LDX     #IMPLET          
-00764 0645 39                RTS                      
-00765               
-00766 0646 DE 2E   START     LDX     SOURCE           
-00767 0648 DF 2A             STX     NEXTBA           
-00768 064A DF 2C             STX     WORKBA           
-00769 064C DF 48             STX     ARRTAB           
-00770 064E 09                DEX                      
-00771 064F 4F                CLR A                    
-00772 0650 08      START2    INX                      
-00773 0651 A7 00             STA A   0,X              
-00774 0653 9C 46             CPX     MEMEND           
-00775 0655 26 F9             BNE     START2           
-00776 0657 4F      START1    CLR A                    
-00777 0658 97 30             STA A   PACKLN           
-00778 065A 97 31             STA A   PACKLN+1         
-00779 065C 97 42             STA A   PRCNT            
-00780 065E DE 30             LDX     PACKLN           
-00781 0660 DF 32             STX     HIGHLN           
-00782 0662 8E A045 READY     LDS     #$A045           
-00783 0665 CE 021B           LDX     #RDYMSG          
-00784 0668 BD 02A8           JSR     OUTPUT           
-00785 066B 8E A045 NEWLIN    LDS     #$A045           
-00786 066E CE A07F           LDX     #$A07F           
-00787 0671 DF 3A             STX     XSTACK           
-00788 0673 7F 0042           CLR     PRCNT            
-00789 0676 BD 0282 NEWL3     JSR     CNTLIN           
-00790 0679 CE 00B0           LDX     #BUFFER          
-00791 067C BD 05E7           JSR     SKIPSP           
-00792 067F DF AC             STX     BUFNXT           
-00793 0681 BD 0457           JSR     TESTNO           
-00794 0684 25 03             BCS     LOOP2            
-00795 0686 7E 0742           JMP     NUMBER           
-00796 0689 81 1E   LOOP2     CMP A   #$1E             
-00797 068B 27 DE             BEQ     NEWLIN           
-00798 068D BD 0611           JSR     CCODE            
-00799 0690 EE 00             LDX     0,X              
-00800 0692 6E 00             JMP     0,X              
-00801               
-00802 0694 8E A045 ERROR     LDS     #$A045           
-00803 0697 BD 02B6           JSR     CRLF             
-00804 069A CE 022F           LDX     #ERRMS1          
-00805 069D BD 02AF           JSR     OUTNCR           
-00806 06A0 4F                CLR A                    
-00807 06A1 BD 0465           JSR     PUSHAE           
-00808 06A4 BD 09E2           JSR     PRN              
-00809 06A7 CE 0237           LDX     #ERRMS2          
-00810 06AA BD 02AF           JSR     OUTNCR           
-00811 06AD 5F                CLR B                    
-00812 06AE 96 36             LDA A   BASLIN           
-00813 06B0 27 06             BEQ     ERROR2           
-00814 06B2 DE 36             LDX     BASLIN           
-00815 06B4 A6 00             LDA A   0,X              
+00757 0650 08      START2    INX                      
+00758 0651 A7 00             STA A   0,X              
+00759 0653 9C 46             CPX     MEMEND           
+00760 0655 26 F9             BNE     START2           
+00761 0657 4F      START1    CLR A                    
+00762 0658 97 30             STA A   PACKLN           
+00763 065A 97 31             STA A   PACKLN+1         
+00764 065C 97 42             STA A   PRCNT            
+00765 065E DE 30             LDX     PACKLN           
+00766 0660 DF 32             STX     HIGHLN           
+00767 0662 8E A045 READY     LDS     #$A045           
+00768 0665 CE 021B           LDX     #RDYMSG          
+00769 0668 BD 02A8           JSR     OUTPUT           
+00770 066B 8E A045 NEWLIN    LDS     #$A045           
+00771 066E CE A07F           LDX     #$A07F           
+00772 0671 DF 3A             STX     XSTACK           
+00773 0673 7F 0042           CLR     PRCNT            
+00774 0676 BD 0282 NEWL3     JSR     CNTLIN           
+00775 0679 CE 00B0           LDX     #BUFFER          
+00776 067C BD 05E7           JSR     SKIPSP           
+00777 067F DF AC             STX     BUFNXT           
+00778 0681 BD 0457           JSR     TESTNO           
+00779 0684 25 03             BCS     LOOP2            
+00780 0686 7E 0742           JMP     NUMBER           
+00781 0689 81 1E   LOOP2     CMP A   #$1E             
+00782 068B 27 DE             BEQ     NEWLIN           
+00783 068D BD 0611           JSR     CCODE            
+00784 0690 EE 00             LDX     0,X              
+00785 0692 6E 00             JMP     0,X              
+00786               
+00787 0694 8E A045 ERROR     LDS     #$A045           
+00788 0697 BD 02B6           JSR     CRLF             
+00789 069A CE 022F           LDX     #ERRMS1          
+00790 069D BD 02AF           JSR     OUTNCR           
+00791 06A0 4F                CLR A                    
+00792 06A1 BD 0465           JSR     PUSHAE           
+00793 06A4 BD 09E2           JSR     PRN              
+00794 06A7 CE 0237           LDX     #ERRMS2          
+00795 06AA BD 02AF           JSR     OUTNCR           
+00796 06AD 5F                CLR B                    
+00797 06AE 96 36             LDA A   BASLIN           
+00798 06B0 27 06             BEQ     ERROR2           
+00799 06B2 DE 36             LDX     BASLIN           
+00800 06B4 A6 00             LDA A   0,X              
+00801 06B6 E6 01             LDA B   1,X              
+00802 06B8 BD 09FD ERROR2    JSR     PRN0             
+00803 06BB BD 02B6           JSR     CRLF             
+00804 06BE 20 A2             BRA     READY            
+00805               
+00806 06C0 DE 2E   RUN       LDX     SOURCE           
+00807 06C2 DF 36             STX     BASLIN           
+00808 06C4 CE 0059           LDX     #SBRSTK          
+00809 06C7 DF 57             STX     SBRPNT           
+00810 06C9 CE 0069           LDX     #FORSTK          
+00811 06CC DF 53             STX     FORPNT           
+00812 06CE CE A07F           LDX     #$A07F           
+00813 06D1 DF 3A             STX     XSTACK           
+00814 06D3 DE 2A             LDX     NEXTBA           
 ASM68 6800 Assembler (c) 1988-1995 Evenson Consulting Services        Page 15
 FILE: e:\src\repos\mc6800\basics\microbas\microbas.asm      TITLE: MICRO
 
-00816 06B6 E6 01             LDA B   1,X              
-00817 06B8 BD 09FD ERROR2    JSR     PRN0             
-00818 06BB BD 02B6           JSR     CRLF             
-00819 06BE 20 A2             BRA     READY            
-00820               
-00821 06C0 DE 2E   RUN       LDX     SOURCE           
-00822 06C2 DF 36             STX     BASLIN           
-00823 06C4 CE 0059           LDX     #SBRSTK          
-00824 06C7 DF 57             STX     SBRPNT           
-00825 06C9 CE 0069           LDX     #FORSTK          
-00826 06CC DF 53             STX     FORPNT           
-00827 06CE CE A07F           LDX     #$A07F           
-00828 06D1 DF 3A             STX     XSTACK           
-00829 06D3 DE 2A             LDX     NEXTBA           
-00830 06D5 DF 48             STX     ARRTAB           
-00831 06D7 4F                CLR A                    
-00832 06D8 09                DEX                      
-00833 06D9 08      RUN1      INX                      
-00834 06DA A7 00             STA A   0,X              
-00835 06DC 9C 46             CPX     MEMEND           
-00836 06DE 26 F9             BNE     RUN1             
-00837 06E0 CE 0103           LDX     #VARTAB          
-00838 06E3 C6 4E             LDA B   #78              
-00839 06E5 A7 00   RUN2      STA A   0,X              
-00840 06E7 08                INX                      
-00841 06E8 5A                DEC B                    
-00842 06E9 26 FA             BNE     RUN2             
-00843 06EB 7E 07F5           JMP     BASIC            
-00844               
-00845 06EE CE 022A CLIST     LDX     #PGCNTL          
-00846 06F1 BD 02A8           JSR     OUTPUT           
-00847 06F4 DE 34             LDX     BASPNT           
-00848 06F6 BD 05E7 CLIST1    JSR     SKIPSP           
-00849 06F9 81 1E             CMP A   #$1E             
-00850 06FB 27 2C             BEQ     CLIST4           
-00851 06FD BD 08F4           JSR     INTSTN           
-00852 0700 DF 34             STX     BASPNT           
-00853 0702 BD 05C2           JSR     FINDN1           
-00854 0705 DF 24             STX     INDEX3           
-00855 0707 DE 34             LDX     BASPNT           
-00856 0709 36                PSH A                    
-00857 070A BD 05E7           JSR     SKIPSP           
-00858 070D 81 1E             CMP A   #$1E             
-00859 070F 32                PUL A                    
-00860 0710 26 05             BNE     CLIST2           
-00861 0712 BD 0465           JSR     PUSHAE           
-00862 0715 20 04             BRA     CLIST3           
-00863 0717 08      CLIST2    INX                      
-00864 0718 BD 08F4           JSR     INTSTN           
-00865 071B 4F      CLIST3    CLR A                    
-00866 071C C6 01             LDA B   #1               
-00867 071E BD 05A8           JSR     ADD1             
-00868 0721 BD 05C2           JSR     FINDN1           
-00869 0724 BD 0324           JSR     LIST0            
-00870 0727 20 03             BRA     CLIST5           
-00871 0729 BD 031C CLIST4    JSR     LIST             
-00872 072C 7E 0A84 CLIST5    JMP     REMARK           
-00873 072F 01                NOP                      
+00815 06D5 DF 48             STX     ARRTAB           
+00816 06D7 4F                CLR A                    
+00817 06D8 09                DEX                      
+00818 06D9 08      RUN1      INX                      
+00819 06DA A7 00             STA A   0,X              
+00820 06DC 9C 46             CPX     MEMEND           
+00821 06DE 26 F9             BNE     RUN1             
+00822 06E0 CE 0103           LDX     #VARTAB          
+00823 06E3 C6 4E             LDA B   #78              
+00824 06E5 A7 00   RUN2      STA A   0,X              
+00825 06E7 08                INX                      
+00826 06E8 5A                DEC B                    
+00827 06E9 26 FA             BNE     RUN2             
+00828 06EB 7E 07F5           JMP     BASIC            
+00829               
+00830 06EE CE 022A CLIST     LDX     #PGCNTL          
+00831 06F1 BD 02A8           JSR     OUTPUT           
+00832 06F4 DE 34             LDX     BASPNT           
+00833 06F6 BD 05E7 CLIST1    JSR     SKIPSP           
+00834 06F9 81 1E             CMP A   #$1E             
+00835 06FB 27 2C             BEQ     CLIST4           
+00836 06FD BD 08F4           JSR     INTSTN           
+00837 0700 DF 34             STX     BASPNT           
+00838 0702 BD 05C2           JSR     FINDN1           
+00839 0705 DF 24             STX     INDEX3           
+00840 0707 DE 34             LDX     BASPNT           
+00841 0709 36                PSH A                    
+00842 070A BD 05E7           JSR     SKIPSP           
+00843 070D 81 1E             CMP A   #$1E             
+00844 070F 32                PUL A                    
+00845 0710 26 05             BNE     CLIST2           
+00846 0712 BD 0465           JSR     PUSHAE           
+00847 0715 20 04             BRA     CLIST3           
+00848 0717 08      CLIST2    INX                      
+00849 0718 BD 08F4           JSR     INTSTN           
+00850 071B 4F      CLIST3    CLR A                    
+00851 071C C6 01             LDA B   #1               
+00852 071E BD 05A8           JSR     ADD1             
+00853 0721 BD 05C2           JSR     FINDN1           
+00854 0724 BD 0324           JSR     LIST0            
+00855 0727 20 03             BRA     CLIST5           
+00856 0729 BD 031C CLIST4    JSR     LIST             
+00857 072C 7E 0A84 CLIST5    JMP     REMARK           
+00858 072F 01                NOP                      
+00859               
+00860 0730 BD 0605 PATCH     JSR     NXTLIN           
+00861 0733 CE 07F5           LDX     #BASIC           
+00862 0736 FF A046           STX     $A046            
+00863 0739 8E A040           LDS     #$A040           
+00864 073C BF A008           STS     SP               
+00865         A008 SP        EQU     $A008            
+00866 073F 7E E0E3           JMP     CONTRL           
+00867         E0E3 CONTRL    EQU     $E0E3            
+00868               
+00869 0742 BD 05F1 NUMBER    JSR     LINENO           
+00870 0745 BD 05B8 NUM1      JSR     FINDNO           
+00871 0748 24 0A             BCC     DELREP           
+00872 074A DE 2C             LDX     WORKBA           
 ASM68 6800 Assembler (c) 1988-1995 Evenson Consulting Services        Page 16
 FILE: e:\src\repos\mc6800\basics\microbas\microbas.asm      TITLE: MICRO
 
-00874               
-00875 0730 BD 0605 PATCH     JSR     NXTLIN           
-00876 0733 CE 07F5           LDX     #BASIC           
-00877 0736 FF A046           STX     $A046            
-00878 0739 8E A040           LDS     #$A040           
-00879 073C BF A008           STS     SP               
-00880         A008 SP        EQU     $A008            
-00881 073F 7E E0E3           JMP     CONTRL           
-00882         E0E3 CONTRL    EQU     $E0E3            
-00883               
-00884 0742 BD 05F1 NUMBER    JSR     LINENO           
-00885 0745 BD 05B8 NUM1      JSR     FINDNO           
-00886 0748 24 0A             BCC     DELREP           
-00887 074A DE 2C             LDX     WORKBA           
-00888 074C 9C 2A             CPX     NEXTBA           
-00889 074E 27 1E             BEQ     CAPPEN           
-00890 0750 8D 50             BSR     INSERT           
-00891 0752 20 17             BRA     NEXIT            
-00892 0754 DE AC   DELREP    LDX     BUFNXT           
-00893 0756 BD 05E7           JSR     SKIPSP           
-00894 0759 81 1E             CMP A   #$1E             
-00895 075B 26 0A             BNE     REPLAC           
-00896 075D DE 2A             LDX     NEXTBA           
-00897 075F 9C 2E             CPX     SOURCE           
-00898 0761 27 08             BEQ     NEXIT            
-00899 0763 8D 11             BSR     DELETE           
-00900 0765 20 04             BRA     NEXIT            
-00901               
-00902 0767 8D 0D   REPLAC    BSR     DELETE           
-00903 0769 8D 37             BSR     INSERT           
-00904 076B 7E 066B NEXIT     JMP     NEWLIN           
-00905 076E 8D 32   CAPPEN    BSR     INSERT           
-00906 0770 DE 30             LDX     PACKLN           
-00907 0772 DF 32             STX     HIGHLN           
-00908 0774 20 F5             BRA     NEXIT            
-00909 0776 9F 28   DELETE    STS     SAVESP           
-00910 0778 DE 2C             LDX     WORKBA           
-00911 077A 9E 2A             LDS     NEXTBA           
-00912 077C C6 02             LDA B   #2               
-00913 077E 08                INX                      
-00914 077F 08                INX                      
-00915 0780 34                DES                      
-00916 0781 34                DES                      
-00917 0782 A6 00   DEL2      LDA A   0,X              
-00918 0784 34                DES                      
-00919 0785 08                INX                      
-00920 0786 5C                INC B                    
-00921 0787 81 1E             CMP A   #$1E             
-00922 0789 26 F7             BNE     DEL2             
-00923 078B 9F 2A             STS     NEXTBA           
-00924 078D 9F 48             STS     ARRTAB           
-00925 078F DE 2C             LDX     WORKBA           
-00926 0791 F7 0799           STA B   DEL5+1           
-00927               * IN AT OBJECT TIME
-00928 0794 9C 2A   DEL4      CPX     NEXTBA           
-00929 0796 27 07             BEQ     DELEX            
-00930 0798 A6 00   DEL5      LDA A   0,X              
-00931 079A A7 00             STA A   0,X              
+00873 074C 9C 2A             CPX     NEXTBA           
+00874 074E 27 1E             BEQ     CAPPEN           
+00875 0750 8D 50             BSR     INSERT           
+00876 0752 20 17             BRA     NEXIT            
+00877 0754 DE AC   DELREP    LDX     BUFNXT           
+00878 0756 BD 05E7           JSR     SKIPSP           
+00879 0759 81 1E             CMP A   #$1E             
+00880 075B 26 0A             BNE     REPLAC           
+00881 075D DE 2A             LDX     NEXTBA           
+00882 075F 9C 2E             CPX     SOURCE           
+00883 0761 27 08             BEQ     NEXIT            
+00884 0763 8D 11             BSR     DELETE           
+00885 0765 20 04             BRA     NEXIT            
+00886               
+00887 0767 8D 0D   REPLAC    BSR     DELETE           
+00888 0769 8D 37             BSR     INSERT           
+00889 076B 7E 066B NEXIT     JMP     NEWLIN           
+00890 076E 8D 32   CAPPEN    BSR     INSERT           
+00891 0770 DE 30             LDX     PACKLN           
+00892 0772 DF 32             STX     HIGHLN           
+00893 0774 20 F5             BRA     NEXIT            
+00894 0776 9F 28   DELETE    STS     SAVESP           
+00895 0778 DE 2C             LDX     WORKBA           
+00896 077A 9E 2A             LDS     NEXTBA           
+00897 077C C6 02             LDA B   #2               
+00898 077E 08                INX                      
+00899 077F 08                INX                      
+00900 0780 34                DES                      
+00901 0781 34                DES                      
+00902 0782 A6 00   DEL2      LDA A   0,X              
+00903 0784 34                DES                      
+00904 0785 08                INX                      
+00905 0786 5C                INC B                    
+00906 0787 81 1E             CMP A   #$1E             
+00907 0789 26 F7             BNE     DEL2             
+00908 078B 9F 2A             STS     NEXTBA           
+00909 078D 9F 48             STS     ARRTAB           
+00910 078F DE 2C             LDX     WORKBA           
+00911 0791 F7 0799           STA B   DEL5+1           
+00912               * IN AT OBJECT TIME
+00913 0794 9C 2A   DEL4      CPX     NEXTBA           
+00914 0796 27 07             BEQ     DELEX            
+00915 0798 A6 00   DEL5      LDA A   0,X              
+00916 079A A7 00             STA A   0,X              
+00917 079C 08                INX                      
+00918 079D 20 F5             BRA     DEL4             
+00919               
+00920 079F 9E 28   DELEX     LDS     SAVESP           
+00921 07A1 39                RTS                      
+00922               
+00923 07A2 DE AC   INSERT    LDX     BUFNXT           
+00924 07A4 BD 0611           JSR     CCODE            
+00925 07A7 DF 4A   INS1      STX     KEYWD            
+00926 07A9 D6 AF             LDA B   ENDBUF+1         
+00927 07AB D0 AD             SUB B   BUFNXT+1         
+00928 07AD CB 04             ADD B   #$04             
+00929 07AF F7 07CC           STA B   OFFSET+1         
+00930 07B2 DB 2B             ADD B   NEXTBA+1         
 ASM68 6800 Assembler (c) 1988-1995 Evenson Consulting Services        Page 17
 FILE: e:\src\repos\mc6800\basics\microbas\microbas.asm      TITLE: MICRO
 
-00932 079C 08                INX                      
-00933 079D 20 F5             BRA     DEL4             
-00934               
-00935 079F 9E 28   DELEX     LDS     SAVESP           
-00936 07A1 39                RTS                      
-00937               
-00938 07A2 DE AC   INSERT    LDX     BUFNXT           
-00939 07A4 BD 0611           JSR     CCODE            
-00940 07A7 DF 4A   INS1      STX     KEYWD            
-00941 07A9 D6 AF             LDA B   ENDBUF+1         
-00942 07AB D0 AD             SUB B   BUFNXT+1         
-00943 07AD CB 04             ADD B   #$04             
-00944 07AF F7 07CC           STA B   OFFSET+1         
-00945 07B2 DB 2B             ADD B   NEXTBA+1         
-00946 07B4 86 00             LDA A   #$00             
-00947 07B6 99 2A             ADC A   NEXTBA           
-00948 07B8 91 46             CMP A   MEMEND           
-00949 07BA 22 34             BHI     OVERFL           
-00950 07BC D7 2B             STA B   NEXTBA+1         
-00951 07BE 97 2A             STA A   NEXTBA           
-00952 07C0 DE 2A             LDX     NEXTBA           
-00953 07C2 DF 48             STX     ARRTAB           
-00954 07C4 9C 2C   INS2      CPX     WORKBA           
-00955 07C6 27 07             BEQ     BUFWRT           
-00956 07C8 09                DEX                      
-00957 07C9 A6 00             LDA A   0,X              
-00958 07CB A7 00   OFFSET    STA A   0,X              
-00959 07CD 20 F5             BRA     INS2             
-00960 07CF DE 2C   BUFWRT    LDX     WORKBA           
-00961 07D1 9F 28             STS     SAVESP           
-00962 07D3 96 30             LDA A   PACKLN           
-00963 07D5 A7 00             STA A   0,X              
-00964 07D7 08                INX                      
-00965 07D8 96 31             LDA A   PACKLN+1         
-00966 07DA A7 00             STA A   0,X              
-00967 07DC 08                INX                      
-00968 07DD 96 4B             LDA A   KEYWD+1          
-00969 07DF A7 00             STA A   0,X              
-00970 07E1 08                INX                      
-00971 07E2 9E AC             LDS     BUFNXT           
-00972 07E4 34                DES                      
-00973 07E5 32      BUF3      PUL A                    
-00974 07E6 A7 00             STA A   0,X              
-00975 07E8 08                INX                      
-00976 07E9 81 1E             CMP A   #$1E             
-00977 07EB 26 F8             BNE     BUF3             
-00978 07ED 9E 28             LDS     SAVESP           
-00979 07EF 39                RTS                      
-00980               
-00981 07F0 C6 0E   OVERFL    LDA B   #14              
-00982 07F2 7E 0694           JMP     ERROR            
-00983 07F5 DE 36   BASIC     LDX     BASLIN           
-00984 07F7 9C 2A             CPX     NEXTBA           
-00985 07F9 26 03             BNE     BASIC1           
-00986 07FB 7E 0662 BASIC0    JMP     READY            
-00987 07FE 7D 0036 BASIC1    TST     BASLIN           
-00988 0801 27 F8             BEQ     BASIC0           
-00989 0803 08                INX                      
+00931 07B4 86 00             LDA A   #$00             
+00932 07B6 99 2A             ADC A   NEXTBA           
+00933 07B8 91 46             CMP A   MEMEND           
+00934 07BA 22 34             BHI     OVERFL           
+00935 07BC D7 2B             STA B   NEXTBA+1         
+00936 07BE 97 2A             STA A   NEXTBA           
+00937 07C0 DE 2A             LDX     NEXTBA           
+00938 07C2 DF 48             STX     ARRTAB           
+00939 07C4 9C 2C   INS2      CPX     WORKBA           
+00940 07C6 27 07             BEQ     BUFWRT           
+00941 07C8 09                DEX                      
+00942 07C9 A6 00             LDA A   0,X              
+00943 07CB A7 00   OFFSET    STA A   0,X              
+00944 07CD 20 F5             BRA     INS2             
+00945 07CF DE 2C   BUFWRT    LDX     WORKBA           
+00946 07D1 9F 28             STS     SAVESP           
+00947 07D3 96 30             LDA A   PACKLN           
+00948 07D5 A7 00             STA A   0,X              
+00949 07D7 08                INX                      
+00950 07D8 96 31             LDA A   PACKLN+1         
+00951 07DA A7 00             STA A   0,X              
+00952 07DC 08                INX                      
+00953 07DD 96 4B             LDA A   KEYWD+1          
+00954 07DF A7 00             STA A   0,X              
+00955 07E1 08                INX                      
+00956 07E2 9E AC             LDS     BUFNXT           
+00957 07E4 34                DES                      
+00958 07E5 32      BUF3      PUL A                    
+00959 07E6 A7 00             STA A   0,X              
+00960 07E8 08                INX                      
+00961 07E9 81 1E             CMP A   #$1E             
+00962 07EB 26 F8             BNE     BUF3             
+00963 07ED 9E 28             LDS     SAVESP           
+00964 07EF 39                RTS                      
+00965               
+00966 07F0 C6 0E   OVERFL    LDA B   #14              
+00967 07F2 7E 0694           JMP     ERROR            
+00968 07F5 DE 36   BASIC     LDX     BASLIN           
+00969 07F7 9C 2A             CPX     NEXTBA           
+00970 07F9 26 03             BNE     BASIC1           
+00971 07FB 7E 0662 BASIC0    JMP     READY            
+00972 07FE 7D 0036 BASIC1    TST     BASLIN           
+00973 0801 27 F8             BEQ     BASIC0           
+00974 0803 08                INX                      
+00975 0804 08                INX                      
+00976 0805 A6 00             LDA A   0,X              
+00977 0807 08                INX                      
+00978 0808 DF 34             STX     BASPNT           
+00979 080A CE 0152           LDX     #COMMAN          
+00980 080D DF 4A             STX     KEYWD            
+00981 080F 97 4B             STA A   KEYWD+1          
+00982 0811 CE 021B           LDX     #ASTACK          
+00983 0814 DF 51             STX     AESTK            
+00984 0816 DE 4A             LDX     KEYWD            
+00985 0818 EE 00             LDX     0,X              
+00986 081A 6E 00   BASIC2    JMP     0,X              
+00987               
+00988 081C DE 36   GOSUB     LDX     BASLIN           
 ASM68 6800 Assembler (c) 1988-1995 Evenson Consulting Services        Page 18
 FILE: e:\src\repos\mc6800\basics\microbas\microbas.asm      TITLE: MICRO
 
-00990 0804 08                INX                      
-00991 0805 A6 00             LDA A   0,X              
-00992 0807 08                INX                      
-00993 0808 DF 34             STX     BASPNT           
-00994 080A CE 0152           LDX     #COMMAN          
-00995 080D DF 4A             STX     KEYWD            
-00996 080F 97 4B             STA A   KEYWD+1          
-00997 0811 CE 021B           LDX     #ASTACK          
-00998 0814 DF 51             STX     AESTK            
-00999 0816 DE 4A             LDX     KEYWD            
-01000 0818 EE 00             LDX     0,X              
-01001 081A 6E 00   BASIC2    JMP     0,X              
-01002               
-01003 081C DE 36   GOSUB     LDX     BASLIN           
-01004 081E DF 20             STX     INDEX1           
-01005 0820 BD 0605           JSR     NXTLIN           
-01006 0823 DE 57             LDX     SBRPNT           
-01007 0825 8C 0069           CPX     #SBRSTK+16       
-01008 0828 26 05             BNE     GOSUB1           
-01009 082A C6 09             LDA B   #9               
-01010 082C 7E 0694           JMP     ERROR            
-01011 082F 96 36   GOSUB1    LDA A   BASLIN           
-01012 0831 A7 00             STA A   0,X              
-01013 0833 08                INX                      
-01014 0834 96 37             LDA A   BASLIN+1         
-01015 0836 A7 00             STA A   0,X              
-01016 0838 08                INX                      
-01017 0839 DF 57             STX     SBRPNT           
-01018 083B DE 20             LDX     INDEX1           
-01019 083D DF 36             STX     BASLIN           
-01020 083F DE 34   GOTO      LDX     BASPNT           
-01021 0841 BD 04BF           JSR     EXPR             
-01022 0844 BD 05C2           JSR     FINDN1           
-01023 0847 24 05             BCC     GOTO2            
-01024 0849 C6 07             LDA B   #7               
-01025 084B 7E 0694           JMP     ERROR            
-01026 084E DF 36   GOTO2     STX     BASLIN           
-01027 0850 20 A3             BRA     BASIC            
-01028               
-01029 0852 DE 57   RETURN    LDX     SBRPNT           
-01030 0854 8C 0059           CPX     #SBRSTK          
-01031 0857 26 05             BNE     RETUR1           
-01032 0859 C6 0A             LDA B   #10              
-01033 085B 7E 0694           JMP     ERROR            
-01034 085E 09      RETUR1    DEX                      
-01035 085F 09                DEX                      
-01036 0860 DF 57             STX     SBRPNT           
-01037 0862 EE 00             LDX     0,X              
-01038 0864 DF 36             STX     BASLIN           
-01039 0866 20 8D             BRA     BASIC            
-01040               
-01041 0868 CE 01D3 PAUSE     LDX     #PAUMSG          
-01042 086B BD 02AF           JSR     OUTNCR           
-01043 086E BD 0363           JSR     PRINSP           
-01044 0871 DE 36             LDX     BASLIN           
-01045 0873 A6 00             LDA A   0,X              
-01046 0875 08                INX                      
-01047 0876 E6 00             LDA B   0,X              
+00989 081E DF 20             STX     INDEX1           
+00990 0820 BD 0605           JSR     NXTLIN           
+00991 0823 DE 57             LDX     SBRPNT           
+00992 0825 8C 0069           CPX     #SBRSTK+16       
+00993 0828 26 05             BNE     GOSUB1           
+00994 082A C6 09             LDA B   #9               
+00995 082C 7E 0694           JMP     ERROR            
+00996 082F 96 36   GOSUB1    LDA A   BASLIN           
+00997 0831 A7 00             STA A   0,X              
+00998 0833 08                INX                      
+00999 0834 96 37             LDA A   BASLIN+1         
+01000 0836 A7 00             STA A   0,X              
+01001 0838 08                INX                      
+01002 0839 DF 57             STX     SBRPNT           
+01003 083B DE 20             LDX     INDEX1           
+01004 083D DF 36             STX     BASLIN           
+01005 083F DE 34   GOTO      LDX     BASPNT           
+01006 0841 BD 04BF           JSR     EXPR             
+01007 0844 BD 05C2           JSR     FINDN1           
+01008 0847 24 05             BCC     GOTO2            
+01009 0849 C6 07             LDA B   #7               
+01010 084B 7E 0694           JMP     ERROR            
+01011 084E DF 36   GOTO2     STX     BASLIN           
+01012 0850 20 A3             BRA     BASIC            
+01013               
+01014 0852 DE 57   RETURN    LDX     SBRPNT           
+01015 0854 8C 0059           CPX     #SBRSTK          
+01016 0857 26 05             BNE     RETUR1           
+01017 0859 C6 0A             LDA B   #10              
+01018 085B 7E 0694           JMP     ERROR            
+01019 085E 09      RETUR1    DEX                      
+01020 085F 09                DEX                      
+01021 0860 DF 57             STX     SBRPNT           
+01022 0862 EE 00             LDX     0,X              
+01023 0864 DF 36             STX     BASLIN           
+01024 0866 20 8D             BRA     BASIC            
+01025               
+01026 0868 CE 01D3 PAUSE     LDX     #PAUMSG          
+01027 086B BD 02AF           JSR     OUTNCR           
+01028 086E BD 0363           JSR     PRINSP           
+01029 0871 DE 36             LDX     BASLIN           
+01030 0873 A6 00             LDA A   0,X              
+01031 0875 08                INX                      
+01032 0876 E6 00             LDA B   0,X              
+01033 0878 08                INX                      
+01034 0879 BD 09FD           JSR     PRN0             
+01035 087C BD 0297 PAUSE1    JSR     INCH             
+01036 087F 81 0D             CMP A   #$0D             
+01037 0881 26 F9             BNE     PAUSE1           
+01038 0883 BD 02B6           JSR     CRLF             
+01039 0886 7E 0A84 PAUSE2    JMP     REMARK           
+01040 0889 96 34   INPUT     LDA A   BASPNT           
+01041 088B 26 04             BNE     INPUT0           
+01042 088D C6 0C             LDA B   #12              
+01043 088F 20 20             BRA     INPERR           
+01044 0891 BD 0241 INPUT0    JSR     KEYBD            
+01045 0894 CE 00B0           LDX     #BUFFER          
+01046 0897 DF AC             STX     BUFNXT           
 ASM68 6800 Assembler (c) 1988-1995 Evenson Consulting Services        Page 19
 FILE: e:\src\repos\mc6800\basics\microbas\microbas.asm      TITLE: MICRO
 
-01048 0878 08                INX                      
-01049 0879 BD 09FD           JSR     PRN0             
-01050 087C BD 0298 PAUSE1    JSR     INCH             
-01051 087F 81 0D             CMP A   #$0D             
-01052 0881 26 F9             BNE     PAUSE1           
-01053 0883 BD 02B6           JSR     CRLF             
-01054 0886 7E 0A84 PAUSE2    JMP     REMARK           
-01055 0889 96 34   INPUT     LDA A   BASPNT           
-01056 088B 26 04             BNE     INPUT0           
-01057 088D C6 0C             LDA B   #12              
-01058 088F 20 20             BRA     INPERR           
-01059 0891 BD 0241 INPUT0    JSR     KEYBD            
-01060 0894 CE 00B0           LDX     #BUFFER          
-01061 0897 DF AC             STX     BUFNXT           
-01062 0899 DE 34             LDX     BASPNT           
-01063 089B BD 0397 INPUT1    JSR     TSTV             
-01064 089E 25 2C             BCS     INPEX            
-01065 08A0 DF 34             STX     BASPNT           
-01066 08A2 DE AC             LDX     BUFNXT           
-01067 08A4 8D 43   INPUT2    BSR     INNUM            
-01068 08A6 24 14             BCC     INPUT4           
-01069 08A8 09                DEX                      
-01070 08A9 A6 00             LDA A   0,X              
-01071 08AB 81 1E             CMP A   #$1E             
-01072 08AD 27 05             BEQ     INPUTS           
-01073 08AF C6 02             LDA B   #2               
-01074 08B1 7E 0694 INPERR    JMP     ERROR            
-01075 08B4 BD 0241 INPUTS    JSR     KEYBD            
-01076 08B7 CE 00B0           LDX     #BUFFER          
-01077 08BA 20 E8             BRA     INPUT2           
-01078 08BC BD 02EA INPUT4    JSR     STORE            
-01079 08BF 08                INX                      
-01080 08C0 DF AC             STX     BUFNXT           
-01081 08C2 DE 34             LDX     BASPNT           
-01082 08C4 BD 05E7           JSR     SKIPSP           
-01083 08C7 08                INX                      
-01084 08C8 81 2C             CMP A   #',              
-01085 08CA 27 CF             BEQ     INPUT1           
-01086 08CC 09      INPEX     DEX                      
-01087 08CD 7F 0042           CLR     PRCNT            
-01088 08D0 81 1E             CMP A   #$1E             
-01089 08D2 27 B2             BEQ     PAUSE2           
-01090 08D4 C6 03   DBLLTR    LDA B   #3               
-01091 08D6 7E 0694           JMP     ERROR            
-01092 08D9 8D 19   TSTN      BSR     INTSTN           
-01093 08DB 25 06             BCS     TSTN0            
-01094 08DD BD 0470           JSR     PULLAE           
-01095 08E0 4D                TST A                    
-01096 08E1 2A 02             BPL     TSTN1            
-01097 08E3 0D      TSTN0     SEC                      
-01098 08E4 39                RTS                      
-01099 08E5 BD 0465 TSTN1     JSR     PUSHAE           
-01100 08E8 39                RTS                      
-01101               
-01102 08E9 BD 05E7 INNUM     JSR     SKIPSP           
-01103 08EC 97 4C             STA A   TSIGN            
-01104 08EE 08                INX                      
-01105 08EF 81 2D             CMP A   #'-              
+01047 0899 DE 34             LDX     BASPNT           
+01048 089B BD 0397 INPUT1    JSR     TSTV             
+01049 089E 25 2C             BCS     INPEX            
+01050 08A0 DF 34             STX     BASPNT           
+01051 08A2 DE AC             LDX     BUFNXT           
+01052 08A4 8D 43   INPUT2    BSR     INNUM            
+01053 08A6 24 14             BCC     INPUT4           
+01054 08A8 09                DEX                      
+01055 08A9 A6 00             LDA A   0,X              
+01056 08AB 81 1E             CMP A   #$1E             
+01057 08AD 27 05             BEQ     INPUTS           
+01058 08AF C6 02             LDA B   #2               
+01059 08B1 7E 0694 INPERR    JMP     ERROR            
+01060 08B4 BD 0241 INPUTS    JSR     KEYBD            
+01061 08B7 CE 00B0           LDX     #BUFFER          
+01062 08BA 20 E8             BRA     INPUT2           
+01063 08BC BD 02EA INPUT4    JSR     STORE            
+01064 08BF 08                INX                      
+01065 08C0 DF AC             STX     BUFNXT           
+01066 08C2 DE 34             LDX     BASPNT           
+01067 08C4 BD 05E7           JSR     SKIPSP           
+01068 08C7 08                INX                      
+01069 08C8 81 2C             CMP A   #',              
+01070 08CA 27 CF             BEQ     INPUT1           
+01071 08CC 09      INPEX     DEX                      
+01072 08CD 7F 0042           CLR     PRCNT            
+01073 08D0 81 1E             CMP A   #$1E             
+01074 08D2 27 B2             BEQ     PAUSE2           
+01075 08D4 C6 03   DBLLTR    LDA B   #3               
+01076 08D6 7E 0694           JMP     ERROR            
+01077 08D9 8D 19   TSTN      BSR     INTSTN           
+01078 08DB 25 06             BCS     TSTN0            
+01079 08DD BD 0470           JSR     PULLAE           
+01080 08E0 4D                TST A                    
+01081 08E1 2A 02             BPL     TSTN1            
+01082 08E3 0D      TSTN0     SEC                      
+01083 08E4 39                RTS                      
+01084 08E5 BD 0465 TSTN1     JSR     PUSHAE           
+01085 08E8 39                RTS                      
+01086               
+01087 08E9 BD 05E7 INNUM     JSR     SKIPSP           
+01088 08EC 97 4C             STA A   TSIGN            
+01089 08EE 08                INX                      
+01090 08EF 81 2D             CMP A   #'-              
+01091 08F1 27 04             BEQ     INNUM0           
+01092 08F3 09                DEX                      
+01093 08F4 7F 004C INTSTN    CLR     TSIGN            
+01094 08F7 BD 05E7 INNUM0    JSR     SKIPSP           
+01095 08FA BD 0457           JSR     TESTNO           
+01096 08FD 24 01             BCC     INNUM1           
+01097 08FF 39                RTS                      
+01098 0900 09      INNUM1    DEX                      
+01099 0901 4F                CLR A                    
+01100 0902 5F                CLR B                    
+01101 0903 08      INNUM2    INX                      
+01102 0904 36                PSH A                    
+01103 0905 A6 00             LDA A   0,X              
+01104 0907 BD 0457           JSR     TESTNO           
 ASM68 6800 Assembler (c) 1988-1995 Evenson Consulting Services        Page 20
 FILE: e:\src\repos\mc6800\basics\microbas\microbas.asm      TITLE: MICRO
 
-01106 08F1 27 04             BEQ     INNUM0           
-01107 08F3 09                DEX                      
-01108 08F4 7F 004C INTSTN    CLR     TSIGN            
-01109 08F7 BD 05E7 INNUM0    JSR     SKIPSP           
-01110 08FA BD 0457           JSR     TESTNO           
-01111 08FD 24 01             BCC     INNUM1           
-01112 08FF 39                RTS                      
-01113 0900 09      INNUM1    DEX                      
-01114 0901 4F                CLR A                    
-01115 0902 5F                CLR B                    
-01116 0903 08      INNUM2    INX                      
-01117 0904 36                PSH A                    
-01118 0905 A6 00             LDA A   0,X              
-01119 0907 BD 0457           JSR     TESTNO           
-01120 090A 25 26             BCS     INNEX            
-01121 090C 80 30             SUB A   #$30             
-01122 090E 97 4E             STA A   TNUMB            
-01123 0910 32                PUL A                    
-01124 0911 58                ASL B                    
-01125 0912 49                ROL A                    
-01126 0913 25 18             BCS     INNERR           
-01127 0915 D7 50             STA B   BNUMB            
-01128 0917 97 4F             STA A   ANUMB            
-01129 0919 58                ASL B                    
-01130 091A 49                ROL A                    
-01131 091B 25 10             BCS     INNERR           
-01132 091D 58                ASL B                    
-01133 091E 49                ROL A                    
-01134 091F 25 0C             BCS     INNERR           
-01135 0921 DB 50             ADD B   BNUMB            
-01136 0923 99 4F             ADC A   ANUMB            
-01137 0925 25 06             BCS     INNERR           
-01138 0927 DB 4E             ADD B   TNUMB            
-01139 0929 89 00             ADC A   #0               
-01140 092B 24 D6             BCC     INNUM2           
-01141 092D C6 02   INNERR    LDA B   #2               
-01142 092F 7E 0694           JMP     ERROR            
-01143 0932 32      INNEX     PUL A                    
-01144 0933 7D 004C           TST     TSIGN            
-01145 0936 27 03             BEQ     INNEX2           
-01146 0938 BD 059C           JSR     NEGAB            
-01147 093B BD 0465 INNEX2    JSR     PUSHAE           
-01148 093E 0C                CLC                      
-01149 093F 39                RTS                      
-01150               
-01151 0940 DE 34   PRINT     LDX     BASPNT           
-01152 0942 BD 05E7 PRINT0    JSR     SKIPSP           
-01153 0945 81 22             CMP A   #'"              
-01154 0947 26 18             BNE     PRINT4           
-01155 0949 08                INX                      
-01156 094A A6 00   PRINT1    LDA A   0,X              
-01157 094C 08                INX                      
-01158 094D 81 22             CMP A   #'"              
-01159 094F 27 5A             BEQ     PRIN88           
-01160 0951 81 1E             CMP A   #$1E             
-01161 0953 26 04             BNE     PRINT2           
-01162 0955 C6 04             LDA B   #4               
-01163 0957 20 34             BRA     PRINTE           
+01105 090A 25 26             BCS     INNEX            
+01106 090C 80 30             SUB A   #$30             
+01107 090E 97 4E             STA A   TNUMB            
+01108 0910 32                PUL A                    
+01109 0911 58                ASL B                    
+01110 0912 49                ROL A                    
+01111 0913 25 18             BCS     INNERR           
+01112 0915 D7 50             STA B   BNUMB            
+01113 0917 97 4F             STA A   ANUMB            
+01114 0919 58                ASL B                    
+01115 091A 49                ROL A                    
+01116 091B 25 10             BCS     INNERR           
+01117 091D 58                ASL B                    
+01118 091E 49                ROL A                    
+01119 091F 25 0C             BCS     INNERR           
+01120 0921 DB 50             ADD B   BNUMB            
+01121 0923 99 4F             ADC A   ANUMB            
+01122 0925 25 06             BCS     INNERR           
+01123 0927 DB 4E             ADD B   TNUMB            
+01124 0929 89 00             ADC A   #0               
+01125 092B 24 D6             BCC     INNUM2           
+01126 092D C6 02   INNERR    LDA B   #2               
+01127 092F 7E 0694           JMP     ERROR            
+01128 0932 32      INNEX     PUL A                    
+01129 0933 7D 004C           TST     TSIGN            
+01130 0936 27 03             BEQ     INNEX2           
+01131 0938 BD 059C           JSR     NEGAB            
+01132 093B BD 0465 INNEX2    JSR     PUSHAE           
+01133 093E 0C                CLC                      
+01134 093F 39                RTS                      
+01135               
+01136 0940 DE 34   PRINT     LDX     BASPNT           
+01137 0942 BD 05E7 PRINT0    JSR     SKIPSP           
+01138 0945 81 22             CMP A   #'"              
+01139 0947 26 18             BNE     PRINT4           
+01140 0949 08                INX                      
+01141 094A A6 00   PRINT1    LDA A   0,X              
+01142 094C 08                INX                      
+01143 094D 81 22             CMP A   #'"              
+01144 094F 27 5A             BEQ     PRIN88           
+01145 0951 81 1E             CMP A   #$1E             
+01146 0953 26 04             BNE     PRINT2           
+01147 0955 C6 04             LDA B   #4               
+01148 0957 20 34             BRA     PRINTE           
+01149 0959 BD 0292 PRINT2    JSR     OUTCH            
+01150 095C BD 09D2           JSR     ENLINE           
+01151 095F 20 E9             BRA     PRINT1           
+01152 0961 81 1E   PRINT4    CMP A   #$1E             
+01153 0963 26 14             BNE     PRINT6           
+01154 0965 09                DEX                      
+01155 0966 A6 00             LDA A   0,X              
+01156 0968 08                INX                      
+01157 0969 81 3B             CMP A   #';              
+01158 096B 27 06             BEQ     PRINT5           
+01159 096D BD 02B6           JSR     CRLF             
+01160 0970 7F 0042           CLR     PRCNT            
+01161 0973 08      PRINT5    INX                      
+01162 0974 DF 36             STX     BASLIN           
 ASM68 6800 Assembler (c) 1988-1995 Evenson Consulting Services        Page 21
 FILE: e:\src\repos\mc6800\basics\microbas\microbas.asm      TITLE: MICRO
 
-01164 0959 BD 0292 PRINT2    JSR     OUTCH            
-01165 095C BD 09D2           JSR     ENLINE           
-01166 095F 20 E9             BRA     PRINT1           
-01167 0961 81 1E   PRINT4    CMP A   #$1E             
-01168 0963 26 14             BNE     PRINT6           
-01169 0965 09                DEX                      
-01170 0966 A6 00             LDA A   0,X              
-01171 0968 08                INX                      
-01172 0969 81 3B             CMP A   #';              
-01173 096B 27 06             BEQ     PRINT5           
-01174 096D BD 02B6           JSR     CRLF             
-01175 0970 7F 0042           CLR     PRCNT            
-01176 0973 08      PRINT5    INX                      
-01177 0974 DF 36             STX     BASLIN           
-01178 0976 7E 07F5           JMP     BASIC            
-01179 0979 81 54   PRINT6    CMP A   #'T              
-01180 097B 26 28             BNE     PRINT8           
-01181 097D E6 01             LDA B   1,X              
-01182 097F C1 41             CMP B   #'A              
-01183 0981 26 22             BNE     PRINT8           
-01184 0983 08                INX                      
-01185 0984 08                INX                      
-01186 0985 A6 00             LDA A   0,X              
-01187 0987 81 42             CMP A   #'B              
-01188 0989 27 05             BEQ     PRINT7           
-01189 098B C6 0B             LDA B   #11              
-01190 098D 7E 0694 PRINTE    JMP     ERROR            
-01191 0990 08      PRINT7    INX                      
-01192 0991 BD 04BF           JSR     EXPR             
-01193 0994 BD 0470           JSR     PULLAE           
-01194 0997 D0 42             SUB B   PRCNT            
-01195 0999 23 10             BLS     PRIN88           
-01196 099B BD 0363 PRIN77    JSR     PRINSP           
-01197 099E 8D 32             BSR     ENLINE           
-01198 09A0 5A                DEC B                    
-01199 09A1 26 F8             BNE     PRIN77           
-01200 09A3 20 06             BRA     PRIN88           
-01201 09A5 BD 04BF PRINT8    JSR     EXPR             
-01202 09A8 BD 09E2           JSR     PRN              
-01203 09AB BD 05E7 PRIN88    JSR     SKIPSP           
-01204 09AE 81 2C             CMP A   #',              
-01205 09B0 26 10             BNE     PRIN99           
-01206 09B2 08                INX                      
-01207 09B3 96 42   PRLOOP    LDA A   PRCNT            
-01208 09B5 16                TAB                      
-01209 09B6 C4 F8             AND B   #$F8             
-01210 09B8 10                SBA                      
-01211 09B9 27 0C             BEQ     PRI999           
-01212 09BB BD 0363           JSR     PRINSP           
-01213 09BE 8D 12             BSR     ENLINE           
-01214 09C0 20 F1             BRA     PRLOOP           
-01215 09C2 81 3B   PRIN99    CMP A   #';              
-01216 09C4 26 04             BNE     PREND            
-01217 09C6 08                INX                      
-01218 09C7 7E 0942 PRI999    JMP     PRINT0           
-01219 09CA 81 1E   PREND     CMP A   #$1E             
-01220 09CC 27 93             BEQ     PRINT4           
-01221 09CE C6 06             LDA B   #6               
+01163 0976 7E 07F5           JMP     BASIC            
+01164 0979 81 54   PRINT6    CMP A   #'T              
+01165 097B 26 28             BNE     PRINT8           
+01166 097D E6 01             LDA B   1,X              
+01167 097F C1 41             CMP B   #'A              
+01168 0981 26 22             BNE     PRINT8           
+01169 0983 08                INX                      
+01170 0984 08                INX                      
+01171 0985 A6 00             LDA A   0,X              
+01172 0987 81 42             CMP A   #'B              
+01173 0989 27 05             BEQ     PRINT7           
+01174 098B C6 0B             LDA B   #11              
+01175 098D 7E 0694 PRINTE    JMP     ERROR            
+01176 0990 08      PRINT7    INX                      
+01177 0991 BD 04BF           JSR     EXPR             
+01178 0994 BD 0470           JSR     PULLAE           
+01179 0997 D0 42             SUB B   PRCNT            
+01180 0999 23 10             BLS     PRIN88           
+01181 099B BD 0363 PRIN77    JSR     PRINSP           
+01182 099E 8D 32             BSR     ENLINE           
+01183 09A0 5A                DEC B                    
+01184 09A1 26 F8             BNE     PRIN77           
+01185 09A3 20 06             BRA     PRIN88           
+01186 09A5 BD 04BF PRINT8    JSR     EXPR             
+01187 09A8 BD 09E2           JSR     PRN              
+01188 09AB BD 05E7 PRIN88    JSR     SKIPSP           
+01189 09AE 81 2C             CMP A   #',              
+01190 09B0 26 10             BNE     PRIN99           
+01191 09B2 08                INX                      
+01192 09B3 96 42   PRLOOP    LDA A   PRCNT            
+01193 09B5 16                TAB                      
+01194 09B6 C4 F8             AND B   #$F8             
+01195 09B8 10                SBA                      
+01196 09B9 27 0C             BEQ     PRI999           
+01197 09BB BD 0363           JSR     PRINSP           
+01198 09BE 8D 12             BSR     ENLINE           
+01199 09C0 20 F1             BRA     PRLOOP           
+01200 09C2 81 3B   PRIN99    CMP A   #';              
+01201 09C4 26 04             BNE     PREND            
+01202 09C6 08                INX                      
+01203 09C7 7E 0942 PRI999    JMP     PRINT0           
+01204 09CA 81 1E   PREND     CMP A   #$1E             
+01205 09CC 27 93             BEQ     PRINT4           
+01206 09CE C6 06             LDA B   #6               
+01207 09D0 20 BB             BRA     PRINTE           
+01208 09D2 36      ENLINE    PSH A                    
+01209 09D3 96 42             LDA A   PRCNT            
+01210 09D5 4C                INC A                    
+01211 09D6 91 43             CMP A   MAXLIN           
+01212 09D8 26 04             BNE     ENLEXT           
+01213 09DA BD 02B6           JSR     CRLF             
+01214 09DD 4F                CLR A                    
+01215 09DE 97 42   ENLEXT    STA A   PRCNT            
+01216 09E0 32                PUL A                    
+01217 09E1 39                RTS                      
+01218 09E2 BD 0363 PRN       JSR     PRINSP           
+01219 09E5 8D EB             BSR     ENLINE           
+01220 09E7 86 FF             LDA A   #$FF             
 ASM68 6800 Assembler (c) 1988-1995 Evenson Consulting Services        Page 22
 FILE: e:\src\repos\mc6800\basics\microbas\microbas.asm      TITLE: MICRO
 
-01222 09D0 20 BB             BRA     PRINTE           
-01223 09D2 36      ENLINE    PSH A                    
-01224 09D3 96 42             LDA A   PRCNT            
-01225 09D5 4C                INC A                    
-01226 09D6 91 43             CMP A   MAXLIN           
-01227 09D8 26 04             BNE     ENLEXT           
-01228 09DA BD 02B6           JSR     CRLF             
-01229 09DD 4F                CLR A                    
-01230 09DE 97 42   ENLEXT    STA A   PRCNT            
-01231 09E0 32                PUL A                    
-01232 09E1 39                RTS                      
-01233 09E2 BD 0363 PRN       JSR     PRINSP           
-01234 09E5 8D EB             BSR     ENLINE           
-01235 09E7 86 FF             LDA A   #$FF             
-01236 09E9 97 4C             STA A   TSIGN            
-01237 09EB BD 0470           JSR     PULLAE           
-01238 09EE 4D                TST A                    
-01239 09EF 2A 0C             BPL     PRN0             
-01240 09F1 BD 059C           JSR     NEGAB            
-01241 09F4 36                PSH A                    
-01242 09F5 86 2D             LDA A   #'-              
-01243 09F7 BD 0292           JSR     OUTCH            
-01244 09FA 8D D6             BSR     ENLINE           
-01245 09FC 32                PUL A                    
-01246 09FD BD 02CA PRN0      JSR     PUSHX            
-01247 0A00 CE 0A3A           LDX     #KIOK            
-01248 0A03 7F 004E PRN1      CLR     TNUMB            
-01249 0A06 E0 01   PRN2      SUB B   1,X              
-01250 0A08 A2 00             SBC A   0,X              
-01251 0A0A 25 05             BCS     PRN5             
-01252 0A0C 7C 004E           INC     TNUMB            
-01253 0A0F 20 F5             BRA     PRN2             
-01254 0A11 EB 01   PRN5      ADD B   1,X              
-01255 0A13 A9 00             ADC A   0,X              
-01256 0A15 36                PSH A                    
-01257 0A16 96 4E             LDA A   TNUMB            
-01258 0A18 26 0A             BNE     PRN6             
-01259 0A1A 8C 0A42           CPX     #KIOK+8          
-01260 0A1D 27 05             BEQ     PRN6             
-01261 0A1F 7D 004C           TST     TSIGN            
-01262 0A22 26 0A             BNE     PRN7             
-01263 0A24 8B 30   PRN6      ADD A   #$30             
-01264 0A26 7F 004C           CLR     TSIGN            
-01265 0A29 BD 0292           JSR     OUTCH            
-01266 0A2C 8D A4             BSR     ENLINE           
-01267 0A2E 32      PRN7      PUL A                    
-01268 0A2F 08                INX                      
-01269 0A30 08                INX                      
-01270 0A31 8C 0A44           CPX     #KIOK+10         
-01271 0A34 26 CD             BNE     PRN1             
-01272 0A36 BD 02DF           JSR     PULLX            
-01273 0A39 39                RTS                      
-01274               
-01275 0A3A    2710 KIOK      FDB     10000            
-01276 0A3C    03E8           FDB     1000             
-01277 0A3E    0064           FDB     100              
-01278 0A40    000A           FDB     10               
-01279 0A42    0001           FDB     1                
+01221 09E9 97 4C             STA A   TSIGN            
+01222 09EB BD 0470           JSR     PULLAE           
+01223 09EE 4D                TST A                    
+01224 09EF 2A 0C             BPL     PRN0             
+01225 09F1 BD 059C           JSR     NEGAB            
+01226 09F4 36                PSH A                    
+01227 09F5 86 2D             LDA A   #'-              
+01228 09F7 BD 0292           JSR     OUTCH            
+01229 09FA 8D D6             BSR     ENLINE           
+01230 09FC 32                PUL A                    
+01231 09FD BD 02CA PRN0      JSR     PUSHX            
+01232 0A00 CE 0A3A           LDX     #KIOK            
+01233 0A03 7F 004E PRN1      CLR     TNUMB            
+01234 0A06 E0 01   PRN2      SUB B   1,X              
+01235 0A08 A2 00             SBC A   0,X              
+01236 0A0A 25 05             BCS     PRN5             
+01237 0A0C 7C 004E           INC     TNUMB            
+01238 0A0F 20 F5             BRA     PRN2             
+01239 0A11 EB 01   PRN5      ADD B   1,X              
+01240 0A13 A9 00             ADC A   0,X              
+01241 0A15 36                PSH A                    
+01242 0A16 96 4E             LDA A   TNUMB            
+01243 0A18 26 0A             BNE     PRN6             
+01244 0A1A 8C 0A42           CPX     #KIOK+8          
+01245 0A1D 27 05             BEQ     PRN6             
+01246 0A1F 7D 004C           TST     TSIGN            
+01247 0A22 26 0A             BNE     PRN7             
+01248 0A24 8B 30   PRN6      ADD A   #$30             
+01249 0A26 7F 004C           CLR     TSIGN            
+01250 0A29 BD 0292           JSR     OUTCH            
+01251 0A2C 8D A4             BSR     ENLINE           
+01252 0A2E 32      PRN7      PUL A                    
+01253 0A2F 08                INX                      
+01254 0A30 08                INX                      
+01255 0A31 8C 0A44           CPX     #KIOK+10         
+01256 0A34 26 CD             BNE     PRN1             
+01257 0A36 BD 02DF           JSR     PULLX            
+01258 0A39 39                RTS                      
+01259               
+01260 0A3A    2710 KIOK      FDB     10000            
+01261 0A3C    03E8           FDB     1000             
+01262 0A3E    0064           FDB     100              
+01263 0A40    000A           FDB     10               
+01264 0A42    0001           FDB     1                
+01265               
+01266 0A44 DE 34   LET       LDX     BASPNT           
+01267 0A46 BD 0397           JSR     TSTV             
+01268 0A49 24 05             BCC     LET1             
+01269 0A4B C6 0C   LET0      LDA B   #12              
+01270 0A4D 7E 0694 LET00     JMP     ERROR            
+01271 0A50 BD 05E7 LET1      JSR     SKIPSP           
+01272 0A53 08                INX                      
+01273 0A54 81 3D             CMP A   #'=              
+01274 0A56 27 04             BEQ     LET3             
+01275 0A58 C6 06   LET2      LDA B   #6               
+01276 0A5A 20 F1             BRA     LET00            
+01277 0A5C BD 04BF LET3      JSR     EXPR             
+01278 0A5F 81 1E             CMP A   #$1E             
 ASM68 6800 Assembler (c) 1988-1995 Evenson Consulting Services        Page 23
 FILE: e:\src\repos\mc6800\basics\microbas\microbas.asm      TITLE: MICRO
 
-01280               
-01281 0A44 DE 34   LET       LDX     BASPNT           
-01282 0A46 BD 0397           JSR     TSTV             
-01283 0A49 24 05             BCC     LET1             
-01284 0A4B C6 0C   LET0      LDA B   #12              
-01285 0A4D 7E 0694 LET00     JMP     ERROR            
-01286 0A50 BD 05E7 LET1      JSR     SKIPSP           
-01287 0A53 08                INX                      
-01288 0A54 81 3D             CMP A   #'=              
-01289 0A56 27 04             BEQ     LET3             
-01290 0A58 C6 06   LET2      LDA B   #6               
-01291 0A5A 20 F1             BRA     LET00            
-01292 0A5C BD 04BF LET3      JSR     EXPR             
-01293 0A5F 81 1E             CMP A   #$1E             
-01294 0A61 26 F5             BNE     LET2             
-01295 0A63 BD 02EA           JSR     STORE            
-01296 0A66 20 1C             BRA     REMARK           
-01297 0A68 D6 49   SIZE      LDA B   ARRTAB+1         
-01298 0A6A 96 48             LDA A   ARRTAB           
-01299 0A6C D0 2F             SUB B   SOURCE+1         
-01300 0A6E 92 2E             SBC A   SOURCE           
-01301 0A70 BD 09FD           JSR     PRN0             
-01302 0A73 BD 0363           JSR     PRINSP           
-01303 0A76 D6 47             LDA B   MEMEND+1         
-01304 0A78 96 46             LDA A   MEMEND           
-01305 0A7A D0 49             SUB B   ARRTAB+1         
-01306 0A7C 92 48             SBC A   ARRTAB           
-01307 0A7E BD 09FD           JSR     PRN0             
-01308 0A81 BD 02B6           JSR     CRLF             
-01309 0A84 BD 0605 REMARK    JSR     NXTLIN           
-01310 0A87 7E 07F5           JMP     BASIC            
-01311 0A8A DE 34   DIM       LDX     BASPNT           
-01312 0A8C BD 05E7 DIM1      JSR     SKIPSP           
-01313 0A8F BD 044F           JSR     TSTLTR           
-01314 0A92 24 03             BCC     DIM111           
-01315 0A94 7E 0B2B           JMP     DIMEX            
-01316 0A97 80 40   DIM111    SUB A   #$40             
-01317 0A99 97 9A             STA A   DIMVAR+1         
-01318 0A9B 48                ASL A                    
-01319 0A9C 9B 9A             ADD A   DIMVAR+1         
-01320 0A9E 97 9A             STA A   DIMVAR+1         
-01321 0AA0 BD 02CA           JSR     PUSHX            
-01322 0AA3 DE 99             LDX     DIMVAR           
-01323 0AA5 6D 00             TST     0,X              
-01324 0AA7 26 1C             BNE     DIMERR           
-01325 0AA9 6D 01             TST     1,X              
-01326 0AAB 26 18             BNE     DIMERR           
-01327 0AAD 6D 02             TST     2,X              
-01328 0AAF 26 14             BNE     DIMERR           
-01329 0AB1 96 49             LDA A   ARRTAB+1         
-01330 0AB3 A7 01             STA A   1,X              
-01331 0AB5 96 48             LDA A   ARRTAB           
-01332 0AB7 A7 00             STA A   0,X              
-01333 0AB9 A7 02             STA A   2,X              
-01334 0ABB BD 02DF           JSR     PULLX            
-01335 0ABE BD 05ED           JSR     INXSKP           
-01336 0AC1 81 28             CMP A   #'(              
-01337 0AC3 27 05             BEQ     DIM2             
+01279 0A61 26 F5             BNE     LET2             
+01280 0A63 BD 02EA           JSR     STORE            
+01281 0A66 20 1C             BRA     REMARK           
+01282 0A68 D6 49   SIZE      LDA B   ARRTAB+1         
+01283 0A6A 96 48             LDA A   ARRTAB           
+01284 0A6C D0 2F             SUB B   SOURCE+1         
+01285 0A6E 92 2E             SBC A   SOURCE           
+01286 0A70 BD 09FD           JSR     PRN0             
+01287 0A73 BD 0363           JSR     PRINSP           
+01288 0A76 D6 47             LDA B   MEMEND+1         
+01289 0A78 96 46             LDA A   MEMEND           
+01290 0A7A D0 49             SUB B   ARRTAB+1         
+01291 0A7C 92 48             SBC A   ARRTAB           
+01292 0A7E BD 09FD           JSR     PRN0             
+01293 0A81 BD 02B6           JSR     CRLF             
+01294 0A84 BD 0605 REMARK    JSR     NXTLIN           
+01295 0A87 7E 07F5           JMP     BASIC            
+01296 0A8A DE 34   DIM       LDX     BASPNT           
+01297 0A8C BD 05E7 DIM1      JSR     SKIPSP           
+01298 0A8F BD 044F           JSR     TSTLTR           
+01299 0A92 24 03             BCC     DIM111           
+01300 0A94 7E 0B2B           JMP     DIMEX            
+01301 0A97 80 40   DIM111    SUB A   #$40             
+01302 0A99 97 9A             STA A   DIMVAR+1         
+01303 0A9B 48                ASL A                    
+01304 0A9C 9B 9A             ADD A   DIMVAR+1         
+01305 0A9E 97 9A             STA A   DIMVAR+1         
+01306 0AA0 BD 02CA           JSR     PUSHX            
+01307 0AA3 DE 99             LDX     DIMVAR           
+01308 0AA5 6D 00             TST     0,X              
+01309 0AA7 26 1C             BNE     DIMERR           
+01310 0AA9 6D 01             TST     1,X              
+01311 0AAB 26 18             BNE     DIMERR           
+01312 0AAD 6D 02             TST     2,X              
+01313 0AAF 26 14             BNE     DIMERR           
+01314 0AB1 96 49             LDA A   ARRTAB+1         
+01315 0AB3 A7 01             STA A   1,X              
+01316 0AB5 96 48             LDA A   ARRTAB           
+01317 0AB7 A7 00             STA A   0,X              
+01318 0AB9 A7 02             STA A   2,X              
+01319 0ABB BD 02DF           JSR     PULLX            
+01320 0ABE BD 05ED           JSR     INXSKP           
+01321 0AC1 81 28             CMP A   #'(              
+01322 0AC3 27 05             BEQ     DIM2             
+01323 0AC5 C6 05   DIMERR    LDA B   #5               
+01324 0AC7 7E 0694 DIMER1    JMP     ERROR            
+01325 0ACA 08      DIM2      INX                      
+01326 0ACB BD 04BF           JSR     EXPR             
+01327 0ACE BD 0463           JSR     PULPSH           
+01328 0AD1 5D                TST B                    
+01329 0AD2 27 03             BEQ     SUBERR           
+01330 0AD4 4D                TST A                    
+01331 0AD5 27 04             BEQ     DIM3             
+01332 0AD7 C6 0F   SUBERR    LDA B   #15              
+01333 0AD9 20 EC             BRA     DIMER1           
+01334 0ADB 8D 55   DIM3      BSR     STRSUB           
+01335 0ADD A6 00             LDA A   0,X              
+01336 0ADF 81 2C             CMP A   #',              
 ASM68 6800 Assembler (c) 1988-1995 Evenson Consulting Services        Page 24
 FILE: e:\src\repos\mc6800\basics\microbas\microbas.asm      TITLE: MICRO
 
-01338 0AC5 C6 05   DIMERR    LDA B   #5               
-01339 0AC7 7E 0694 DIMER1    JMP     ERROR            
-01340 0ACA 08      DIM2      INX                      
-01341 0ACB BD 04BF           JSR     EXPR             
-01342 0ACE BD 0463           JSR     PULPSH           
-01343 0AD1 5D                TST B                    
-01344 0AD2 27 03             BEQ     SUBERR           
-01345 0AD4 4D                TST A                    
-01346 0AD5 27 04             BEQ     DIM3             
-01347 0AD7 C6 0F   SUBERR    LDA B   #15              
-01348 0AD9 20 EC             BRA     DIMER1           
-01349 0ADB 8D 55   DIM3      BSR     STRSUB           
-01350 0ADD A6 00             LDA A   0,X              
-01351 0ADF 81 2C             CMP A   #',              
-01352 0AE1 26 12             BNE     DIM6             
-01353 0AE3 08                INX                      
-01354 0AE4 BD 04BF           JSR     EXPR             
-01355 0AE7 BD 0463           JSR     PULPSH           
-01356 0AEA 5D                TST B                    
-01357 0AEB 27 EA             BEQ     SUBERR           
-01358 0AED 4D                TST A                    
-01359 0AEE 26 E7             BNE     SUBERR           
-01360 0AF0 8D 40             BSR     STRSUB           
-01361 0AF2 BD 04F1           JSR     MPY              
-01362 0AF5 4F      DIM6      CLR A                    
-01363 0AF6 C6 02             LDA B   #2               
-01364 0AF8 BD 0465           JSR     PUSHAE           
-01365 0AFB BD 04F1           JSR     MPY              
-01366 0AFE A6 00             LDA A   0,X              
-01367 0B00 81 29             CMP A   #')              
-01368 0B02 26 C1             BNE     DIMERR           
-01369 0B04 08                INX                      
-01370 0B05 D6 49             LDA B   ARRTAB+1         
-01371 0B07 96 48             LDA A   ARRTAB           
-01372 0B09 BD 05A8           JSR     ADD1             
-01373 0B0C 4F                CLR A                    
-01374 0B0D C6 02             LDA B   #2               
-01375 0B0F BD 05A8           JSR     ADD1             
-01376 0B12 BD 0470           JSR     PULLAE           
-01377 0B15 91 46             CMP A   MEMEND           
-01378 0B17 23 03             BLS     DIM7             
-01379 0B19 7E 07F0           JMP     OVERFL           
-01380 0B1C 97 48   DIM7      STA A   ARRTAB           
-01381 0B1E D7 49             STA B   ARRTAB+1         
-01382 0B20 BD 05E7           JSR     SKIPSP           
-01383 0B23 81 2C             CMP A   #',              
-01384 0B25 26 04             BNE     DIMEX            
-01385 0B27 08                INX                      
-01386 0B28 7E 0A8C           JMP     DIM1             
-01387 0B2B 81 1E   DIMEX     CMP A   #$1E             
-01388 0B2D 26 96             BNE     DIMERR           
-01389 0B2F 7E 0A84           JMP     REMARK           
-01390 0B32 BD 02CA STRSUB    JSR     PUSHX            
-01391 0B35 DE 99             LDX     DIMVAR           
-01392 0B37 EE 00             LDX     0,X              
-01393 0B39 6D 00   STRSU2    TST     0,X              
-01394 0B3B 27 03             BEQ     STRSU3           
-01395 0B3D 08                INX                      
+01337 0AE1 26 12             BNE     DIM6             
+01338 0AE3 08                INX                      
+01339 0AE4 BD 04BF           JSR     EXPR             
+01340 0AE7 BD 0463           JSR     PULPSH           
+01341 0AEA 5D                TST B                    
+01342 0AEB 27 EA             BEQ     SUBERR           
+01343 0AED 4D                TST A                    
+01344 0AEE 26 E7             BNE     SUBERR           
+01345 0AF0 8D 40             BSR     STRSUB           
+01346 0AF2 BD 04F1           JSR     MPY              
+01347 0AF5 4F      DIM6      CLR A                    
+01348 0AF6 C6 02             LDA B   #2               
+01349 0AF8 BD 0465           JSR     PUSHAE           
+01350 0AFB BD 04F1           JSR     MPY              
+01351 0AFE A6 00             LDA A   0,X              
+01352 0B00 81 29             CMP A   #')              
+01353 0B02 26 C1             BNE     DIMERR           
+01354 0B04 08                INX                      
+01355 0B05 D6 49             LDA B   ARRTAB+1         
+01356 0B07 96 48             LDA A   ARRTAB           
+01357 0B09 BD 05A8           JSR     ADD1             
+01358 0B0C 4F                CLR A                    
+01359 0B0D C6 02             LDA B   #2               
+01360 0B0F BD 05A8           JSR     ADD1             
+01361 0B12 BD 0470           JSR     PULLAE           
+01362 0B15 91 46             CMP A   MEMEND           
+01363 0B17 23 03             BLS     DIM7             
+01364 0B19 7E 07F0           JMP     OVERFL           
+01365 0B1C 97 48   DIM7      STA A   ARRTAB           
+01366 0B1E D7 49             STA B   ARRTAB+1         
+01367 0B20 BD 05E7           JSR     SKIPSP           
+01368 0B23 81 2C             CMP A   #',              
+01369 0B25 26 04             BNE     DIMEX            
+01370 0B27 08                INX                      
+01371 0B28 7E 0A8C           JMP     DIM1             
+01372 0B2B 81 1E   DIMEX     CMP A   #$1E             
+01373 0B2D 26 96             BNE     DIMERR           
+01374 0B2F 7E 0A84           JMP     REMARK           
+01375 0B32 BD 02CA STRSUB    JSR     PUSHX            
+01376 0B35 DE 99             LDX     DIMVAR           
+01377 0B37 EE 00             LDX     0,X              
+01378 0B39 6D 00   STRSU2    TST     0,X              
+01379 0B3B 27 03             BEQ     STRSU3           
+01380 0B3D 08                INX                      
+01381 0B3E 20 F9             BRA     STRSU2           
+01382 0B40 E7 00   STRSU3    STA B   0,X              
+01383 0B42 BD 02DF           JSR     PULLX            
+01384 0B45 39                RTS                      
+01385               
+01386 0B46 DE 34   FOR       LDX     BASPNT           
+01387 0B48 BD 0397           JSR     TSTV             
+01388 0B4B 24 03             BCC     FOR1             
+01389 0B4D 7E 0A4B           JMP     LET0             
+01390 0B50 DF 34   FOR1      STX     BASPNT           
+01391 0B52 BD 0463           JSR     PULPSH           
+01392 0B55 DE 53             LDX     FORPNT           
+01393 0B57 8C 0099           CPX     #FORSTK+48       
+01394 0B5A 26 05             BNE     FOR11            
 ASM68 6800 Assembler (c) 1988-1995 Evenson Consulting Services        Page 25
 FILE: e:\src\repos\mc6800\basics\microbas\microbas.asm      TITLE: MICRO
 
-01396 0B3E 20 F9             BRA     STRSU2           
-01397 0B40 E7 00   STRSU3    STA B   0,X              
-01398 0B42 BD 02DF           JSR     PULLX            
-01399 0B45 39                RTS                      
-01400               
-01401 0B46 DE 34   FOR       LDX     BASPNT           
-01402 0B48 BD 0397           JSR     TSTV             
-01403 0B4B 24 03             BCC     FOR1             
-01404 0B4D 7E 0A4B           JMP     LET0             
-01405 0B50 DF 34   FOR1      STX     BASPNT           
-01406 0B52 BD 0463           JSR     PULPSH           
-01407 0B55 DE 53             LDX     FORPNT           
-01408 0B57 8C 0099           CPX     #FORSTK+48       
-01409 0B5A 26 05             BNE     FOR11            
-01410 0B5C C6 10             LDA B   #16              
-01411 0B5E 7E 0694           JMP     ERROR            
-01412 0B61 A7 00   FOR11     STA A   0,X              
-01413 0B63 08                INX                      
-01414 0B64 E7 00             STA B   0,X              
-01415 0B66 08                INX                      
-01416 0B67 DF 53             STX     FORPNT           
-01417 0B69 DE 34             LDX     BASPNT           
-01418 0B6B BD 05E7           JSR     SKIPSP           
-01419 0B6E 08                INX                      
-01420 0B6F 81 3D             CMP A   #'=              
-01421 0B71 27 03             BEQ     FOR3             
-01422 0B73 7E 0A58 FOR2      JMP     LET2             
-01423 0B76 BD 04BF FOR3      JSR     EXPR             
-01424 0B79 BD 02EA           JSR     STORE            
-01425 0B7C 08                INX                      
-01426 0B7D 81 54             CMP A   #'T              
-01427 0B7F 26 F2             BNE     FOR2             
-01428 0B81 A6 00             LDA A   0,X              
-01429 0B83 08                INX                      
-01430 0B84 81 4F             CMP A   #'O              
-01431 0B86 26 EB             BNE     FOR2             
-01432 0B88 BD 04BF           JSR     EXPR             
-01433 0B8B BD 0470           JSR     PULLAE           
-01434 0B8E DF 34             STX     BASPNT           
-01435 0B90 DE 53             LDX     FORPNT           
-01436 0B92 A7 00             STA A   0,X              
-01437 0B94 08                INX                      
-01438 0B95 E7 00             STA B   0,X              
-01439 0B97 08                INX                      
-01440 0B98 DF 53             STX     FORPNT           
-01441 0B9A DE 34             LDX     BASPNT           
-01442 0B9C A6 00             LDA A   0,X              
-01443 0B9E 81 1E             CMP A   #$1E             
-01444 0BA0 26 D1   FOR8      BNE     FOR2             
-01445 0BA2 08                INX                      
-01446 0BA3 DF 36             STX     BASLIN           
-01447 0BA5 DE 53             LDX     FORPNT           
-01448 0BA7 96 36             LDA A   BASLIN           
-01449 0BA9 A7 00             STA A   0,X              
-01450 0BAB 08                INX                      
-01451 0BAC D6 37             LDA B   BASLIN+1         
-01452 0BAE E7 00             STA B   0,X              
-01453 0BB0 08                INX                      
+01395 0B5C C6 10             LDA B   #16              
+01396 0B5E 7E 0694           JMP     ERROR            
+01397 0B61 A7 00   FOR11     STA A   0,X              
+01398 0B63 08                INX                      
+01399 0B64 E7 00             STA B   0,X              
+01400 0B66 08                INX                      
+01401 0B67 DF 53             STX     FORPNT           
+01402 0B69 DE 34             LDX     BASPNT           
+01403 0B6B BD 05E7           JSR     SKIPSP           
+01404 0B6E 08                INX                      
+01405 0B6F 81 3D             CMP A   #'=              
+01406 0B71 27 03             BEQ     FOR3             
+01407 0B73 7E 0A58 FOR2      JMP     LET2             
+01408 0B76 BD 04BF FOR3      JSR     EXPR             
+01409 0B79 BD 02EA           JSR     STORE            
+01410 0B7C 08                INX                      
+01411 0B7D 81 54             CMP A   #'T              
+01412 0B7F 26 F2             BNE     FOR2             
+01413 0B81 A6 00             LDA A   0,X              
+01414 0B83 08                INX                      
+01415 0B84 81 4F             CMP A   #'O              
+01416 0B86 26 EB             BNE     FOR2             
+01417 0B88 BD 04BF           JSR     EXPR             
+01418 0B8B BD 0470           JSR     PULLAE           
+01419 0B8E DF 34             STX     BASPNT           
+01420 0B90 DE 53             LDX     FORPNT           
+01421 0B92 A7 00             STA A   0,X              
+01422 0B94 08                INX                      
+01423 0B95 E7 00             STA B   0,X              
+01424 0B97 08                INX                      
+01425 0B98 DF 53             STX     FORPNT           
+01426 0B9A DE 34             LDX     BASPNT           
+01427 0B9C A6 00             LDA A   0,X              
+01428 0B9E 81 1E             CMP A   #$1E             
+01429 0BA0 26 D1   FOR8      BNE     FOR2             
+01430 0BA2 08                INX                      
+01431 0BA3 DF 36             STX     BASLIN           
+01432 0BA5 DE 53             LDX     FORPNT           
+01433 0BA7 96 36             LDA A   BASLIN           
+01434 0BA9 A7 00             STA A   0,X              
+01435 0BAB 08                INX                      
+01436 0BAC D6 37             LDA B   BASLIN+1         
+01437 0BAE E7 00             STA B   0,X              
+01438 0BB0 08                INX                      
+01439 0BB1 DF 53             STX     FORPNT           
+01440 0BB3 7E 07F5           JMP     BASIC            
+01441               
+01442 0BB6 DE 34   NEXT      LDX     BASPNT           
+01443 0BB8 BD 0397           JSR     TSTV             
+01444 0BBB 24 03             BCC     NEXT1            
+01445 0BBD 7E 0A4B           JMP     LET0             
+01446 0BC0 BD 05E7 NEXT1     JSR     SKIPSP           
+01447 0BC3 81 1E             CMP A   #$1E             
+01448 0BC5 26 D9             BNE     FOR8             
+01449 0BC7 08                INX                      
+01450 0BC8 DF 36             STX     BASLIN           
+01451 0BCA CE 0069           LDX     #FORSTK          
+01452 0BCD BD 0463           JSR     PULPSH           
 ASM68 6800 Assembler (c) 1988-1995 Evenson Consulting Services        Page 26
 FILE: e:\src\repos\mc6800\basics\microbas\microbas.asm      TITLE: MICRO
 
-01454 0BB1 DF 53             STX     FORPNT           
-01455 0BB3 7E 07F5           JMP     BASIC            
-01456               
-01457 0BB6 DE 34   NEXT      LDX     BASPNT           
-01458 0BB8 BD 0397           JSR     TSTV             
-01459 0BBB 24 03             BCC     NEXT1            
-01460 0BBD 7E 0A4B           JMP     LET0             
-01461 0BC0 BD 05E7 NEXT1     JSR     SKIPSP           
-01462 0BC3 81 1E             CMP A   #$1E             
-01463 0BC5 26 D9             BNE     FOR8             
-01464 0BC7 08                INX                      
-01465 0BC8 DF 36             STX     BASLIN           
-01466 0BCA CE 0069           LDX     #FORSTK          
-01467 0BCD BD 0463           JSR     PULPSH           
-01468 0BD0 9C 53   NEXT2     CPX     FORPNT           
-01469 0BD2 27 3A             BEQ     NEXT6            
-01470 0BD4 A1 00             CMP A   0,X              
-01471 0BD6 26 2E             BNE     NEXT5            
-01472 0BD8 E1 01             CMP B   1,X              
-01473 0BDA 26 2A             BNE     NEXT5            
-01474 0BDC BD 0303           JSR     IND              
-01475 0BDF BD 0463           JSR     PULPSH           
-01476 0BE2 E0 03             SUB B   3,X              
-01477 0BE4 A2 02             SBC A   2,X              
-01478 0BE6 25 05             BCS     NEXT4            
-01479 0BE8 DF 53             STX     FORPNT           
-01480 0BEA 7E 07F5 NEXT3     JMP     BASIC            
-01481 0BED BD 0470 NEXT4     JSR     PULLAE           
-01482 0BF0 CB 01             ADD B   #1               
-01483 0BF2 89 00             ADC A   #0               
-01484 0BF4 BD 02CA           JSR     PUSHX            
-01485 0BF7 EE 00             LDX     0,X              
-01486 0BF9 A7 00             STA A   0,X              
-01487 0BFB E7 01             STA B   1,X              
-01488 0BFD BD 02DF           JSR     PULLX            
-01489 0C00 EE 04             LDX     4,X              
-01490 0C02 DF 36             STX     BASLIN           
-01491 0C04 20 E4             BRA     NEXT3            
-01492 0C06 08      NEXT5     INX                      
-01493 0C07 08                INX                      
-01494 0C08 08                INX                      
-01495 0C09 08                INX                      
-01496 0C0A 08                INX                      
-01497 0C0B 08                INX                      
-01498 0C0C 20 C2             BRA     NEXT2            
-01499 0C0E C6 11   NEXT6     LDA B   #17              
-01500 0C10 7E 0694           JMP     ERROR            
-01501               
-01502 0C13 DE 34   IF        LDX     BASPNT           
-01503 0C15 BD 04BF           JSR     EXPR             
-01504 0C18 8D 17             BSR     RELOP            
-01505 0C1A 97 4D             STA A   NCMPR            
-01506 0C1C BD 04BF           JSR     EXPR             
-01507 0C1F DF 34             STX     BASPNT           
-01508 0C21 8D 4A             BSR     CMPR             
-01509 0C23 24 03             BCC     IF2              
-01510 0C25 7E 0A84           JMP     REMARK           
-01511 0C28 DE 34   IF2       LDX     BASPNT           
+01453 0BD0 9C 53   NEXT2     CPX     FORPNT           
+01454 0BD2 27 3A             BEQ     NEXT6            
+01455 0BD4 A1 00             CMP A   0,X              
+01456 0BD6 26 2E             BNE     NEXT5            
+01457 0BD8 E1 01             CMP B   1,X              
+01458 0BDA 26 2A             BNE     NEXT5            
+01459 0BDC BD 0303           JSR     IND              
+01460 0BDF BD 0463           JSR     PULPSH           
+01461 0BE2 E0 03             SUB B   3,X              
+01462 0BE4 A2 02             SBC A   2,X              
+01463 0BE6 25 05             BCS     NEXT4            
+01464 0BE8 DF 53             STX     FORPNT           
+01465 0BEA 7E 07F5 NEXT3     JMP     BASIC            
+01466 0BED BD 0470 NEXT4     JSR     PULLAE           
+01467 0BF0 CB 01             ADD B   #1               
+01468 0BF2 89 00             ADC A   #0               
+01469 0BF4 BD 02CA           JSR     PUSHX            
+01470 0BF7 EE 00             LDX     0,X              
+01471 0BF9 A7 00             STA A   0,X              
+01472 0BFB E7 01             STA B   1,X              
+01473 0BFD BD 02DF           JSR     PULLX            
+01474 0C00 EE 04             LDX     4,X              
+01475 0C02 DF 36             STX     BASLIN           
+01476 0C04 20 E4             BRA     NEXT3            
+01477 0C06 08      NEXT5     INX                      
+01478 0C07 08                INX                      
+01479 0C08 08                INX                      
+01480 0C09 08                INX                      
+01481 0C0A 08                INX                      
+01482 0C0B 08                INX                      
+01483 0C0C 20 C2             BRA     NEXT2            
+01484 0C0E C6 11   NEXT6     LDA B   #17              
+01485 0C10 7E 0694           JMP     ERROR            
+01486               
+01487 0C13 DE 34   IF        LDX     BASPNT           
+01488 0C15 BD 04BF           JSR     EXPR             
+01489 0C18 8D 17             BSR     RELOP            
+01490 0C1A 97 4D             STA A   NCMPR            
+01491 0C1C BD 04BF           JSR     EXPR             
+01492 0C1F DF 34             STX     BASPNT           
+01493 0C21 8D 4A             BSR     CMPR             
+01494 0C23 24 03             BCC     IF2              
+01495 0C25 7E 0A84           JMP     REMARK           
+01496 0C28 DE 34   IF2       LDX     BASPNT           
+01497 0C2A BD 0611           JSR     CCODE            
+01498 0C2D EE 00             LDX     0,X              
+01499 0C2F 6E 00             JMP     0,X              
+01500 0C31 BD 05E7 RELOP     JSR     SKIPSP           
+01501 0C34 08                INX                      
+01502 0C35 81 3D             CMP A   #'=              
+01503 0C37 26 03             BNE     RELOP0           
+01504 0C39 86 00             LDA A   #0               
+01505 0C3B 39                RTS                      
+01506 0C3C E6 00   RELOP0    LDA B   0,X              
+01507 0C3E 81 3C             CMP A   #'<              
+01508 0C40 26 13             BNE     RELOP4           
+01509 0C42 C1 3D             CMP B   #'=              
+01510 0C44 26 04             BNE     RELOP1           
 ASM68 6800 Assembler (c) 1988-1995 Evenson Consulting Services        Page 27
 FILE: e:\src\repos\mc6800\basics\microbas\microbas.asm      TITLE: MICRO
 
-01512 0C2A BD 0611           JSR     CCODE            
-01513 0C2D EE 00             LDX     0,X              
-01514 0C2F 6E 00             JMP     0,X              
-01515 0C31 BD 05E7 RELOP     JSR     SKIPSP           
-01516 0C34 08                INX                      
-01517 0C35 81 3D             CMP A   #'=              
-01518 0C37 26 03             BNE     RELOP0           
-01519 0C39 86 00             LDA A   #0               
-01520 0C3B 39                RTS                      
-01521 0C3C E6 00   RELOP0    LDA B   0,X              
-01522 0C3E 81 3C             CMP A   #'<              
-01523 0C40 26 13             BNE     RELOP4           
-01524 0C42 C1 3D             CMP B   #'=              
-01525 0C44 26 04             BNE     RELOP1           
-01526 0C46 08                INX                      
-01527 0C47 86 02             LDA A   #2               
-01528 0C49 39                RTS                      
-01529 0C4A C1 3E   RELOP1    CMP B   #'>              
-01530 0C4C 26 04             BNE     RELOP3           
-01531 0C4E 08      RELOP2    INX                      
-01532 0C4F 86 03             LDA A   #3               
-01533 0C51 39                RTS                      
-01534 0C52 86 01   RELOP3    LDA A   #1               
-01535 0C54 39                RTS                      
-01536 0C55 81 3E   RELOP4    CMP A   #'>              
-01537 0C57 27 05             BEQ     REL44            
-01538 0C59 C6 06             LDA B   #6               
-01539 0C5B 7E 0694           JMP     ERROR            
-01540 0C5E C1 3D   REL44     CMP B   #'=              
-01541 0C60 26 04             BNE     RELOP5           
-01542 0C62 08                INX                      
-01543 0C63 86 05             LDA A   #5               
-01544 0C65 39                RTS                      
-01545 0C66 C1 3C   RELOP5    CMP B   #'<              
-01546 0C68 27 E4             BEQ     RELOP2           
-01547 0C6A 86 04             LDA A   #4               
-01548 0C6C 39                RTS                      
-01549               
-01550 0C6D 96 4D   CMPR      LDA A   NCMPR            
-01551 0C6F 48                ASL A                    
-01552 0C70 48                ASL A                    
-01553 0C71 B7 0C7F           STA A   FUNNY+1          
-01554 0C74 CE 0C80           LDX     #CMPR1           
-01555 0C77 BD 05A3           JSR     SUB              
-01556 0C7A BD 0470           JSR     PULLAE           
-01557 0C7D 4D                TST A                    
-01558 0C7E 6E 00   FUNNY     JMP     0,X              
-01559 0C80 27 18   CMPR1     BEQ     MAYEQ            
-01560 0C82 20 12             BRA     NOCMPR           
-01561 0C84 2B 12             BMI     OKCMPR           
-01562 0C86 20 0E             BRA     NOCMPR           
-01563 0C88 2B 0E             BMI     OKCMPR           
-01564 0C8A 20 F4             BRA     CMPR1            
-01565 0C8C 26 0A             BNE     OKCMPR           
-01566 0C8E 20 0F             BRA     MYNTEQ           
-01567 0C90 27 0D             BEQ     MYNTEQ           
-01568 0C92 2B 02             BMI     NOCMPR           
-01569 0C94 2A 02             BPL     OKCMPR           
+01511 0C46 08                INX                      
+01512 0C47 86 02             LDA A   #2               
+01513 0C49 39                RTS                      
+01514 0C4A C1 3E   RELOP1    CMP B   #'>              
+01515 0C4C 26 04             BNE     RELOP3           
+01516 0C4E 08      RELOP2    INX                      
+01517 0C4F 86 03             LDA A   #3               
+01518 0C51 39                RTS                      
+01519 0C52 86 01   RELOP3    LDA A   #1               
+01520 0C54 39                RTS                      
+01521 0C55 81 3E   RELOP4    CMP A   #'>              
+01522 0C57 27 05             BEQ     REL44            
+01523 0C59 C6 06             LDA B   #6               
+01524 0C5B 7E 0694           JMP     ERROR            
+01525 0C5E C1 3D   REL44     CMP B   #'=              
+01526 0C60 26 04             BNE     RELOP5           
+01527 0C62 08                INX                      
+01528 0C63 86 05             LDA A   #5               
+01529 0C65 39                RTS                      
+01530 0C66 C1 3C   RELOP5    CMP B   #'<              
+01531 0C68 27 E4             BEQ     RELOP2           
+01532 0C6A 86 04             LDA A   #4               
+01533 0C6C 39                RTS                      
+01534               
+01535 0C6D 96 4D   CMPR      LDA A   NCMPR            
+01536 0C6F 48                ASL A                    
+01537 0C70 48                ASL A                    
+01538 0C71 B7 0C7F           STA A   FUNNY+1          
+01539 0C74 CE 0C80           LDX     #CMPR1           
+01540 0C77 BD 05A3           JSR     SUB              
+01541 0C7A BD 0470           JSR     PULLAE           
+01542 0C7D 4D                TST A                    
+01543 0C7E 6E 00   FUNNY     JMP     0,X              
+01544 0C80 27 18   CMPR1     BEQ     MAYEQ            
+01545 0C82 20 12             BRA     NOCMPR           
+01546 0C84 2B 12             BMI     OKCMPR           
+01547 0C86 20 0E             BRA     NOCMPR           
+01548 0C88 2B 0E             BMI     OKCMPR           
+01549 0C8A 20 F4             BRA     CMPR1            
+01550 0C8C 26 0A             BNE     OKCMPR           
+01551 0C8E 20 0F             BRA     MYNTEQ           
+01552 0C90 27 0D             BEQ     MYNTEQ           
+01553 0C92 2B 02             BMI     NOCMPR           
+01554 0C94 2A 02             BPL     OKCMPR           
+01555 0C96 0D      NOCMPR    SEC                      
+01556 0C97 39                RTS                      
+01557 0C98 0C      OKCMPR    CLC                      
+01558 0C99 39                RTS                      
+01559 0C9A 5D      MAYEQ     TST B                    
+01560 0C9B 27 FB             BEQ     OKCMPR           
+01561 0C9D 20 F7             BRA     NOCMPR           
+01562 0C9F 5D      MYNTEQ    TST B                    
+01563 0CA0 26 F6             BNE     OKCMPR           
+01564 0CA2 20 F2             BRA     NOCMPR           
+01565               
+01566               ***************************************
+01567               **** Replacement BREAK function for
+01568               **** Corsham Tech 6800 w/ MP-S at $8004
 ASM68 6800 Assembler (c) 1988-1995 Evenson Consulting Services        Page 28
 FILE: e:\src\repos\mc6800\basics\microbas\microbas.asm      TITLE: MICRO
 
-01570 0C96 0D      NOCMPR    SEC                      
-01571 0C97 39                RTS                      
-01572 0C98 0C      OKCMPR    CLC                      
-01573 0C99 39                RTS                      
-01574 0C9A 5D      MAYEQ     TST B                    
-01575 0C9B 27 FB             BEQ     OKCMPR           
-01576 0C9D 20 F7             BRA     NOCMPR           
-01577 0C9F 5D      MYNTEQ    TST B                    
-01578 0CA0 26 F6             BNE     OKCMPR           
-01579 0CA2 20 F2             BRA     NOCMPR           
-01580               
-01581               ***************************************
-01582               **** Replacement BREAK function for
-01583               **** Corsham Tech 6800 w/ MP-S at $8004
-01584               ****
-01585         8004 ACIACS    EQU     $8004            
-01586         8005 ACIADA    EQU     $8005            
-01587               
-01588 0CA4 7E 0CA7 BREAK     JMP     BREAK1           
-01589 0CA7 36      BREAK1    PSH A                    
-01590 0CA8 B6 8004           LDA A   ACIACS           
-01591 0CAB 47                ASR A                    ROTATE
-01592 0CAC 24 0A             BCC     BREAK2           
-01593 0CAE B6 8005           LDA A   ACIADA           
-01594 0CB1 81 03             CMPA    #$03             
-01595 0CB3 26 03             BNE     BREAK2           
-01596 0CB5 7E 0662           JMP     READY            
-01597               
-01598 0CB8 32      BREAK2    PUL A                    
-01599 0CB9 39                RTS                      
-01600               ****************************************
-01601               
-01602         0CBA END       EQU     *                
-01603         A048           ORG     $A048            
-01604 A048    0100           FDB     PROGM            
-01605         0000           END                      
+01569               ****
+01570         8004 ACIACS    EQU     $8004            
+01571         8005 ACIADA    EQU     $8005            
+01572               
+01573 0CA4 36      CBREAK1   PSH A                    
+01574 0CA5 B6 8004           LDA A   ACIACS           
+01575 0CA8 47                ASR A                    # WILL SET CARRY IF HAS DA
+01576 0CA9 24 0A             BCC     CBREAK2          
+01577 0CAB B6 8005           LDA A   ACIADA           
+01578 0CAE 81 03             CMPA    #$03             
+01579 0CB0 26 03             BNE     CBREAK2          
+01580 0CB2 7E 0662           JMP     READY            
+01581 0CB5 32      CBREAK2   PUL A                    
+01582 0CB6 39                RTS                      
+01583               ****************************************
+01584               
+01585         0CB7 END       EQU     *                
+01586         A048           ORG     $A048            
+01587 A048    0100           FDB     PROGM            
+01588         0000           END                      
 
 No errors
 
- Total bytes output = 3211
+ Total bytes output = 3208

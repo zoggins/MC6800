@@ -190,39 +190,26 @@ IEXIT   LDA A #$1E
         BSR CRLF
         RTS
 
-OUTCH   JSR BREAK       **** CJM: Calling my break function. JSR instead of BSR.
-        JMP OUTEEE      **** JSR is 3 instead of 2 bytes
-OUTEEE  EQU $E1D1       **** To keep memory locations the same padding with NOP
+OUTCH   BSR BREAK       
+        JMP OUTEEE      
+OUTEEE  EQU $E1D1      
 
 INCH    JMP INEEE
 
+
+BREAK   JMP CBREAK1     #CJM: Calling my BREAK function, was BREAK1
 ****************************************
 **** Original BREAK function for
 **** SWTPC 6800 w/ MP-C board at $8004
 ****
-*BREAK   JMP BREAK1
-*BREAK1  PSH A
-*        LDA A PIAD
-*PIAD    EQU $8004
-*        BMI BREAK2
-*        JMP READY
-*
-*BREAK2  PUL A
-*        RTS
-***************************************
-        NOP
-        NOP
-        NOP
-        NOP
-        NOP
-        NOP
-        NOP
-        NOP
-        NOP
-        NOP
-        NOP
-        NOP
-        NOP
+BREAK1  PSH A
+        LDA A PIAD
+PIAD    EQU $8004
+        BMI BREAK2
+        JMP READY
+
+BREAK2  PUL A
+       RTS
 ***************************************
 
 INEEE   EQU $E1AC
@@ -1583,16 +1570,15 @@ MYNTEQ  TST B
 ACIACS      EQU     $8004
 ACIADA      EQU     $8005
 
-BREAK       JMP     BREAK1
-BREAK1      PSH A
+CBREAK1     PSH A
             LDA A   ACIACS
-            ASR A               # WILL SET CARRY IF HAS DATA
-            BCC     BREAK2
+            ASR A           # WILL SET CARRY IF HAS DATA
+            BCC     CBREAK2
             LDA A   ACIADA
             CMPA    #$03
-            BNE     BREAK2
+            BNE     CBREAK2
             JMP     READY
-BREAK2      PUL A
+CBREAK2     PUL A
             RTS
 ****************************************
 
