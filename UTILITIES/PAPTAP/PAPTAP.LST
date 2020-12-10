@@ -1,0 +1,105 @@
+ASM68 6800 Assembler (c) 1988-1995 Evenson Consulting Services        Page 1
+FILE: e:\src\repos\mc6800\utilities\paptap\paptap.asm      TITLE: MICRO
+
+00011         1F00           ORG     $1F00            
+00013         8018 PIABFA    EQU     $8018            PIA IN SLOT 6
+00014               
+00015 1F00         CHKSUM    RMB     1                RUNNING CHECKSUM
+00016 1F01         NUMBYT    RMB     1                BYTES LEFT TO READ
+00017 1F02         TMPADDR1  RMB     1                TEMP ADDRESS POINTER
+00018 1F03         TMPADDR2  RMB     1                
+00019               
+00020 1F04 8D 2D   ENTER     BSR     PIASUP           INIT PIA
+00021 1F06 8D 43   START     BSR     PIADAT           GET 1ST BYTE
+00022 1F08 81 53             CMP A   #'S              IS IT AN S?
+00023 1F0A 26 FA             BNE     START            IF NOT, START OVER
+00024 1F0C 8D 3D             BSR     PIADAT           GET 2ND BYTE
+00025 1F0E 81 31             CMP A   #$31             IS IT A 1?
+00026 1F10 26 F4             BNE     START            IF NOT, START OVER
+00027 1F12 7F 1F00           CLR     CHKSUM           
+00028 1F15 8D 4E             BSR     GETBYTE          GET THE BYTE COUNT
+00029 1F17 80 02             SUB A   #2               
+00030 1F19 B7 1F01           STA A   NUMBYT           
+00031 1F1C 8D 59             BSR     GETADDR          GET ADDRESS AND LOAD X
+00032               
+00033 1F1E 8D 45   LOOP      BSR     GETBYTE          READ THE BYTES
+00034 1F20 7A 1F01           DEC     NUMBYT           
+00035 1F23 27 05             BEQ     CHKCHK           LAST BYTE IS CHECKSUM
+00036 1F25 A7 00             STA A   0,X              
+00037 1F27 08                INX                      
+00038 1F28 20 F4             BRA     LOOP             
+00039               
+00040 1F2A 73 1F00 CHKCHK    COM     CHKSUM           CHECK THE CHECKSUM
+00041 1F2D B1 1F00           CMP A   CHKSUM           
+00042 1F30 27 D4             BEQ     START            GO TO NEXT LINE
+00043 1F32 3F                SWI                      FAILED CHECK SUM, SO INTER
+00044               
+00045               *********** PIASUP - PIA SETUP ROUTINE
+00046 1F33 FE 8018 PIASUP    LDX     PIABFA           
+00047 1F36 86 32             LDA A   #$32             KNOCK DOWN C2(RESET C1)
+00048 1F38 A7 03             STA A   3,X              SET CRB
+00049 1F3A 4F                CLR A                    
+00050 1F3B A7 01             STA A   1,X              RESET CRA
+00051 1F3D A7 02             STA A   2,X              SET DDRB = ALL INPUTS
+00052 1F3F 43                COM A                    
+00053 1F40 A7 00             STA A   0,X              SET DDRA = ALL OUTPUTS
+00054 1F42 86 3E             LDA A   #$3E             C1 SET ON A 0 TO 1, C2=1
+00055 1F44 A7 03             STA A   3,X              SET CRB
+00056 1F46 86 04             LDA A   #$04             DUMMY FOR CRA
+00057 1F48 A7 01             STA A   1,X              SET CRA
+00058 1F4A 39                RTS                      AND LEAVE...
+00059               
+00060               *********** PIADAT - GET DATA FROM PIA
+00061 1F4B FE 8018 PIADAT    LDX     PIABFA           
+00062 1F4E A6 00             LDA A   0,X              READ ADR AND
+00063 1F50 A6 02             LDA A   2,X              BDR TO CLEAR CR FLAGS
+00064 1F52 86 3E             LDA A   #$3E             C1 SET ON A 0 TO 1, C2=1
+00065 1F54 A7 03             STA A   3,X              SET CRB
+00066 1F56 A6 03   DATLOP    LDA A   3,X              GET C1 FLAG(BIT 7)
+00067 1F58 2B 02             BMI     GETDAT           DATA PRESENT?
+00068 1F5A 20 FA             BRA     DATLOP           NOT YET. KEEP TRYING.
+00069 1F5C A6 02   GETDAT    LDA A   2,X              YES. GET THE DATA
+ASM68 6800 Assembler (c) 1988-1995 Evenson Consulting Services        Page 2
+FILE: e:\src\repos\mc6800\utilities\paptap\paptap.asm      TITLE: MICRO
+
+00070 1F5E 36                PSH A                    AND SAVE IT.
+00071 1F5F 86 36             LDA A   #$36             KNOCK DOWN C2(RESET C1)
+00072 1F61 A7 03             STA A   3,X              SET CRB
+00073 1F63 32                PUL A                    PUT DATA BACK IN REGISTER
+00074 1F64 39                RTS                      AND LEAVE...
+00075               
+00076               *********** GETBYTE - READ ASCII HEX BYTE (2 digits)
+00077 1F65 8D 1E   GETBYTE   BSR     A2H              GET FIRST CHARACTER TO HEX
+00078 1F67 48                ASL A                    MOVE IT UP 4 BITS
+00079 1F68 48                ASL A                    
+00080 1F69 48                ASL A                    
+00081 1F6A 48                ASL A                    
+00082 1F6B 16                TAB                      
+00083 1F6C 8D 17             BSR     A2H              GET SECOND CHARACTER TO HE
+00084 1F6E 1B                ABA                      ADD THEM TOGETHER
+00085 1F6F 16                TAB                      
+00086 1F70 FB 1F00           ADD B   CHKSUM           ADD TO CHECKSUM
+00087 1F73 F7 1F00           STA B   CHKSUM           
+00088 1F76 39                RTS                      
+00089               
+00090               *********** GETADDR - READ ADDRESS AND LOAD X
+00091 1F77 8D EC   GETADDR   BSR     GETBYTE          
+00092 1F79 B7 1F02           STA A   TMPADDR1         
+00093 1F7C 8D E7             BSR     GETBYTE          
+00094 1F7E B7 1F03           STA A   TMPADDR2         
+00095 1F81 FE 1F02           LDX     TMPADDR1         
+00096 1F84 39                RTS                      
+00097               
+00098               *********** A2H - READ SINGLE ASCII BYTE AND CONVERT TO HEX
+00099 1F85 8D C4   A2H       BSR     PIADAT           
+00100 1F87 80 30             SUB A   #$30             
+00101 1F89 81 09             CMP A   #09              
+00102 1F8B 2F 02             BLE     RT               
+00103 1F8D 80 07             SUB A   #7               
+00104 1F8F 39      RT        RTS                      
+00105               
+00106         0000           END                      
+
+No errors
+
+ Total bytes output = 144
