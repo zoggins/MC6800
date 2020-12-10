@@ -1,0 +1,61 @@
+ASM68 6800 Assembler (c) 1988-1995 Evenson Consulting Services        Page 1
+FILE: c:\src\repos\zoggins\mc6800\utilities\terminal\terminal.asm
+
+00001               ***********************************************
+00002               *    RS-232 COMMUNICATIONS ROUTINE FOR THE    *
+00003               *           SWTP  6800  COMPUTER              *
+00004               *                                             *
+00005               ***********************************************
+00006               
+00007               * DEFINITIONS:
+00008               
+00009         8004 P1CR      EQU     $8004            PORT 1 CONTROL AND STATUS 
+00010         8005 P1DR      EQU     $8005            PORT 1 DATA REGISTER
+00011         0055 P1SET     EQU     $55              PORT 1 SET TO 8N1
+00012         8008 P2CR      EQU     $8008            PORT 2 CONTROL AND STATUS 
+00013         8009 P2DR      EQU     $8009            PORT 2 DATA REGISTER
+00014         0055 P2SET     EQU     $55              PORT 2 SET TO 8N1
+00015               
+00016         E2C2 DELAY     EQU     $E2C2            
+00017               
+00018               * PROGRAM:
+00019               
+00020         0100           ORG     $100             
+00021               
+00022 0100 C6 03   INIT      LDA B   #3               TO RESET ACIA'S
+00023 0102 CE 8004           LDX     #P1CR            SET INDEX TO PORT 1
+00024 0105 E7 00             STA B   0,X              RESET PORT 1
+00025 0107 E7 04             STA B   P2CR-P1CR,X      RESET PORT 2
+00026 0109 86 55             LDA A   #P1SET           TO CONFIGURE ACIA'S TO 8B+
+00027 010B A7 00             STA A   0,X              CONFIGURE PORT 1
+00028 010D A7 04             STA A   P2CR-P1CR,X      CONFIGURE PORT 2
+00029 010F 86 01   R1        LDA A   #1               PREPARE TO CHECK PORT 1 FO
+00030 0111 A4 00             AND A   0,X              ANY DATA FROM PORT 1?
+00031 0113 27 10             BEQ     R2               IF NOT, CHECK PORT 2
+00032 0115 A6 01             LDA A   1,X              IF SO, LOAD DATA IN ACC A
+00033 0117 81 1F             CMP A   #$1F             IS IT THE BREAK (^_) CHARA
+00034 0119 27 1C             BEQ     BRK              IF SO, GO BREAK PORT 2
+00035 011B C6 02   T2        LDA B   #2               IF NOT, PREPARE TO TRANSMI
+00036 011D E4 04             AND B   P2CR-P1CR,X      IS PORT 2 READY TO SEND?
+00037 011F 27 FA             BEQ     T2               IF NOT, CHECK AGAIN
+00038 0121 A7 05             STA A   P2DR-P1CR,X      IF SO, SEND DATA OUT PORT 
+00039 0123 20 EA             BRA     R1               AND GO CHECK PORT 1 FOR MO
+00040 0125 86 01   R2        LDA A   #1               PREPARE TO CHECK PORT 2 FO
+00041 0127 A4 04             AND A   P2CR-P1CR,X      ANY DATA FROM PORT 2?
+00042 0129 27 E4             BEQ     R1               IF NOT, CHECK PORT 1
+00043 012B A6 05             LDA A   P2DR-P1CR,X      IF SO, LOAD DATA IN ACC A
+00044 012D C6 02   T1        LDA B   #2               PREPARE TO TRANSMIT
+00045 012F E4 00             AND B   0,X              IS PORT 1 READY TO TRANSMI
+00046 0131 27 FA             BEQ     T1               IF NOT, CHECK AGAIN
+00047 0133 A7 01             STA A   1,X              IF SO, SEND DATA OUT PORT 
+00048 0135 20 EE             BRA     R2               AND GO CHECK PORT 2 FOR MO
+00049 0137 86 61   BRK       LDA A   #$61             PREPARE TO BREAK PORT 2
+00050 0139 A7 04             STA A   P2CR-P1CR,X      BREAK PORT 2
+00051 013B BD E2C2           JSR     DELAY            WAIT A BIT . . .
+00052 013E 20 C0             BRA     INIT             AND START OVER
+00053               
+00054         0000           END                      
+
+No errors
+
+ Total bytes output = 64
