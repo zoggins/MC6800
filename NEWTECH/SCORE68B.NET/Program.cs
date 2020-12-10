@@ -43,7 +43,7 @@ namespace Score68B.Net
                 Console.WriteLine(string.Format("{0:X2}", (byte)(~checksum)));
             }
 
-            Console.WriteLine("S9");
+            Console.WriteLine("S9030000FC");
         }
 
         static void Main(string[] args)
