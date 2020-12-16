@@ -9,8 +9,8 @@
 *
 ******************************
 		ORG		$0100
-PIABFA	EQU		$8018		# PIA IN SLOT 6
-PIACRA	EQU		$8019
+PIABFA	EQU		$801C		# PIA IN SLOT 7
+PIACRA	EQU		$801D
 PIAINIT	LDA A	PIACRA
 		AND A	#%11111011	# Enable DDR access
 		STA A	PIACRA

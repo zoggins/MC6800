@@ -12,17 +12,17 @@ FILE: c:\src\repos\zoggins\mc6800\piademo\piademo.asm
 00009               *
 00010               ******************************
 00011         0100           ORG     $0100            
-00012         8018 PIABFA    EQU     $8018            # PIA IN SLOT 6
-00013         8019 PIACRA    EQU     $8019            
-00014 0100 B6 8019 PIAINIT   LDA A   PIACRA           
+00012         801C PIABFA    EQU     $801C            # PIA IN SLOT 6
+00013         801D PIACRA    EQU     $801D            
+00014 0100 B6 801D PIAINIT   LDA A   PIACRA           
 00015 0103 84 FB             AND A   #%11111011       # Enable DDR access
-00016 0105 B7 8019           STA A   PIACRA           
+00016 0105 B7 801D           STA A   PIACRA           
 00017 0108 86 01             LDA A   #%00000001       # PA7-1 Input, PA0 Output
-00018 010A B7 8018           STA A   PIABFA           
+00018 010A B7 801C           STA A   PIABFA           
 00019 010D 8A 04             ORA A   #%00000100       # Disable DDR access
-00020 010F B7 8019           STA A   PIACRA           
-00021 0112 7C 8018 START     INC     PIABFA           
-00022 0115 F6 8018           LDA B   PIABFA           
+00020 010F B7 801D           STA A   PIACRA           
+00021 0112 7C 801C START     INC     PIABFA           
+00022 0115 F6 801C           LDA B   PIABFA           
 00023 0118 53                COM B                    
 00024 0119 54                LSR B                    
 00025 011A 5A      DELAY     DEC B                    
