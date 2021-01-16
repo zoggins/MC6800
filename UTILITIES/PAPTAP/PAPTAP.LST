@@ -93,40 +93,41 @@ FILE: e:\src\repos\mc6800\utilities\paptap\paptap.asm
 00098 1F60 A7 00             STA A   0,X              
 00099 1F62 32                PUL A                    
 00100 1F63 39                RTS                      
-00101               *********** GETBYTE - READ ASCII HEX BYTE (2 digits)
-00102 1F64 8D 1E   GETBYTE   BSR     A2H              GET FIRST CHARACTER TO HEX
-00103 1F66 48                ASL A                    MOVE IT UP 4 BITS
-00104 1F67 48                ASL A                    
-00105 1F68 48                ASL A                    
-00106 1F69 48                ASL A                    
-00107 1F6A 16                TAB                      
-00108 1F6B 8D 17             BSR     A2H              GET SECOND CHARACTER TO HE
-00109 1F6D 1B                ABA                      ADD THEM TOGETHER
-00110 1F6E 16                TAB                      
-00111 1F6F FB 1F00           ADD B   CHKSUM           ADD TO CHECKSUM
-00112 1F72 F7 1F00           STA B   CHKSUM           
-00113 1F75 39                RTS                      
-00114               
-00115               *********** GETADDR - READ ADDRESS AND LOAD X
-00116 1F76 8D EC   GETADDR   BSR     GETBYTE          
-00117 1F78 B7 1F02           STA A   TMPADDR1         
-00118 1F7B 8D E7             BSR     GETBYTE          
-00119 1F7D B7 1F03           STA A   TMPADDR2         
-00120 1F80 FE 1F02           LDX     TMPADDR1         
-00121 1F83 39                RTS                      
-00122               
-00123               *********** A2H - READ SINGLE ASCII BYTE AND CONVERT TO HEX
-00124 1F84 8D C3   A2H       BSR     PIADAT           
-00125 1F86 80 30             SUB A   #$30             
-00126 1F88 81 09             CMP A   #09              
-00127 1F8A 2F 02             BLE     RT               
+00101               
+00102               *********** GETBYTE - READ ASCII HEX BYTE (2 digits)
+00103 1F64 8D 1E   GETBYTE   BSR     A2H              GET FIRST CHARACTER TO HEX
+00104 1F66 48                ASL A                    MOVE IT UP 4 BITS
+00105 1F67 48                ASL A                    
+00106 1F68 48                ASL A                    
+00107 1F69 48                ASL A                    
+00108 1F6A 16                TAB                      
+00109 1F6B 8D 17             BSR     A2H              GET SECOND CHARACTER TO HE
+00110 1F6D 1B                ABA                      ADD THEM TOGETHER
+00111 1F6E 16                TAB                      
+00112 1F6F FB 1F00           ADD B   CHKSUM           ADD TO CHECKSUM
+00113 1F72 F7 1F00           STA B   CHKSUM           
+00114 1F75 39                RTS                      
+00115               
+00116               *********** GETADDR - READ ADDRESS AND LOAD X
+00117 1F76 8D EC   GETADDR   BSR     GETBYTE          
+00118 1F78 B7 1F02           STA A   TMPADDR1         
+00119 1F7B 8D E7             BSR     GETBYTE          
+00120 1F7D B7 1F03           STA A   TMPADDR2         
+00121 1F80 FE 1F02           LDX     TMPADDR1         
+00122 1F83 39                RTS                      
+00123               
+00124               *********** A2H - READ SINGLE ASCII BYTE AND CONVERT TO HEX
+00125 1F84 8D C3   A2H       BSR     PIADAT           
+00126 1F86 80 30             SUB A   #$30             
+00127 1F88 81 09             CMP A   #09              
 ASM68 6800 Assembler (c) 1988-1995 Evenson Consulting Services        Page 3
 FILE: e:\src\repos\mc6800\utilities\paptap\paptap.asm
 
-00128 1F8C 80 07             SUB A   #7               
-00129 1F8E 39      RT        RTS                      
-00130               
-00131         0000           END                      
+00128 1F8A 2F 02             BLE     RT               
+00129 1F8C 80 07             SUB A   #7               
+00130 1F8E 39      RT        RTS                      
+00131               
+00132         0000           END                      
 
 No errors
 
