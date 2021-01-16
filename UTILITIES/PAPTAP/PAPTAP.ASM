@@ -43,35 +43,61 @@ CHKCHK      COM     CHKSUM      CHECK THE CHECKSUM
             SWI                 FAILED CHECK SUM, SO INTERRUPT
 
 *********** PIASUP - PIA SETUP ROUTINE
-PIASUP      LDX     PIABFA
-            LDA A   #$32        KNOCK DOWN C2(RESET C1)
-            STA A   3,X         SET CRB
-            CLR A
-            STA A   1,X         RESET CRA
+;PIASUP      LDX     #PIABFA
+;            LDA A   #$32        KNOCK DOWN C2(RESET C1)
+;            STA A   3,X         SET CRB
+;            CLR A
+;            STA A   1,X         RESET CRA
+;            STA A   2,X         SET DDRB = ALL INPUTS
+;            COM A
+;            STA A   0,X         SET DDRA = ALL OUTPUTS
+;            LDA A   #$3E        C1 SET ON A 0 TO 1, C2=1
+;            STA A   3,X         SET CRB
+;            LDA A   #$04        DUMMY FOR CRA
+;            STA A   1,X         SET CRA
+;            RTS                 AND LEAVE...
+PIASUP      LDX     #PIABFA
+            LDA A   #$00        CHANGE TO DIRECTION REGISTER  
+            STA A   3,X         ON PORT B
+            STA A   1,X         ON PORT A
             STA A   2,X         SET DDRB = ALL INPUTS
-            COM A
-            STA A   0,X         SET DDRA = ALL OUTPUTS
-            LDA A   #$3E        C1 SET ON A 0 TO 1, C2=1
-            STA A   3,X         SET CRB
-            LDA A   #$04        DUMMY FOR CRA
-            STA A   1,X         SET CRA
-            RTS                 AND LEAVE...
+            LDA A   #$02        SET DDRA = 0 - INPUT, 1 - OUTPUT
+            STA A   0,X 
+            LDA A   #$04        CHANGE TO DATA REGISTER
+            STA A   1,X         ON PORT A
+            STA A   3,X         ON PORT B
+            RTS
 
 *********** PIADAT - GET DATA FROM PIA
-PIADAT      LDX     PIABFA
-            LDA A   0,X         READ ADR AND
-            LDA A   2,X         BDR TO CLEAR CR FLAGS
-            LDA A   #$3E        C1 SET ON A 0 TO 1, C2=1
-            STA A   3,X         SET CRB
-DATLOP      LDA A   3,X         GET C1 FLAG(BIT 7)
-            BMI     GETDAT      DATA PRESENT?
-            BRA     DATLOP      NOT YET. KEEP TRYING.
-GETDAT      LDA A   2,X         YES. GET THE DATA
-            PSH A               AND SAVE IT.
-            LDA A   #$36        KNOCK DOWN C2(RESET C1)
-            STA A   3,X         SET CRB
-            PUL A               PUT DATA BACK IN REGISTER
-            RTS                 AND LEAVE...
+;PIADAT      LDX     #PIABFA
+;            LDA A   0,X         READ ADR AND
+;            LDA A   2,X         BDR TO CLEAR CR FLAGS
+;            LDA A   #$3E        C1 SET ON A 0 TO 1, C2=1
+;            STA A   3,X         SET CRB
+;DATLOP      LDA A   3,X         GET C1 FLAG(BIT 7)
+;            BMI     GETDAT      DATA PRESENT?
+;            BRA     DATLOP      NOT YET. KEEP TRYING.
+;GETDAT      LDA A   2,X         YES. GET THE DATA
+;            PSH A               AND SAVE IT.
+;            LDA A   #$36        KNOCK DOWN C2(RESET C1)
+;            STA A   3,X         SET CRB
+;            PUL A               PUT DATA BACK IN REGISTER
+;            RTS                 AND LEAVE...
+
+PIADAT      LDX     #PIABFA
+            LDA A   #$02        SET ACK
+            STA A   0,X
+DATLOP      LDA A   0,X         GET RDY
+            AND A   #$02
+            BNE     GETDAT
+            BRA     DATLOP
+GETDAT      LDA A   2,X
+            JSR     $E1D1
+            PSH     A
+            LDA A   #$00
+            STA A   0,X
+            PUL A
+            RTS
 
 *********** GETBYTE - READ ASCII HEX BYTE (2 digits)
 GETBYTE     BSR     A2H         GET FIRST CHARACTER TO HEX
