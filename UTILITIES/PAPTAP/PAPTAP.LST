@@ -1,134 +1,102 @@
 ASM68 6800 Assembler (c) 1988-1995 Evenson Consulting Services        Page 1
-FILE: e:\src\repos\mc6800\utilities\paptap\paptap.asm
+FILE: c:\src\repos\zoggins\mc6800\utilities\paptap\paptap.asm
 
-00011         1F00           ORG     $1F00            
-00013         8018 PIABFA    EQU     $8018            PIA IN SLOT 6
-00014               
-00015 1F00         CHKSUM    RMB     1                RUNNING CHECKSUM
-00016 1F01         NUMBYT    RMB     1                BYTES LEFT TO READ
-00017 1F02         TMPADDR1  RMB     1                TEMP ADDRESS POINTER
-00018 1F03         TMPADDR2  RMB     1                
-00019               
-00020 1F04 8D 2D   ENTER     BSR     PIASUP           INIT PIA
-00021 1F06 8D 41   START     BSR     PIADAT           GET 1ST BYTE
-00022 1F08 81 53             CMP A   #'S              IS IT AN S?
-00023 1F0A 26 FA             BNE     START            IF NOT, START OVER
-00024 1F0C 8D 3B             BSR     PIADAT           GET 2ND BYTE
-00025 1F0E 81 31             CMP A   #$31             IS IT A 1?
-00026 1F10 26 F4             BNE     START            IF NOT, START OVER
-00027 1F12 7F 1F00           CLR     CHKSUM           
-00028 1F15 8D 4D             BSR     GETBYTE          GET THE BYTE COUNT
-00029 1F17 80 02             SUB A   #2               
-00030 1F19 B7 1F01           STA A   NUMBYT           
-00031 1F1C 8D 58             BSR     GETADDR          GET ADDRESS AND LOAD X
-00032               
-00033 1F1E 8D 44   LOOP      BSR     GETBYTE          READ THE BYTES
-00034 1F20 7A 1F01           DEC     NUMBYT           
-00035 1F23 27 05             BEQ     CHKCHK           LAST BYTE IS CHECKSUM
-00036 1F25 A7 00             STA A   0,X              
-00037 1F27 08                INX                      
-00038 1F28 20 F4             BRA     LOOP             
-00039               
-00040 1F2A 73 1F00 CHKCHK    COM     CHKSUM           CHECK THE CHECKSUM
-00041 1F2D B1 1F00           CMP A   CHKSUM           
-00042 1F30 27 D4             BEQ     START            GO TO NEXT LINE
-00043 1F32 3F                SWI                      FAILED CHECK SUM, SO INTER
-00044               
-00045               *********** PIASUP - PIA SETUP ROUTINE
-00046               ;PIASUP      LDX     #PIABFA
-00047               ;            LDA A   #$32        KNOCK DOWN C2(RESET C1)
-00048               ;            STA A   3,X         SET CRB
-00049               ;            CLR A
-00050               ;            STA A   1,X         RESET CRA
-00051               ;            STA A   2,X         SET DDRB = ALL INPUTS
-00052               ;            COM A
-00053               ;            STA A   0,X         SET DDRA = ALL OUTPUTS
-00054               ;            LDA A   #$3E        C1 SET ON A 0 TO 1, C2=1
-00055               ;            STA A   3,X         SET CRB
-00056               ;            LDA A   #$04        DUMMY FOR CRA
-00057               ;            STA A   1,X         SET CRA
-00058               ;            RTS                 AND LEAVE...
-00059 1F33 CE 8018 PIASUP    LDX     #PIABFA          
-00060 1F36 86 00             LDA A   #$00             CHANGE TO DIRECTION REGIST
-00061 1F38 A7 03             STA A   3,X              ON PORT B
-00062 1F3A A7 01             STA A   1,X              ON PORT A
-00063 1F3C A7 02             STA A   2,X              SET DDRB = ALL INPUTS
-00064 1F3E 86 02             LDA A   #$02             SET DDRA = 0 - INPUT, 1 - 
-00065 1F40 A7 00             STA A   0,X              
-00066 1F42 86 04             LDA A   #$04             CHANGE TO DATA REGISTER
-00067 1F44 A7 01             STA A   1,X              ON PORT A
-00068 1F46 A7 03             STA A   3,X              ON PORT B
-00069 1F48 39                RTS                      
+00011         9000           ORG     $9000            
+00013         801E PIABDR    EQU     $801E            PIA IN SLOT 7, DATA REGIST
+00014         801F PIABCR    EQU     $801F            PIA IN SLOT 7, CONTROL REG
+00015         E1D1 OUTCH     EQU     $E1D1            
+00016               
+00017 9000 8D 2F   ENTER     BSR     PIASUP           INIT PIA
+00018 9002 8D 3C   START     BSR     PIADAT           GET 1ST BYTE
+00019 9004 81 53             CMP A   #'S              IS IT AN S?
+00020 9006 26 FA             BNE     START            IF NOT, START OVER
+00021 9008 8D 36             BSR     PIADAT           GET 2ND BYTE
+00022 900A 81 31             CMP A   #$31             IS IT A 1?
+00023 900C 26 F4             BNE     START            IF NOT, START OVER
+00024 900E 7F 908A           CLR     CHKSUM           
+00025 9011 8D 47             BSR     GETBYTE          GET THE BYTE COUNT
+00026 9013 80 02             SUB A   #2               
+00027 9015 B7 9087           STA A   NUMBYT           
+00028 9018 8D 54             BSR     GETADDR          GET ADDRESS AND LOAD X
+00029               
+00030 901A 8D 3E   LOOP      BSR     GETBYTE          READ THE BYTES
+00031 901C 7A 9087           DEC     NUMBYT           
+00032 901F 27 05             BEQ     CHKCHK           LAST BYTE IS CHECKSUM
+00033 9021 A7 00             STA A   0,X              
+00034 9023 08                INX                      
+00035 9024 20 F4             BRA     LOOP             
+00036               
+00037 9026 7C 908A CHKCHK    INC     CHKSUM           CHECK THE CHECKSUM      
+00038 9029 27 D7             BEQ     START            GO TO NEXT LINE
+00039 902B 86 21             LDA A   #'!              
+00040 902D BD E1D1           JSR     OUTCH            
+00041 9030 3F                SWI                      FAILED CHECK SUM, SO INTER
+00042               
+00043               *********** PIASUP - PIA SETUP ROUTINE
+00044 9031 86 32   PIASUP    LDA A   #$32             C1 SET ON RISING EDGE OF R
+00045 9033 B7 801F           STA A   PIABCR           SET CRB
+00046 9036 4F                CLR A                    
+00047 9037 B7 801E           STA A   PIABDR           SET DDRB = ALL INPUTS
+00048 903A 86 3E             LDA A   #$3E             RAISE ACK ON C2 (RESET RDY
+00049 903C B7 801F           STA A   PIABCR           SET CRB
+00050 903F 39                RTS                      AND LEAVE...
+00051               
+00052               *********** PIADAT - GET DATA FROM PIA
+00053 9040 86 36   PIADAT    LDA A   #$36             C1 SET ON RISING EDGE OF R
+00054 9042 B7 801F           STA A   PIABCR           SET CRB
+00055 9045 B6 801F DATLOP    LDA A   PIABCR           GET RDY ON C1 
+00056 9048 2B 02             BMI     GETDAT           DATA PRESENT? (BIT 7 == 1)
+00057 904A 20 F9             BRA     DATLOP           NOT YET. KEEP TRYING.
+00058 904C B6 801E GETDAT    LDA A   PIABDR           YES. GET THE DATA,
+00059 904F BD E1D1           JSR     OUTCH            PRINT IT OUT
+00060 9052 36                PSH A                    AND SAVE IT.
+00061 9053 86 3E             LDA A   #$3E             RAISE ACK ON C2 (RESET RDY
+00062 9055 B7 801F           STA A   PIABCR           
+00063 9058 32                PUL A                    PUT DATA BACK IN REGISTER
+00064 9059 39                RTS                      AND LEAVE...
+00065               
+00066               *********** GETBYTE - READ ASCII HEX BYTE (2 digits)
+00067 905A 8D 20   GETBYTE   BSR     A2H              GET FIRST CHARACTER TO HEX
+00068 905C 48                ASL A                    MOVE IT UP 4 BITS
+00069 905D 48                ASL A                    
 ASM68 6800 Assembler (c) 1988-1995 Evenson Consulting Services        Page 2
-FILE: e:\src\repos\mc6800\utilities\paptap\paptap.asm
+FILE: c:\src\repos\zoggins\mc6800\utilities\paptap\paptap.asm
 
-00070               
-00071               *********** PIADAT - GET DATA FROM PIA
-00072               ;PIADAT      LDX     #PIABFA
-00073               ;            LDA A   0,X         READ ADR AND
-00074               ;            LDA A   2,X         BDR TO CLEAR CR FLAGS
-00075               ;            LDA A   #$3E        C1 SET ON A 0 TO 1, C2=1
-00076               ;            STA A   3,X         SET CRB
-00077               ;DATLOP      LDA A   3,X         GET C1 FLAG(BIT 7)
-00078               ;            BMI     GETDAT      DATA PRESENT?
-00079               ;            BRA     DATLOP      NOT YET. KEEP TRYING.
-00080               ;GETDAT      LDA A   2,X         YES. GET THE DATA
-00081               ;            PSH A               AND SAVE IT.
-00082               ;            LDA A   #$36        KNOCK DOWN C2(RESET C1)
-00083               ;            STA A   3,X         SET CRB
-00084               ;            PUL A               PUT DATA BACK IN REGISTER
-00085               ;            RTS                 AND LEAVE...
-00086               
-00087 1F49 CE 8018 PIADAT    LDX     #PIABFA          
-00088 1F4C 86 02             LDA A   #$02             SET ACK
-00089 1F4E A7 00             STA A   0,X              
-00090 1F50 A6 00   DATLOP    LDA A   0,X              GET RDY
-00091 1F52 84 02             AND A   #$02             
-00092 1F54 26 02             BNE     GETDAT           
-00093 1F56 20 F8             BRA     DATLOP           
-00094 1F58 A6 02   GETDAT    LDA A   2,X              
-00095 1F5A BD E1D1           JSR     $E1D1            
-00096 1F5D 36                PSH A                    
-00097 1F5E 86 00             LDA A   #$00             
-00098 1F60 A7 00             STA A   0,X              
-00099 1F62 32                PUL A                    
-00100 1F63 39                RTS                      
-00101               
-00102               *********** GETBYTE - READ ASCII HEX BYTE (2 digits)
-00103 1F64 8D 1E   GETBYTE   BSR     A2H              GET FIRST CHARACTER TO HEX
-00104 1F66 48                ASL A                    MOVE IT UP 4 BITS
-00105 1F67 48                ASL A                    
-00106 1F68 48                ASL A                    
-00107 1F69 48                ASL A                    
-00108 1F6A 16                TAB                      
-00109 1F6B 8D 17             BSR     A2H              GET SECOND CHARACTER TO HE
-00110 1F6D 1B                ABA                      ADD THEM TOGETHER
-00111 1F6E 16                TAB                      
-00112 1F6F FB 1F00           ADD B   CHKSUM           ADD TO CHECKSUM
-00113 1F72 F7 1F00           STA B   CHKSUM           
-00114 1F75 39                RTS                      
-00115               
-00116               *********** GETADDR - READ ADDRESS AND LOAD X
-00117 1F76 8D EC   GETADDR   BSR     GETBYTE          
-00118 1F78 B7 1F02           STA A   TMPADDR1         
-00119 1F7B 8D E7             BSR     GETBYTE          
-00120 1F7D B7 1F03           STA A   TMPADDR2         
-00121 1F80 FE 1F02           LDX     TMPADDR1         
-00122 1F83 39                RTS                      
-00123               
-00124               *********** A2H - READ SINGLE ASCII BYTE AND CONVERT TO HEX
-00125 1F84 8D C3   A2H       BSR     PIADAT           
-00126 1F86 80 30             SUB A   #$30             
-00127 1F88 81 09             CMP A   #09              
-ASM68 6800 Assembler (c) 1988-1995 Evenson Consulting Services        Page 3
-FILE: e:\src\repos\mc6800\utilities\paptap\paptap.asm
-
-00128 1F8A 2F 02             BLE     RT               
-00129 1F8C 80 07             SUB A   #7               
-00130 1F8E 39      RT        RTS                      
-00131               
-00132         0000           END                      
+00070 905E 48                ASL A                    
+00071 905F 48                ASL A                    
+00072 9060 16                TAB                      
+00073 9061 8D 19             BSR     A2H              GET SECOND CHARACTER TO HE
+00074 9063 1B                ABA                      ADD THEM TOGETHER
+00075 9064 36                PSH A                    
+00076 9065 16                TAB                      
+00077 9066 FB 908A           ADD B   CHKSUM           ADD TO CHECKSUM
+00078 9069 F7 908A           STA B   CHKSUM           
+00079 906C 32                PUL A                    
+00080 906D 39                RTS                      
+00081               
+00082               *********** GETADDR - READ ADDRESS AND LOAD X
+00083 906E 8D EA   GETADDR   BSR     GETBYTE          
+00084 9070 B7 9088           STA A   TMPADDR1         
+00085 9073 8D E5             BSR     GETBYTE          
+00086 9075 B7 9089           STA A   TMPADDR2         
+00087 9078 FE 9088           LDX     TMPADDR1         
+00088 907B 39                RTS                      
+00089               
+00090               *********** A2H - READ SINGLE ASCII BYTE AND CONVERT TO HEX
+00091 907C 8D C2   A2H       BSR     PIADAT           
+00092 907E 80 30             SUB A   #$30             
+00093 9080 81 09             CMP A   #09              
+00094 9082 2F 02             BLE     RT               
+00095 9084 80 07             SUB A   #7               
+00096 9086 39      RT        RTS                      
+00097               
+00098 9087         NUMBYT    RMB     1                BYTES LEFT TO READ
+00099 9088         TMPADDR1  RMB     1                TEMP ADDRESS POINTER
+00100 9089         TMPADDR2  RMB     1                
+00101 908A         CHKSUM    RMB     1                RUNNING CHECKSUM
+00102               
+00103         0000           END                      
 
 No errors
 
- Total bytes output = 143
+ Total bytes output = 139
