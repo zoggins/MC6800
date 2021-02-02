@@ -2,7 +2,12 @@
 * Demo of PIA input and output
 * using switches and a speaker
 *
-* Schematic provided in folder
+* Hardware: v1 speaker board
+*           MP-L in Slot 7
+*
+* Connections: J1 1-8 = MP-L PA0-PA7
+*              J1 9 = GND
+*              J1 10 = 5v
 * 
 * Adapted from the demo in the
 * KIM-1 manual.
