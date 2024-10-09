@@ -1,0 +1,68 @@
+ASM68 6800 Assembler (c) 1988-1995 Evenson Consulting Services        Page 1
+FILE: e:\src\repos\zoggins\mc6800\utilities\gdisk\gdisk.asm      TITLE: SWTBUG
+
+00001         8014 DRVREG    EQU     $8014            DRIVE REGISTER
+00002         8018 COMREG    EQU     $8018            COMMAND REG 1771
+00003         801A TRKREG    EQU     $801A            TRACK REG 1771
+00004         801A SECREG    EQU     $801A            SECTOR REG 1771
+00005         801B DATREG    EQU     $801B            DATA REG 1771
+00006               
+00007         0100           ORG     $0100            
+00008               
+00009               * Boot from Sector 1
+00010               
+00011 0100 C6 01   GDISK     LDA B   #1               BOOT FROM SECTOR 1
+00012 0102 20 01             BRA     BDISK            
+00013               
+00014 0104 5F      FDISK     CLR B                    BOOT FROM SECTOR 0
+00015               
+00016         0105 BDISK     EQU     *                
+00017 0105 B6 8018           LDAA    COMREG           TURN ON MOTOR
+00018 0108 4F                CLR A                    SELECT DRIVE 0
+00019 0109 B7 8014           STA A   DRVREG           WRITE TO DRIVE SELECT REGI
+00020 010C B6 8018           LDA A   COMREG           READ COMREG TO ALLOW MOTOR
+00021 010F CE FFFF           LDX     #$FFFF           WAIT FOR MOTOR TO START
+00022 0112 01      GOWAIT    NOP                      "
+00023 0113 01                NOP                      "
+00024 0114 09                DEX                      "
+00025 0115 26 FB             BNE     GOWAIT           "
+00026 0117 86 0B             LDA A   #$0B             ISSUE RESTORE COMMAND
+00027 0119 B7 8018           STA A   COMREG           "
+00028 011C 8D 2A             BSR     GDELAY           WAIT BEFORE READING STATUS
+00029 011E B6 8018 GWAIT1    LDA A   COMREG           WAIT FOR RESTORE TO COMPLE
+00030 0121 84 01             AND A   #1               "
+00031 0123 26 F9             BNE     GWAIT1           "
+00032 0125 F7 801A           STA B   SECREG           SET SECTOR TO BOOT FROM
+00033 0128 86 9C             LDA A   #$9C             READ SECTOR COMMAND
+00034 012A B7 8018           STA A   COMREG           EXECUTE READ COMMAND
+00035 012D 8D 19             BSR     GDELAY           WAIT BEFORE READING STATUS
+00036 012F CE 2400           LDX     #$2400           LOAD ADDRESS
+00037 0132 B6 8018 GREAD     LDA A   COMREG           READ STATUS REGISTER
+00038 0135 85 02             BIT A   #2               CHECK FOR DRQ
+00039 0137 26 07             BNE     GREAD1           YES= READ DATA
+00040 0139 85 01             BIT A   #1               CHECK FOR BUSY
+00041 013B 26 F5             BNE     GREAD            YES = REPEAT LOOP
+00042               *       BITA #sRDERR   GOOD READ?
+00043               *       BEQ GJUMP      YES, JUMP TO LOADED CODE
+00044               *       LDX #NOLOAD    Boot Sector failed msg
+00045               *       JSR PDATA1     PRINT MESSAGE
+00046               *       JMP EOE3       Abort
+00047 013D 7E 2400 GJUMP     JMP     $2400            EXECUTE LOADED PROGRAM
+00048               
+00049 0140 B6 801B GREAD1    LDA A   DATREG           GET DATA
+00050 0143 A7 00             STA A   0,X              STORE IT
+00051 0145 08                INX                      BUMP LOAD POINTER TO NEXT 
+00052 0146 20 EA             BRA     GREAD            GET NEXT BYTE
+00053               
+00054 0148 8D 00   GDELAY    BSR     GDLY1            DELAY ROUTINE
+00055 014A 8D 00   GDLY1     BSR     GDLY2            
+00056 014C 8D 00   GDLY2     BSR     GDLY3            
+00057 014E 8D 00   GDLY3     BSR     GDLY4            
+00058 0150 39      GDLY4     RTS                      
+ASM68 6800 Assembler (c) 1988-1995 Evenson Consulting Services        Page 2
+FILE: e:\src\repos\zoggins\mc6800\utilities\gdisk\gdisk.asm      TITLE: SWTBUG
+
+
+No errors
+
+ Total bytes output = 81
